@@ -48,6 +48,10 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
 
+    // ONNX Runtime
+    implementation(libs.onnxruntime.android)
+    testImplementation(libs.onnxruntime.jvm)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

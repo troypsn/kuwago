@@ -41,7 +41,7 @@ class SmsReceiver : BroadcastReceiver() {
                         DetectionRepository.addDetection(placeholder)
                         
                         // 4. Analyze
-                        val finalResult = SmishingDetector.analyze(fullBody).copy(
+                        val finalResult = SmishingDetector.analyze(context, fullBody).copy(
                             id = placeholder.id,
                             sender = sender
                         )
