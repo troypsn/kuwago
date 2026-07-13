@@ -80,7 +80,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 )
                 DetectionRepository.addDetection(placeholder)
 
-                val finalResult = SmishingDetector.analyze(text).copy(
+                val finalResult = SmishingDetector.analyze(this@SmsNotificationListener, text).copy(
                     id = placeholder.id,
                     sender = title
                 )

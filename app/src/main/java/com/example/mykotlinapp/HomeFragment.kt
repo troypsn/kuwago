@@ -107,6 +107,7 @@ class HomeFragment : Fragment() {
     private fun showDetectionDetails(result: DetectionResult) {
         val confidencePercent = String.format(Locale.getDefault(), "%.1f%%", result.probability * 100)
         val classification = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
+        val explanation = LocalClassifier.formatDetailsExplanation(result)
 
         AlertDialog.Builder(requireContext())
             .setTitle("Detection Details")
@@ -114,6 +115,7 @@ class HomeFragment : Fragment() {
                 "Sender: ${result.sender}\n\n" +
                 "Classification: $classification\n" +
                 "Confidence: $confidencePercent\n\n" +
+                "$explanation\n\n" +
                 "Message:\n\"${result.message}\""
             )
             .setPositiveButton("OK", null)

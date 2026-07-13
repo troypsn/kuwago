@@ -1,63 +1,81 @@
 package com.example.mykotlinapp
 
+import android.content.Context
+import android.util.Log
 import com.example.mykotlinapp.network.RetrofitClient
 import com.example.mykotlinapp.network.SmsScanRequest
-import android.util.Log
 import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val TIMEOUT_MS = 30000L // Increased to 30 seconds for Render "cold starts"
+    private const val TIMEOUT_MS = 6000L // 6 seconds timeout for API queries
 
-    suspend fun analyze(message: String): DetectionResult {
+    suspend fun analyze(context: Context?, message: String): DetectionResult {
         Log.i("SmishingDetector", "-----------------------------------------")
-        Log.i("SmishingDetector", "STARTING SCAN: \"$message\"")
-        
-        return try {
-            withTimeout(TIMEOUT_MS) {
-                val request = SmsScanRequest(message)
-                Log.d("SmishingDetector", "Sending Request to Backend...")
-                
-                val response = RetrofitClient.instance.scanSms(request)
-                Log.i("SmishingDetector", "API SUCCESS! Response: $response")
-                
-                val classification = when (response.verdict.lowercase()) {
-                    "spam" -> Classification.SMISHING
-                    "benign" -> Classification.SAFE
-                    else -> {
-                        Log.w("SmishingDetector", "Unknown verdict: ${response.verdict}, defaulting to SAFE")
-                        Classification.SAFE
-                    }
-                }
+        Log.i("SmishingDetector", "STARTING HYBRID SCAN: \"$message\"")
 
-                DetectionResult(
-                    sender = "Unknown",
-                    message = message,
-                    classification = classification,
-                    probability = response.probability,
-                    isScanning = false
-                )
-            }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.e("SmishingDetector", "TIMEOUT ERROR: Backend took longer than ${TIMEOUT_MS/1000}s to respond.")
-            DetectionResult(
-                sender = "Unknown",
-                message = "$message [Scan Timed Out]",
-                classification = Classification.SAFE,
-                probability = 0f,
-                isScanning = false
-            )
+        // 1. Run local classification first
+        val localResult = try {
+            LocalClassifier.classify(context, message)
         } catch (e: Exception) {
-            Log.e("SmishingDetector", "API FAILURE: ${e.javaClass.simpleName} - ${e.message}")
-            Log.e("SmishingDetector", "Stack trace:", e)
-            
+            Log.e("SmishingDetector", "LOCAL CLASSIFIER ERROR: ${e.message}", e)
             DetectionResult(
                 sender = "Unknown",
-                message = "$message [Network Error]",
+                message = message,
                 classification = Classification.SAFE,
                 probability = 0f,
                 isScanning = false
             )
         }
+
+        Log.i("SmishingDetector", "Local Classifier Result: prob=${localResult.probability}, class=${localResult.classification}")
+
+        var finalProb = localResult.probability
+        var cnnProb: Float? = null
+        var isCnnSuccess = false
+
+        // 2. Query remote CNN API with timeout
+        try {
+            withTimeout(TIMEOUT_MS) {
+                val request = SmsScanRequest(message)
+                Log.d("SmishingDetector", "Sending request to CNN API...")
+                val response = RetrofitClient.instance.scanSms(request)
+                Log.i("SmishingDetector", "CNN API SUCCESS! Response: $response")
+
+                val fetchedCnnProb = response.probability
+                cnnProb = fetchedCnnProb
+                isCnnSuccess = true
+
+                // Compute combined hybrid score: 50% Local ensembled score + 50% CNN API score
+                finalProb = LocalClassifier.localWeight * localResult.probability + LocalClassifier.cnnWeight * fetchedCnnProb
+                Log.i("SmishingDetector", "CNN API Combined Hybrid Probability: $finalProb")
+            }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.e("SmishingDetector", "CNN API TIMEOUT: API took longer than ${TIMEOUT_MS / 1000}s. Falling back to local.")
+        } catch (e: Exception) {
+            Log.e("SmishingDetector", "CNN API FAILURE: ${e.javaClass.simpleName} - ${e.message}. Falling back to local.")
+        }
+
+        // 3. Determine final classification based on combined/local probability
+        val finalClassification = when {
+            finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
+            finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+            else -> Classification.SAFE
+        }
+
+        Log.i("SmishingDetector", "FINAL DECISION: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
+
+        return DetectionResult(
+            id = localResult.id,
+            sender = localResult.sender,
+            message = localResult.message,
+            classification = finalClassification,
+            probability = finalProb,
+            isScanning = false,
+            rfProb = localResult.rfProb,
+            rfRawLogit = localResult.rfRawLogit,
+            xgbProb = localResult.xgbProb,
+            cnnProb = cnnProb
+        )
     }
 }
