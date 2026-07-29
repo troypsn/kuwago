@@ -290,5 +290,17 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"/>
 
+        <!-- Debug Info (Temporary for testing) -->
+        <TextView
+            android:id="@+id/debug_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="System Status: Checking..."
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:alpha="0.5"
+            android:gravity="center" />
+
     </LinearLayout>
 </ScrollView>

@@ -4,73 +4,78 @@ import android.content.Context
 import android.util.Log
 import com.example.mykotlinapp.network.RetrofitClient
 import com.example.mykotlinapp.network.SmsScanRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val NETWORK_TIMEOUT_MS = 6000L // 6 seconds timeout for CNN remote call
+    private const val TIMEOUT_MS = 6000L // 6 seconds timeout for API queries
 
-    suspend fun analyze(context: Context, message: String): DetectionResult = withContext(Dispatchers.Default) {
-        Log.d("SmishingDetector", "--- New Analysis Request (Hybrid Local + Remote CNN) ---")
-        Log.d("SmishingDetector", "Message: \"$message\"")
+    suspend fun analyze(context: Context?, message: String): DetectionResult {
+        Log.i("SmishingDetector", "-----------------------------------------")
+        Log.i("SmishingDetector", "STARTING HYBRID SCAN: \"$message\"")
 
-        // 1. Initialize local classifier (loads models and weights if not done)
-        LocalClassifier.init(context)
-
-        // 2. Perform local classification (XGBoost + RF)
+        // 1. Run local classification first
         val localResult = try {
             LocalClassifier.classify(context, message)
         } catch (e: Exception) {
-            Log.e("SmishingDetector", "Local classification failed: ${e.message}")
-            null
+            Log.e("SmishingDetector", "LOCAL CLASSIFIER ERROR: ${e.message}", e)
+            DetectionResult(
+                sender = "Unknown",
+                message = message,
+                classification = Classification.SAFE,
+                probability = 0f,
+                isScanning = false
+            )
         }
 
-        val pLocal = localResult?.probability ?: 0.0f
-        Log.d("SmishingDetector", "Local prediction probability: $pLocal")
+        Log.i("SmishingDetector", "Local Classifier Result: prob=${localResult.probability}, class=${localResult.classification}")
 
-        // 3. Attempt to fetch CNN-BiGRU prediction from the remote API
-        var pCnn: Float? = null
+        var finalProb = localResult.probability
+        var cnnProb: Float? = null
+        var isCnnSuccess = false
+
+        // 2. Query remote CNN API with timeout
         try {
-            // Run network request on IO dispatcher with timeout
-            withContext(Dispatchers.IO) {
-                withTimeout(NETWORK_TIMEOUT_MS) {
-                    val request = SmsScanRequest(message)
-                    val response = RetrofitClient.instance.scanSms(request)
-                    pCnn = response.probability
-                    Log.d("SmishingDetector", "Remote CNN API success: prob=$pCnn")
-                }
+            withTimeout(TIMEOUT_MS) {
+                val request = SmsScanRequest(message)
+                Log.d("SmishingDetector", "Sending request to CNN API...")
+                val response = RetrofitClient.instance.scanSms(request)
+                Log.i("SmishingDetector", "CNN API SUCCESS! Response: $response")
+
+                val fetchedCnnProb = response.probability
+                cnnProb = fetchedCnnProb
+                isCnnSuccess = true
+
+                // Compute combined hybrid score: 50% Local ensembled score + 50% CNN API score
+                finalProb = LocalClassifier.localWeight * localResult.probability + LocalClassifier.cnnWeight * fetchedCnnProb
+                Log.i("SmishingDetector", "CNN API Combined Hybrid Probability: $finalProb")
             }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.e("SmishingDetector", "CNN API TIMEOUT: API took longer than ${TIMEOUT_MS / 1000}s. Falling back to local.")
         } catch (e: Exception) {
-            // Gracefully catch timeout, connection loss (WiFi dropped), or server errors
-            Log.w("SmishingDetector", "Remote CNN API failed/timed out: ${e.message}. Falling back to local models.")
+            Log.e("SmishingDetector", "CNN API FAILURE: ${e.javaClass.simpleName} - ${e.message}. Falling back to local.")
         }
 
-        // 4. Combine verdicts using the dynamic weights
-        val finalProb: Float
-        if (pCnn != null) {
-            // Hybrid combination: 50% Local, 50% CNN
-            finalProb = LocalClassifier.localWeight * pLocal + LocalClassifier.cnnWeight * pCnn!!
-            Log.d("SmishingDetector", "Hybrid verdict calculated: finalProb=$finalProb (Local weight: ${LocalClassifier.localWeight}, CNN weight: ${LocalClassifier.cnnWeight})")
-        } else {
-            // Fallback: Use local models only
-            finalProb = pLocal
-            Log.d("SmishingDetector", "Fallback local-only verdict calculated: finalProb=$finalProb")
-        }
-
+        // 3. Determine final classification based on combined/local probability
         val finalClassification = when {
             finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
             finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
             else -> Classification.SAFE
         }
 
-        DetectionResult(
-            sender = "Unknown",
-            message = message,
+        Log.i("SmishingDetector", "FINAL DECISION: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
+
+        return DetectionResult(
+            id = localResult.id,
+            sender = localResult.sender,
+            message = localResult.message,
             classification = finalClassification,
             probability = finalProb,
-            isScanning = false
+            isScanning = false,
+            rfProb = localResult.rfProb,
+            rfRawLogit = localResult.rfRawLogit,
+            xgbProb = localResult.xgbProb,
+            cnnProb = cnnProb
         )
     }
 }

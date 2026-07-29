@@ -1,12 +1,15 @@
 package com.example.mykotlinapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -61,7 +64,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkSmsPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECEIVE_SMS)) {
+                // If the user has already denied it once, suggest the fallback
+                showNotificationAccessDialog()
+            } else {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
+            }
         }
     }
 
@@ -70,7 +78,38 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == SMS_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted
+            } else {
+                // Permission denied, suggest notification fallback
+                showNotificationAccessDialog()
             }
+        }
+    }
+
+    fun isNotificationServiceEnabled(): Boolean {
+        val pkgName = packageName
+        val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        if (flat != null && flat.isNotEmpty()) {
+            val names = flat.split(":")
+            for (name in names) {
+                val cn = android.content.ComponentName.unflattenFromString(name)
+                if (cn != null && cn.packageName == pkgName) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private fun showNotificationAccessDialog() {
+        if (!isNotificationServiceEnabled()) {
+            AlertDialog.Builder(this)
+                .setTitle("Enhanced Protection")
+                .setMessage("SMS permissions were denied. To continue protecting you from smishing, please enable Notification Access so we can scan messages as they arrive.")
+                .setPositiveButton("Enable in Settings") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                }
+                .setNegativeButton("Maybe Later", null)
+                .show()
         }
     }
 
