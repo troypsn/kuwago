@@ -10,9 +10,9 @@ object SmishingDetector {
 
     private const val TIMEOUT_MS = 6000L // 6 seconds timeout for API queries
 
-    suspend fun analyze(context: Context?, message: String): DetectionResult {
+    suspend fun analyze(context: Context?, message: String, sender: String = "Unknown"): DetectionResult {
         Log.i("SmishingDetector", "-----------------------------------------")
-        Log.i("SmishingDetector", "STARTING HYBRID SCAN: \"$message\"")
+        Log.i("SmishingDetector", "STARTING HYBRID SCAN FOR \"$sender\": \"$message\"")
 
         // 1. Run local classification first
         val localResult = try {
@@ -20,7 +20,7 @@ object SmishingDetector {
         } catch (e: Exception) {
             Log.e("SmishingDetector", "LOCAL CLASSIFIER ERROR: ${e.message}", e)
             DetectionResult(
-                sender = "Unknown",
+                sender = sender,
                 message = message,
                 classification = Classification.SAFE,
                 probability = 0f,
@@ -28,7 +28,9 @@ object SmishingDetector {
             )
         }
 
-        Log.i("SmishingDetector", "Local Classifier Result: prob=${localResult.probability}, class=${localResult.classification}")
+        val actualSender = if (sender.isNotBlank() && sender != "Unknown") sender else localResult.sender
+
+        Log.i("SmishingDetector", "Local Classifier Result for $actualSender: prob=${localResult.probability}, class=${localResult.classification}")
 
         var finalProb = localResult.probability
         var cnnProb: Float? = null
@@ -63,15 +65,15 @@ object SmishingDetector {
             else -> Classification.SAFE
         }
 
-        Log.i("SmishingDetector", "FINAL DECISION: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
+        Log.i("SmishingDetector", "FINAL DECISION FOR $actualSender: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
 
-        // 4. Auto-blacklist if enabled and high-risk smishing detected
+        // 4. Auto-blacklist if enabled and high-risk smishing detected (handles past/CNN scanned messages as well)
         if (context != null && finalClassification == Classification.SMISHING) {
             if (BlacklistRepository.isAutoBlacklistEnabled(context)) {
-                Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: ${localResult.sender}")
+                Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: $actualSender")
                 BlacklistRepository.addOrUpdateEntry(
                     context = context,
-                    sender = localResult.sender,
+                    sender = actualSender,
                     riskLevel = RiskLevel.HIGH,
                     method = BlacklistMethod.AUTO
                 )
@@ -80,7 +82,7 @@ object SmishingDetector {
 
         return DetectionResult(
             id = localResult.id,
-            sender = localResult.sender,
+            sender = actualSender,
             message = localResult.message,
             classification = finalClassification,
             probability = finalProb,

@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import android.widget.Toast
 import java.util.Locale
 
 class HomeFragment : Fragment() {
@@ -105,11 +106,13 @@ class HomeFragment : Fragment() {
     }
 
     private fun showDetectionDetails(result: DetectionResult) {
+        val ctx = requireContext()
         val confidencePercent = String.format(Locale.getDefault(), "%.1f%%", result.probability * 100)
         val classification = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
         val explanation = LocalClassifier.formatDetailsExplanation(result)
+        val isBlacklisted = BlacklistRepository.isBlacklisted(ctx, result.sender)
 
-        AlertDialog.Builder(requireContext())
+        val builder = AlertDialog.Builder(ctx)
             .setTitle("Detection Details")
             .setMessage(
                 "Sender: ${result.sender}\n\n" +
@@ -119,6 +122,28 @@ class HomeFragment : Fragment() {
                 "Message:\n\"${result.message}\""
             )
             .setPositiveButton("OK", null)
-            .show()
+
+        if (isBlacklisted) {
+            builder.setNeutralButton("Remove from Blacklist") { _, _ ->
+                BlacklistRepository.removeEntry(ctx, result.sender)
+                Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            builder.setNeutralButton("Add to Blacklist") { _, _ ->
+                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, RiskLevel.HIGH, BlacklistMethod.MANUAL)
+                Toast.makeText(ctx, "Added ${result.sender} to Blacklist", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        builder.setNegativeButton("Test Warning Overlay") { _, _ ->
+            val intent = android.content.Intent(ctx, WarningOverlayActivity::class.java).apply {
+                putExtra("EXTRA_SENDER", result.sender)
+                putExtra("EXTRA_MESSAGE", result.message)
+                putExtra("EXTRA_CONFIDENCE", confidencePercent)
+            }
+            startActivity(intent)
+        }
+
+        builder.show()
     }
 }

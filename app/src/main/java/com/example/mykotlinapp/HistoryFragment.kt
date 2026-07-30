@@ -247,8 +247,8 @@ class HistoryFragment : Fragment() {
         // 2. Perform scan asynchronously
         scope.launch {
             val finalResult = withContext(Dispatchers.Default) {
-                // Call hybrid scan (executes local + remote CNN API)
-                val scanResult = SmishingDetector.analyze(ctx, result.message)
+                // Call hybrid scan (executes local + remote CNN API) with actual sender name
+                val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
                 scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
             }
 
@@ -264,11 +264,13 @@ class HistoryFragment : Fragment() {
     }
 
     private fun showDetailsDialog(result: DetectionResult) {
+        val ctx = requireContext()
         val confidencePercent = String.format(java.util.Locale.getDefault(), "%.1f%%", result.probability * 100)
         val classification = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
         val explanation = LocalClassifier.formatDetailsExplanation(result)
+        val isBlacklisted = BlacklistRepository.isBlacklisted(ctx, result.sender)
 
-        AlertDialog.Builder(requireContext())
+        val builder = AlertDialog.Builder(ctx)
             .setTitle("Detection Details")
             .setMessage(
                 "Sender: ${result.sender}\n\n" +
@@ -278,7 +280,31 @@ class HistoryFragment : Fragment() {
                 "Message:\n\"${result.message}\""
             )
             .setPositiveButton("OK", null)
-            .show()
+
+        if (isBlacklisted) {
+            builder.setNeutralButton("Remove from Blacklist") { _, _ ->
+                BlacklistRepository.removeEntry(ctx, result.sender)
+                android.widget.Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", android.widget.Toast.LENGTH_SHORT).show()
+                loadAndClassifySms()
+            }
+        } else {
+            builder.setNeutralButton("Add to Blacklist") { _, _ ->
+                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, RiskLevel.HIGH, BlacklistMethod.MANUAL)
+                android.widget.Toast.makeText(ctx, "Added ${result.sender} to Blacklist", android.widget.Toast.LENGTH_SHORT).show()
+                loadAndClassifySms()
+            }
+        }
+
+        builder.setNegativeButton("Test Warning Overlay") { _, _ ->
+            val intent = android.content.Intent(ctx, WarningOverlayActivity::class.java).apply {
+                putExtra("EXTRA_SENDER", result.sender)
+                putExtra("EXTRA_MESSAGE", result.message)
+                putExtra("EXTRA_CONFIDENCE", confidencePercent)
+            }
+            startActivity(intent)
+        }
+
+        builder.show()
     }
 }
 
