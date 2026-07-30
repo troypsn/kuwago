@@ -87,7 +87,14 @@ object BlacklistRepository {
         if (sender.isBlank()) return false
         val list = getBlacklist(context)
         val cleanSender = normalizeSender(sender)
-        return list.any { normalizeSender(it.sender) == cleanSender }
+        if (cleanSender.isEmpty()) return false
+
+        return list.any { entry ->
+            val cleanEntry = normalizeSender(entry.sender)
+            cleanEntry == cleanSender ||
+            (cleanEntry.length >= 4 && cleanSender.contains(cleanEntry)) ||
+            (cleanSender.length >= 4 && cleanEntry.contains(cleanSender))
+        }
     }
 
     fun addOrUpdateEntry(
@@ -129,7 +136,10 @@ object BlacklistRepository {
         loadIfNeeded(context)
         val currentList = _blacklistLiveData.value.orEmpty().toMutableList()
         val cleanSender = normalizeSender(sender)
-        val removed = currentList.removeAll { normalizeSender(it.sender) == cleanSender }
+        val removed = currentList.removeAll { 
+            val cleanEntry = normalizeSender(it.sender)
+            cleanEntry == cleanSender || (cleanEntry.length >= 4 && cleanSender.contains(cleanEntry))
+        }
         if (removed) {
             saveList(context, currentList)
         }
@@ -152,10 +162,17 @@ object BlacklistRepository {
 
     fun isWarningAcknowledged(context: Context, sender: String): Boolean {
         val set = getPrefs(context).getStringSet(KEY_ACKNOWLEDGED_WARNINGS, emptySet()).orEmpty()
-        return set.contains(normalizeSender(sender))
+        val cleanSender = normalizeSender(sender)
+        return set.contains(cleanSender)
     }
 
     fun normalizeSender(sender: String): String {
-        return sender.trim().lowercase().replace(Regex("[^a-zA-Z0-9]"), "")
+        var clean = sender.trim().lowercase().replace(Regex("[^a-zA-Z0-9]"), "")
+        if (clean.startsWith("639") && clean.length == 12) {
+            clean = "09" + clean.substring(3)
+        } else if (clean.startsWith("9") && clean.length == 10) {
+            clean = "0" + clean
+        }
+        return clean
     }
 }

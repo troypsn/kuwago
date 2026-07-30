@@ -70,12 +70,18 @@ class SmsNotificationListener : NotificationListenerService() {
         }
 
         // Check if sender is blacklisted -> cancel notification popup immediately
-        if (BlacklistRepository.isBlacklisted(this, title)) {
+        val isSenderBlacklisted = BlacklistRepository.isBlacklisted(this, title) ||
+                                  (text.length < 50 && BlacklistRepository.isBlacklisted(this, text))
+        if (isSenderBlacklisted) {
             Log.i("SmsNotificationListener", "BLOCKED & SUPPRESSED notification popup from blacklisted sender: $title")
             try {
                 cancelNotification(sbn.key)
             } catch (e: Exception) {
-                Log.e("SmsNotificationListener", "Could not cancel notification: ${e.message}")
+                try {
+                    cancelNotification(sbn.packageName, sbn.tag, sbn.id)
+                } catch (e2: Exception) {
+                    Log.e("SmsNotificationListener", "Could not cancel notification: ${e2.message}")
+                }
             }
             return
         }

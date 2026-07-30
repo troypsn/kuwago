@@ -130,8 +130,13 @@ class HomeFragment : Fragment() {
             }
         } else {
             builder.setNeutralButton("Add to Blacklist") { _, _ ->
-                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, RiskLevel.HIGH, BlacklistMethod.MANUAL)
-                Toast.makeText(ctx, "Added ${result.sender} to Blacklist", Toast.LENGTH_SHORT).show()
+                val calculatedRisk = when (result.classification) {
+                    Classification.SMISHING -> RiskLevel.HIGH
+                    Classification.SUSPICIOUS -> RiskLevel.MEDIUM
+                    Classification.SAFE -> RiskLevel.LOW
+                }
+                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, calculatedRisk, BlacklistMethod.MANUAL)
+                Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", Toast.LENGTH_SHORT).show()
             }
         }
 
