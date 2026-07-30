@@ -29,6 +29,10 @@
     <string name="dl_desc">DL</string>
     <string name="link_desc">Link</string>
     <string name="home_desc">Home</string>
+    <string name="nav_home_label">Home</string>
+    <string name="nav_scan_label">Scan</string>
+    <string name="nav_blacklist_label">Blacklist</string>
+    <string name="nav_settings_label">Settings</string>
 
     <!-- History Screen -->
     <string name="message_history_title">Message History</string>

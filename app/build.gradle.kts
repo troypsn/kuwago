@@ -50,6 +50,7 @@ dependencies {
 
     // ONNX Runtime
     implementation(libs.onnxruntime.android)
+    implementation(libs.androidx.cardview)
     testImplementation(libs.onnxruntime.jvm)
 
     testImplementation(libs.junit)

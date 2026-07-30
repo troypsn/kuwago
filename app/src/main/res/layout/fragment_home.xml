@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_primary"
     android:clipToPadding="false"
     android:fillViewport="true"
-    android:paddingBottom="120dp">
+    android:paddingBottom="80dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,7 +21,7 @@
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_status_card"
             android:elevation="2dp"
-            android:gravity="center_horizontal"
+            android:gravity="center_horizontal|center_vertical"
             android:orientation="vertical"
             android:padding="24dp">
 
@@ -28,7 +29,7 @@
                 android:layout_width="150dp"
                 android:layout_height="100dp"
                 android:contentDescription="@string/status_icon_desc"
-                android:src="@drawable/kuwagoicon" />
+                android:src="@drawable/kuwago_home" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -43,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-black"
                 android:text="@string/status_active"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp" />
 
             <View
@@ -69,7 +70,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/sms_scanned_count"
-                        android:textColor="@color/black"
+                        android:textColor="@color/text_primary"
                         android:textSize="24sp" />
 
                     <TextView
@@ -99,7 +100,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/suspicious_count"
-                        android:textColor="@color/black"
+                        android:textColor="@color/text_primary"
                         android:textSize="24sp" />
 
                     <TextView
@@ -129,7 +130,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/smishing_count"
-                        android:textColor="@color/black"
+                        android:textColor="@color/text_primary"
                         android:textSize="24sp" />
 
                     <TextView
@@ -144,120 +145,6 @@
         </LinearLayout>
 
         <!-- Action Cards Grid -->
-        <GridLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:columnCount="2">
-
-            <!-- Scan SMS -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_action_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:contentDescription="@string/scan_sms_label"
-                    android:src="@drawable/ic_scan" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/scan_sms_label"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Deep Analysis -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_action_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:contentDescription="@string/deep_analysis_label"
-                    android:src="@drawable/ic_eye" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/deep_analysis_label"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Blacklisted -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_action_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:contentDescription="@string/blacklisted_label"
-                    android:src="@drawable/ic_block" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/blacklisted_label"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Help -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_action_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:contentDescription="@string/help_label"
-                    android:src="@drawable/ic_help" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/help_label"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </GridLayout>
 
         <!-- Recent Detections Section -->
         <RelativeLayout
@@ -271,7 +158,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-black"
                 android:text="@string/recent_detections_title"
-                android:textColor="@color/black"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <TextView
@@ -279,7 +166,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:text="@string/view_all"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/primary"
                 android:textSize="12sp" />
         </RelativeLayout>
 
@@ -288,7 +175,7 @@
             android:id="@+id/detections_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"/>
+            android:orientation="vertical" />
 
         <!-- Debug Info (Temporary for testing) -->
         <TextView
@@ -296,11 +183,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:alpha="0.5"
+            android:gravity="center"
             android:text="System Status: Checking..."
             android:textColor="@color/text_secondary"
-            android:textSize="10sp"
-            android:alpha="0.5"
-            android:gravity="center" />
+            android:textSize="10sp" />
 
     </LinearLayout>
 </ScrollView>

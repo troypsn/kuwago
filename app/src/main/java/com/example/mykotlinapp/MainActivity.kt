@@ -5,8 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -22,23 +22,29 @@ class MainActivity : AppCompatActivity() {
 
     private val SMS_PERMISSION_CODE = 101
 
-    private lateinit var navHome: View
-    private lateinit var navHistory: View
-    private lateinit var navConfigure: View
+    // Nav item containers
+    private lateinit var navHome: LinearLayout
+    private lateinit var navHistory: LinearLayout
+    private lateinit var navScan: LinearLayout
+    private lateinit var navBlacklist: LinearLayout
+    private lateinit var navSettings: LinearLayout
 
-    private lateinit var homeIndicator: View
-    private lateinit var historyIndicator: View
-    private lateinit var configureIndicator: View
-
+    // Nav icons
     private lateinit var homeIcon: ImageView
     private lateinit var historyIcon: ImageView
-    private lateinit var configureIcon: ImageView
+    private lateinit var scanIcon: ImageView
+    private lateinit var blacklistIcon: ImageView
+    private lateinit var settingsIcon: ImageView
 
+    // Nav labels
+    private lateinit var homeText: TextView
     private lateinit var historyText: TextView
-    private lateinit var configureText: TextView
+    private lateinit var blacklistText: TextView
+    private lateinit var settingsText: TextView
+
+    private var currentTab = "home"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Handle the splash screen transition.
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
@@ -47,7 +53,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
 
@@ -65,7 +71,6 @@ class MainActivity : AppCompatActivity() {
     private fun checkSmsPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECEIVE_SMS)) {
-                // If the user has already denied it once, suggest the fallback
                 showNotificationAccessDialog()
             } else {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
@@ -76,10 +81,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == SMS_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
-            } else {
-                // Permission denied, suggest notification fallback
+            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 showNotificationAccessDialog()
             }
         }
@@ -116,34 +118,56 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         navHome = findViewById(R.id.nav_home)
         navHistory = findViewById(R.id.nav_history)
-        navConfigure = findViewById(R.id.nav_configure)
-
-        homeIndicator = findViewById(R.id.nav_home_indicator)
-        historyIndicator = findViewById(R.id.nav_history_indicator)
-        configureIndicator = findViewById(R.id.nav_configure_indicator)
+        navScan = findViewById(R.id.nav_scan)
+        navBlacklist = findViewById(R.id.nav_blacklist)
+        navSettings = findViewById(R.id.nav_settings)
 
         homeIcon = findViewById(R.id.nav_home_icon)
         historyIcon = findViewById(R.id.nav_history_icon)
-        configureIcon = findViewById(R.id.nav_configure_icon)
+        scanIcon = findViewById(R.id.nav_scan_icon)
+        blacklistIcon = findViewById(R.id.nav_blacklist_icon)
+        settingsIcon = findViewById(R.id.nav_settings_icon)
 
+        homeText = findViewById(R.id.nav_home_text)
         historyText = findViewById(R.id.nav_history_text)
-        configureText = findViewById(R.id.nav_configure_text)
+        blacklistText = findViewById(R.id.nav_blacklist_text)
+        settingsText = findViewById(R.id.nav_settings_text)
     }
 
     private fun setupNavigation() {
         navHome.setOnClickListener {
-            switchFragment(HomeFragment(), "home")
-            updateNavUI("home")
+            if (currentTab != "home") {
+                switchFragment(HomeFragment(), "home")
+                updateNavUI("home")
+            }
         }
 
         navHistory.setOnClickListener {
-            switchFragment(HistoryFragment(), "history")
-            updateNavUI("history")
+            if (currentTab != "history") {
+                switchFragment(HistoryFragment(), "history")
+                updateNavUI("history")
+            }
         }
 
-        navConfigure.setOnClickListener {
-            switchFragment(ConfigureFragment(), "configure")
-            updateNavUI("configure")
+        navScan.setOnClickListener {
+            if (currentTab != "scan") {
+                switchFragment(ScanFragment(), "scan")
+                updateNavUI("scan")
+            }
+        }
+
+        navBlacklist.setOnClickListener {
+            if (currentTab != "blacklist") {
+                switchFragment(BlacklistFragment(), "blacklist")
+                updateNavUI("blacklist")
+            }
+        }
+
+        navSettings.setOnClickListener {
+            if (currentTab != "settings") {
+                switchFragment(SettingsFragment(), "settings")
+                updateNavUI("settings")
+            }
         }
     }
 
@@ -154,33 +178,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNavUI(selectedTab: String) {
-        // Reset all
-        homeIndicator.visibility = View.GONE
-        historyIndicator.visibility = View.GONE
-        configureIndicator.visibility = View.GONE
+        currentTab = selectedTab
 
-        homeIcon.setColorFilter(ContextCompat.getColor(this, R.color.nav_icon_unselected))
-        historyIcon.setColorFilter(ContextCompat.getColor(this, R.color.nav_icon_unselected))
-        configureIcon.setColorFilter(ContextCompat.getColor(this, R.color.nav_icon_unselected))
+        val unselected = ContextCompat.getColor(this, R.color.nav_icon_unselected)
+        val selected = ContextCompat.getColor(this, R.color.nav_icon_selected)
 
-        historyText.setTextColor(ContextCompat.getColor(this, R.color.nav_icon_unselected))
-        configureText.setTextColor(ContextCompat.getColor(this, R.color.nav_icon_unselected))
+        // Reset all to unselected (gray)
+        listOf(homeIcon, historyIcon, blacklistIcon, settingsIcon)
+            .forEach { it.setColorFilter(unselected) }
+        listOf(homeText, historyText, blacklistText, settingsText)
+            .forEach { it.setTextColor(unselected) }
 
-        // Set selected
+        // Highlight selected tab (white)
         when (selectedTab) {
             "home" -> {
-                homeIndicator.visibility = View.VISIBLE
-                homeIcon.setColorFilter(ContextCompat.getColor(this, R.color.black))
+                homeIcon.setColorFilter(selected)
+                homeText.setTextColor(selected)
             }
             "history" -> {
-                historyIndicator.visibility = View.VISIBLE
-                historyIcon.setColorFilter(ContextCompat.getColor(this, R.color.black))
-                historyText.setTextColor(ContextCompat.getColor(this, R.color.black))
+                historyIcon.setColorFilter(selected)
+                historyText.setTextColor(selected)
             }
-            "configure" -> {
-                configureIndicator.visibility = View.VISIBLE
-                configureIcon.setColorFilter(ContextCompat.getColor(this, R.color.black))
-                configureText.setTextColor(ContextCompat.getColor(this, R.color.black))
+            "scan" -> {
+                scanIcon.setColorFilter(selected)
+            }
+            "blacklist" -> {
+                blacklistIcon.setColorFilter(selected)
+                blacklistText.setTextColor(selected)
+            }
+            "settings" -> {
+                settingsIcon.setColorFilter(selected)
+                settingsText.setTextColor(selected)
             }
         }
     }
