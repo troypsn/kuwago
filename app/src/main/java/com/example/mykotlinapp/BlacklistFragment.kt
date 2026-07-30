@@ -11,6 +11,8 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -79,65 +81,72 @@ class BlacklistFragment : Fragment() {
         chipSortOldest = view.findViewById(R.id.chip_sort_oldest)
 
         setupRecyclerView()
-        loadPlaceholderData()
         setupListeners()
-        applyFilters()
 
+        // Sync switch state with SharedPreferences
+        val ctx = requireContext()
+        switchAutoBlacklist.isChecked = BlacklistRepository.isAutoBlacklistEnabled(ctx)
+
+        // Observe repository
+        BlacklistRepository.blacklistLiveData.observe(viewLifecycleOwner) { list ->
+            allEntries.clear()
+            allEntries.addAll(list)
+            applyFilters()
+        }
+
+        loadRealData()
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadRealData()
     }
 
     // ─── Setup ───────────────────────────────────
 
     private fun setupRecyclerView() {
-        adapter = BlacklistAdapter(displayedEntries)
+        adapter = BlacklistAdapter(displayedEntries) { entry ->
+            showRemoveConfirmationDialog(entry)
+        }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
     }
 
-    private fun loadPlaceholderData() {
-        val cal = Calendar.getInstance()
+    private fun loadRealData() {
+        val ctx = context ?: return
+        val list = BlacklistRepository.getBlacklist(ctx)
+        allEntries.clear()
+        allEntries.addAll(list)
+        applyFilters()
+    }
 
-        // Yesterday
-        val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }.timeInMillis
-
-        // July 8, 2026
-        cal.set(2026, 6, 8)
-        val jul8 = cal.timeInMillis
-
-        // June 9, 2026
-        cal.set(2026, 5, 9)
-        val jun9 = cal.timeInMillis
-
-        allEntries.addAll(
-            listOf(
-                BlacklistEntry(
-                    sender = "BDO",
-                    riskLevel = RiskLevel.HIGH,
-                    flaggedCount = 1,
-                    method = BlacklistMethod.AUTO,
-                    timestamp = yesterday
-                ),
-                BlacklistEntry(
-                    sender = "+63 949 651 0557",
-                    riskLevel = RiskLevel.MEDIUM,
-                    flaggedCount = 2,
-                    method = BlacklistMethod.MANUAL,
-                    timestamp = jul8
-                ),
-                BlacklistEntry(
-                    sender = "LTO",
-                    riskLevel = RiskLevel.HIGH,
-                    flaggedCount = 1,
-                    method = BlacklistMethod.AUTO,
-                    timestamp = jun9
-                )
-            )
-        )
+    private fun showRemoveConfirmationDialog(entry: BlacklistEntry) {
+        val ctx = requireContext()
+        AlertDialog.Builder(ctx)
+            .setTitle("Remove from Blacklist")
+            .setMessage("Are you sure you want to remove \"${entry.sender}\" from your blacklist?\n\nThis will re-enable notification popups from this sender.")
+            .setPositiveButton("Remove") { _, _ ->
+                BlacklistRepository.removeEntry(ctx, entry.sender)
+                Toast.makeText(ctx, "Removed ${entry.sender} from blacklist", Toast.LENGTH_SHORT).show()
+                loadRealData()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // ─── Listeners ───────────────────────────────
 
     private fun setupListeners() {
+        // Switch Auto Blacklist
+        switchAutoBlacklist.setOnCheckedChangeListener { _, isChecked ->
+            context?.let { ctx ->
+                BlacklistRepository.setAutoBlacklistEnabled(ctx, isChecked)
+                val statusText = if (isChecked) "Auto-blacklisting enabled" else "Auto-blacklisting disabled"
+                Toast.makeText(ctx, statusText, Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Filter toggle button
         btnFilter.setOnClickListener {
             filterChipsVisible = !filterChipsVisible
@@ -244,7 +253,7 @@ class BlacklistFragment : Fragment() {
     // ─── Chip UI ─────────────────────────────────
 
     private fun setChipSelected(chip: TextView, selected: Boolean) {
-        val context = requireContext()
+        val context = context ?: return
         if (selected) {
             chip.background = ContextCompat.getDrawable(context, R.drawable.bg_chip_selected)
             chip.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
@@ -259,7 +268,8 @@ class BlacklistFragment : Fragment() {
 // RecyclerView Adapter
 // ──────────────────────────────────────────────
 class BlacklistAdapter(
-    private val items: List<BlacklistEntry>
+    private val items: List<BlacklistEntry>,
+    private val onItemClick: (BlacklistEntry) -> Unit
 ) : RecyclerView.Adapter<BlacklistAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -300,6 +310,10 @@ class BlacklistAdapter(
         holder.riskBadge.backgroundTintList =
             ColorStateList.valueOf(ContextCompat.getColor(ctx, bgColor))
         holder.riskBadge.setTextColor(ContextCompat.getColor(ctx, R.color.white))
+
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
+        }
     }
 
     override fun getItemCount(): Int = items.size

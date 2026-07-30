@@ -65,6 +65,19 @@ object SmishingDetector {
 
         Log.i("SmishingDetector", "FINAL DECISION: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
 
+        // 4. Auto-blacklist if enabled and high-risk smishing detected
+        if (context != null && finalClassification == Classification.SMISHING) {
+            if (BlacklistRepository.isAutoBlacklistEnabled(context)) {
+                Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: ${localResult.sender}")
+                BlacklistRepository.addOrUpdateEntry(
+                    context = context,
+                    sender = localResult.sender,
+                    riskLevel = RiskLevel.HIGH,
+                    method = BlacklistMethod.AUTO
+                )
+            }
+        }
+
         return DetectionResult(
             id = localResult.id,
             sender = localResult.sender,

@@ -69,6 +69,17 @@ class SmsNotificationListener : NotificationListenerService() {
             return
         }
 
+        // Check if sender is blacklisted -> cancel notification popup immediately
+        if (BlacklistRepository.isBlacklisted(this, title)) {
+            Log.i("SmsNotificationListener", "BLOCKED & SUPPRESSED notification popup from blacklisted sender: $title")
+            try {
+                cancelNotification(sbn.key)
+            } catch (e: Exception) {
+                Log.e("SmsNotificationListener", "Could not cancel notification: ${e.message}")
+            }
+            return
+        }
+
         Log.i("SmsNotificationListener", "SUCCESS: Found a message to scan. Sender: $title")
 
         scope.launch {
@@ -87,6 +98,22 @@ class SmsNotificationListener : NotificationListenerService() {
 
                 DetectionRepository.updateDetection(finalResult)
                 Log.i("SmsNotificationListener", "Update complete for message: ${placeholder.id}")
+
+                // Check if this sender is high-risk smishing, not blacklisted yet, and unacknowledged
+                if (finalResult.classification == Classification.SMISHING &&
+                    !BlacklistRepository.isBlacklisted(this@SmsNotificationListener, title) &&
+                    !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, title)
+                ) {
+                    Log.w("SmsNotificationListener", "Unhandled high-risk sender detected: $title. Will alert when user accesses SMS app.")
+                    // Trigger Full-Screen Warning Overlay when user accesses SMS app notification
+                    val intent = android.content.Intent(this@SmsNotificationListener, WarningOverlayActivity::class.java).apply {
+                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra("EXTRA_SENDER", title)
+                        putExtra("EXTRA_MESSAGE", text)
+                        putExtra("EXTRA_CONFIDENCE", String.format(java.util.Locale.US, "%.1f%%", finalResult.probability * 100))
+                    }
+                    startActivity(intent)
+                }
             } catch (e: Exception) {
                 Log.e("SmsNotificationListener", "Critical error during notification scan", e)
             }

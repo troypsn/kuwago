@@ -26,6 +26,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".WarningOverlayActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Mykotlinapp" />
+
         <receiver
             android:name=".SmsReceiver"
             android:enabled="true"
