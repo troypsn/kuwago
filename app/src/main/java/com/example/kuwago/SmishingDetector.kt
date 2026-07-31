@@ -1,9 +1,9 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.Context
 import android.util.Log
-import com.example.mykotlinapp.network.RetrofitClient
-import com.example.mykotlinapp.network.SmsScanRequest
+import com.example.kuwago.network.RetrofitClient
+import com.example.kuwago.network.SmsScanRequest
 import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
@@ -66,19 +66,6 @@ object SmishingDetector {
         }
 
         Log.i("SmishingDetector", "FINAL DECISION FOR $actualSender: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
-
-        // 4. Auto-blacklist if enabled and high-risk smishing detected (handles past/CNN scanned messages as well)
-        if (context != null && finalClassification == Classification.SMISHING) {
-            if (BlacklistRepository.isAutoBlacklistEnabled(context)) {
-                Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: $actualSender")
-                BlacklistRepository.addOrUpdateEntry(
-                    context = context,
-                    sender = actualSender,
-                    riskLevel = RiskLevel.HIGH,
-                    method = BlacklistMethod.AUTO
-                )
-            }
-        }
 
         return DetectionResult(
             id = localResult.id,

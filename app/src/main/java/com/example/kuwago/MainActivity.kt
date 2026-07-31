@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.Manifest
 import android.content.Intent
@@ -68,23 +68,49 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        checkForPendingWarnings()
+        checkNotificationPermission()
+    }
+
+    /**
+     * Check if the background service flagged any suspicious senders.
+     * If so, show the warning popup now that the user has opened the app.
+     */
+    private fun checkForPendingWarnings() {
+        val pending = PendingWarningRepository.getPendingWarning(this) ?: return
+
+        // Only show if the sender is still not blacklisted and not already acknowledged
+        if (BlacklistRepository.isBlacklisted(this, pending.sender) ||
+            BlacklistRepository.isWarningAcknowledged(this, pending.sender)
+        ) {
+            PendingWarningRepository.clearPendingWarning(this)
+            return
+        }
+
+        // Clear it first so it doesn't re-trigger on next onResume
+        PendingWarningRepository.clearPendingWarning(this)
+
+        val intent = Intent(this, WarningOverlayActivity::class.java).apply {
+            putExtra("EXTRA_SENDER", pending.sender)
+            putExtra("EXTRA_MESSAGE", pending.message)
+            putExtra("EXTRA_CONFIDENCE", pending.confidence)
+        }
+        startActivity(intent)
+    }
+
     private fun checkSmsPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECEIVE_SMS)) {
-                showNotificationAccessDialog()
-            } else {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
-            }
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
         }
     }
 
+
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == SMS_PERMISSION_CODE) {
-            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                showNotificationAccessDialog()
-            }
-        }
+        // Handled silently
     }
 
     fun isNotificationServiceEnabled(): Boolean {
@@ -102,18 +128,20 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun showNotificationAccessDialog() {
+    private fun checkNotificationPermission() {
         if (!isNotificationServiceEnabled()) {
             AlertDialog.Builder(this)
-                .setTitle("Enhanced Protection")
-                .setMessage("SMS permissions were denied. To continue protecting you from smishing, please enable Notification Access so we can scan messages as they arrive.")
+                .setTitle("Notification Access Required")
+                .setMessage("Kuwago needs Notification Access to intercept and block scam SMS messages before you see them. Please enable it in the next screen.")
                 .setPositiveButton("Enable in Settings") { _, _ ->
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }
-                .setNegativeButton("Maybe Later", null)
+                .setCancelable(false)
                 .show()
         }
     }
+
+
 
     private fun initViews() {
         navHome = findViewById(R.id.nav_home)

@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.Context
 import ai.onnxruntime.OnnxTensor

@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -22,16 +22,15 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-// ──────────────────────────────────────────────
+// -----------------------------------------------
 // Fragment
-// ──────────────────────────────────────────────
+// -----------------------------------------------
 class BlacklistFragment : Fragment() {
 
     // Views
     private lateinit var searchBox: EditText
     private lateinit var btnFilter: ImageView
     private lateinit var filterChipScroll: View
-    private lateinit var switchAutoBlacklist: SwitchCompat
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyState: LinearLayout
 
@@ -65,7 +64,6 @@ class BlacklistFragment : Fragment() {
         searchBox = view.findViewById(R.id.blacklist_search)
         btnFilter = view.findViewById(R.id.btn_filter)
         filterChipScroll = view.findViewById(R.id.filter_chip_scroll)
-        switchAutoBlacklist = view.findViewById(R.id.switch_auto_blacklist)
         recyclerView = view.findViewById(R.id.blacklist_recycler_view)
         emptyState = view.findViewById(R.id.blacklist_empty_state)
 
@@ -83,9 +81,7 @@ class BlacklistFragment : Fragment() {
         setupRecyclerView()
         setupListeners()
 
-        // Sync switch state with SharedPreferences
         val ctx = requireContext()
-        switchAutoBlacklist.isChecked = BlacklistRepository.isAutoBlacklistEnabled(ctx)
 
         // Observe repository
         BlacklistRepository.blacklistLiveData.observe(viewLifecycleOwner) { list ->
@@ -103,7 +99,7 @@ class BlacklistFragment : Fragment() {
         loadRealData()
     }
 
-    // ─── Setup ───────────────────────────────────
+    // --- Setup ---
 
     private fun setupRecyclerView() {
         adapter = BlacklistAdapter(displayedEntries) { entry ->
@@ -135,18 +131,9 @@ class BlacklistFragment : Fragment() {
             .show()
     }
 
-    // ─── Listeners ───────────────────────────────
+    // --- Listeners ---
 
     private fun setupListeners() {
-        // Switch Auto Blacklist
-        switchAutoBlacklist.setOnCheckedChangeListener { _, isChecked ->
-            context?.let { ctx ->
-                BlacklistRepository.setAutoBlacklistEnabled(ctx, isChecked)
-                val statusText = if (isChecked) "Auto-blacklisting enabled" else "Auto-blacklisting disabled"
-                Toast.makeText(ctx, statusText, Toast.LENGTH_SHORT).show()
-            }
-        }
-
         // Filter toggle button
         btnFilter.setOnClickListener {
             filterChipsVisible = !filterChipsVisible
@@ -167,7 +154,7 @@ class BlacklistFragment : Fragment() {
         categoryChips.forEach { chip ->
             chip.setOnClickListener {
                 if (activeFilterChip == chip) {
-                    // Deselect — go back to All
+                    // Deselect - go back to All
                     setChipSelected(chip, false)
                     activeFilterChip = null
                     setChipSelected(chipAll, true)
@@ -202,7 +189,7 @@ class BlacklistFragment : Fragment() {
         activeFilterChip = chipAll
     }
 
-    // ─── Filter & Sort ───────────────────────────
+    // --- Filter & Sort ---
 
     private fun applyFilters() {
         val query = searchBox.text.toString().trim().lowercase(Locale.getDefault())
@@ -250,7 +237,7 @@ class BlacklistFragment : Fragment() {
         RiskLevel.LOW    -> 2
     }
 
-    // ─── Chip UI ─────────────────────────────────
+    // --- Chip UI ---
 
     private fun setChipSelected(chip: TextView, selected: Boolean) {
         val context = context ?: return
@@ -264,9 +251,9 @@ class BlacklistFragment : Fragment() {
     }
 }
 
-// ──────────────────────────────────────────────
+// -----------------------------------------------
 // RecyclerView Adapter
-// ──────────────────────────────────────────────
+// -----------------------------------------------
 class BlacklistAdapter(
     private val items: List<BlacklistEntry>,
     private val onItemClick: (BlacklistEntry) -> Unit
@@ -298,7 +285,7 @@ class BlacklistAdapter(
             BlacklistMethod.MANUAL -> "Manually added"
         }
         val dateLabel = formatTimestamp(item.timestamp)
-        holder.meta.text = "$methodLabel · $dateLabel"
+        holder.meta.text = "$methodLabel • $dateLabel"
 
         // Risk badge
         val (badgeText, bgColor) = when (item.riskLevel) {

@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -23,9 +23,7 @@ class SettingsFragment : Fragment() {
             openSubPage(SettingsRealtimeScanFragment())
         }
 
-        view.findViewById<View>(R.id.settings_row_auto_blacklist).setOnClickListener {
-            openSubPage(SettingsAutoBlacklistFragment())
-        }
+
 
         view.findViewById<View>(R.id.settings_row_deep_analysis).setOnClickListener {
             openSubPage(SettingsDeepAnalysisFragment())

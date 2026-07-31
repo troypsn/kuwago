@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+﻿package com.example.kuwago
 
 import org.junit.Test
 import org.junit.Assert.*

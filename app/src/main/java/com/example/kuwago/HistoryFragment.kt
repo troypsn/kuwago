@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.Manifest
 import android.content.Context
@@ -298,15 +298,6 @@ class HistoryFragment : Fragment() {
                 android.widget.Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", android.widget.Toast.LENGTH_SHORT).show()
                 loadAndClassifySms()
             }
-        }
-
-        builder.setNegativeButton("Test Warning Overlay") { _, _ ->
-            val intent = android.content.Intent(ctx, WarningOverlayActivity::class.java).apply {
-                putExtra("EXTRA_SENDER", result.sender)
-                putExtra("EXTRA_MESSAGE", result.message)
-                putExtra("EXTRA_CONFIDENCE", confidencePercent)
-            }
-            startActivity(intent)
         }
 
         builder.show()

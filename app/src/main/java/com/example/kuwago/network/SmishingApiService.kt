@@ -1,4 +1,4 @@
-package com.example.mykotlinapp.network
+﻿package com.example.kuwago.network
 
 import retrofit2.http.Body
 import retrofit2.http.POST

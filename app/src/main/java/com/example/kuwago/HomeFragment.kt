@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -138,15 +138,6 @@ class HomeFragment : Fragment() {
                 BlacklistRepository.addOrUpdateEntry(ctx, result.sender, calculatedRisk, BlacklistMethod.MANUAL)
                 Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", Toast.LENGTH_SHORT).show()
             }
-        }
-
-        builder.setNegativeButton("Test Warning Overlay") { _, _ ->
-            val intent = android.content.Intent(ctx, WarningOverlayActivity::class.java).apply {
-                putExtra("EXTRA_SENDER", result.sender)
-                putExtra("EXTRA_MESSAGE", result.message)
-                putExtra("EXTRA_CONFIDENCE", confidencePercent)
-            }
-            startActivity(intent)
         }
 
         builder.show()

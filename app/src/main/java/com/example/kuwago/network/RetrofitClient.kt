@@ -1,4 +1,4 @@
-package com.example.mykotlinapp.network
+﻿package com.example.kuwago.network
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

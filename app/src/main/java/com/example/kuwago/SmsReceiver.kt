@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -39,9 +39,34 @@ class SmsReceiver : BroadcastReceiver() {
                             isScanning = true
                         )
                         DetectionRepository.addDetection(placeholder)
+
+                        // 3.5. INSTANT KILL: Bypass Android's OEM NotificationListenerService delays
+                        val isBlacklisted = BlacklistRepository.isBlacklisted(context, sender) || 
+                                (fullBody.length < 50 && BlacklistRepository.isBlacklisted(context, fullBody))
+                        
+                        if (isBlacklisted) {
+                            Log.i("SmsReceiver", "BLACKLISTED sender detected instantly in SmsReceiver: $sender")
+                            // We don't have the notification key here, but we can trigger the NotificationListenerService
+                            // to aggressively poll and kill it the exact millisecond Google Messages posts it!
+                            SmsNotificationListener.instance?.triggerAggressiveKill("com.google.android.apps.messaging")
+                            
+                            // We still run the analyzer just to update the History tab properly,
+                            // but we could also skip it if we wanted to save CPU. Let's just update the UI.
+                            val finalResult = DetectionResult(
+                                id = placeholder.id,
+                                sender = sender,
+                                message = fullBody,
+                                classification = Classification.SUSPICIOUS,
+                                probability = 1.0f,
+                                isScanning = false
+                            )
+                            DetectionRepository.updateDetection(finalResult)
+                            Log.d("SmsReceiver", "Final result updated for $sender (Skipped AI, was blacklisted)")
+                            continue
+                        }
                         
                         // 4. Analyze
-                        val finalResult = SmishingDetector.analyze(context, fullBody).copy(
+                        val finalResult = SmishingDetector.analyze(context, fullBody, sender).copy(
                             id = placeholder.id,
                             sender = sender
                         )

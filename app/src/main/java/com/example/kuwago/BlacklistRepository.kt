@@ -1,7 +1,8 @@
-package com.example.mykotlinapp
+package com.example.kuwago
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import org.json.JSONArray
@@ -36,8 +37,10 @@ object BlacklistRepository {
                 for (i in 0 until array.length()) {
                     val obj = array.getJSONObject(i)
                     val sender = obj.getString("sender")
-                    // Filter out legacy placeholder data
-                    if (sender == "BDO" || sender == "+63 949 651 0557" || sender == "LTO") {
+
+                    // Auto-heal: Purge corrupted entries like the "â" that don't have valid characters
+                    if (normalizeSender(sender).isEmpty()) {
+                        Log.w("BlacklistRepository", "Purging corrupted entry: $sender")
                         continue
                     }
                     list.add(
@@ -142,6 +145,13 @@ object BlacklistRepository {
         }
         if (removed) {
             saveList(context, currentList)
+        }
+        
+        // Reset their 'Proceed Anyway' muted status just in case they were muted previously
+        val prefs = getPrefs(context)
+        val set = prefs.getStringSet(KEY_ACKNOWLEDGED_WARNINGS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (set.remove(cleanSender)) {
+            prefs.edit().putStringSet(KEY_ACKNOWLEDGED_WARNINGS, set).apply()
         }
     }
 

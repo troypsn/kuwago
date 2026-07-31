@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+﻿package com.example.kuwago
 
 /**
  * Represents a single entry in the user's blacklist.

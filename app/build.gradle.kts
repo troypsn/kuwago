@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mykotlinapp"
+    namespace = "com.example.kuwago"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mykotlinapp"
+        applicationId = "com.example.kuwago"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

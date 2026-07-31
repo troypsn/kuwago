@@ -1,4 +1,4 @@
-package com.example.mykotlinapp
+﻿package com.example.kuwago
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
