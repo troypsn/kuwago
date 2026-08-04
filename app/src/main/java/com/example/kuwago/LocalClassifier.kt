@@ -157,6 +157,16 @@ object LocalClassifier {
         return count
     }
 
+    fun hasUrl(text: String): Boolean {
+        val urlRegex = Regex("https?://\\S+|www\\.\\S+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE)
+        return urlRegex.containsMatchIn(text)
+    }
+
+    fun extractUrl(text: String): String? {
+        val urlRegex = Regex("https?://\\S+|www\\.\\S+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE)
+        return urlRegex.find(text)?.value
+    }
+
     fun extractNumericalFeatures(text: String): FloatArray {
         val urls = Regex("https?://\\S+|www\\.\\S+").findAll(text).map { it.value }.toList()
         val urlPresent = if (urls.isNotEmpty()) 1.0f else 0.0f

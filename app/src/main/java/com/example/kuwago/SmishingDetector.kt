@@ -10,7 +10,7 @@ import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val TIMEOUT_MS = 35000L // 35 seconds to allow for cold starts + VirusTotal scan
+    private const val TIMEOUT_MS = 60000L // 60 seconds for backend CNN + VirusTotal URL scan
 
     suspend fun analyze(context: Context, message: String, sender: String): DetectionResult {
         Log.i("SmishingDetector", "=========================================")
@@ -29,10 +29,18 @@ object SmishingDetector {
             )
         }
 
+        val hasUrl = LocalClassifier.hasUrl(message)
+        val extractedUrl = LocalClassifier.extractUrl(message)
+        Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl, extractedUrl=$extractedUrl")
+
         return try {
             withTimeout(TIMEOUT_MS) {
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API...")
-                val request = SmsScanRequest(message)
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, extracted_url=$extractedUrl)...")
+                val request = SmsScanRequest(
+                    message = message,
+                    hasUrl = hasUrl,
+                    extractedUrl = extractedUrl
+                )
                 val response = RetrofitClient.instance.scanSms(request)
                 Log.i("SmishingDetector", "API RESPONSE RECEIVED SUCCESSFULLY: $response")
                 
@@ -70,8 +78,8 @@ object SmishingDetector {
                     isScanning = false,
                     cnnScore = cnnScore,
                     cnnVerdict = cnn.verdict,
-                    urlFound = url.hasUrl,
-                    extractedUrl = url.extractedUrl,
+                    urlFound = url.hasUrl || hasUrl,
+                    extractedUrl = url.extractedUrl ?: extractedUrl,
                     urlScore = url.score,
                     urlVerdict = url.verdict,
                     explanation = url.explanation,
@@ -97,12 +105,13 @@ object SmishingDetector {
         } catch (e: Exception) {
             Log.e("SmishingDetector", "CNN-BiGRU API request failed or timed out: ${e.javaClass.simpleName} - ${e.message}", e)
             val localOnly = LocalClassifier.classify(context, message)
+            // cnnProb and cnnScore remain NULL so the UI knows the remote scan did NOT complete successfully and allows retrying!
             localOnly.copy(
                 sender = sender,
                 message = message,
                 isScanning = false,
-                cnnProb = 0f,
-                cnnScore = 0f,
+                cnnProb = null,
+                cnnScore = null,
                 cnnVerdict = "API Error: ${e.localizedMessage ?: "Failed to connect"}"
             )
         }

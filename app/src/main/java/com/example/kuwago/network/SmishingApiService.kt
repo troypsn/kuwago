@@ -5,7 +5,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 data class SmsScanRequest(
-    val message: String
+    val message: String,
+    @SerializedName("has_url") val hasUrl: Boolean = false,
+    @SerializedName("extracted_url") val extractedUrl: String? = null
 )
 
 data class CnnAnalysis(

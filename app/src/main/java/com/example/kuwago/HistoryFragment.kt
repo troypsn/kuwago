@@ -17,6 +17,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
@@ -232,16 +233,17 @@ class HistoryFragment : Fragment() {
                 tvEmptyTitle.text = "No Messages Found"
                 tvEmptyMessage.text = "There are no SMS messages in your device inbox."
             } else {
-                historyRecyclerView.visibility = View.VISIBLE
+                historyRecyclerView.visibility = View.GONE
                 layoutEmptyState.visibility = View.GONE
+                historyRecyclerView.visibility = View.VISIBLE
             }
         }
     }
 
     private fun scanItemWithCnn(result: DetectionResult, position: Int) {
         val ctx = context ?: return
-        Log.d("HistoryFragment", "CNN Scan Button Pressed for message from: ${result.sender}")
-        Log.d("HistoryFragment", "Message: \"${result.message}\"")
+        Log.i("HistoryFragment", "CNN Scan Button Pressed for message from: ${result.sender}")
+        Log.i("HistoryFragment", "Message: \"${result.message}\"")
 
         // 1. Visually set item state to scanning
         smsList[position] = result.copy(isScanning = true)
@@ -249,15 +251,14 @@ class HistoryFragment : Fragment() {
 
         // 2. Perform scan asynchronously
         scope.launch {
-            Log.d("HistoryFragment", "Launching CNN Scan Job for ID: ${result.id}")
+            Log.i("HistoryFragment", "Launching CNN Scan Job for ID: ${result.id}")
             try {
-                val finalResult = withContext(Dispatchers.Default) {
-                    // Call hybrid scan (executes local + remote CNN API) with actual sender name
+                val finalResult = withContext(Dispatchers.IO) {
                     val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
                     scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
                 }
 
-                Log.d("HistoryFragment", "CNN Scan Job Finished. Verdict: ${finalResult.classification}, Confidence: ${finalResult.probability}")
+                Log.i("HistoryFragment", "CNN Scan Job Finished. Verdict: ${finalResult.classification}, Prob: ${finalResult.probability}, cnnProb=${finalResult.cnnProb}")
 
                 // 3. Update list and notify adapter
                 withContext(Dispatchers.Main) {
@@ -267,7 +268,14 @@ class HistoryFragment : Fragment() {
                         
                         // Add/Update to main repository recent detections list
                         DetectionRepository.addDetection(finalResult)
-                        Log.d("HistoryFragment", "UI and Repository updated for ID: ${result.id}")
+                        Log.i("HistoryFragment", "UI and Repository updated for ID: ${result.id}")
+
+                        if (finalResult.cnnProb != null) {
+                            Toast.makeText(ctx, "CNN API Scan Complete: ${finalResult.classification.name}", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val err = finalResult.cnnVerdict ?: "API connection failed"
+                            Toast.makeText(ctx, "CNN Scan Failed: $err\nTap download icon to retry.", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -277,6 +285,7 @@ class HistoryFragment : Fragment() {
                         smsList[position] = result.copy(isScanning = false)
                         smsAdapter.notifyItemChanged(position)
                     }
+                    Toast.makeText(ctx, "Scan error: ${e.message}\nTap download icon to retry.", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -303,7 +312,7 @@ class HistoryFragment : Fragment() {
         if (isBlacklisted) {
             builder.setNeutralButton("Remove from Blacklist") { _, _ ->
                 BlacklistRepository.removeEntry(ctx, result.sender)
-                android.widget.Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", Toast.LENGTH_SHORT).show()
                 loadAndClassifySms()
             }
         } else {
@@ -314,7 +323,7 @@ class HistoryFragment : Fragment() {
                     Classification.SAFE -> RiskLevel.LOW
                 }
                 BlacklistRepository.addOrUpdateEntry(ctx, result.sender, calculatedRisk, BlacklistMethod.MANUAL)
-                android.widget.Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", Toast.LENGTH_SHORT).show()
                 loadAndClassifySms()
             }
         }
@@ -372,12 +381,12 @@ class SmsHistoryAdapter(
             holder.statusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, bgColor))
             holder.statusBadge.setTextColor(ContextCompat.getColor(context, textColor))
 
-            // Hide/Show CNN Scan button depending on whether it has been scanned
-            if (item.cnnProb != null) {
-                // Already scanned
+            // Hide/Show CNN Scan button depending on whether it has been scanned successfully
+            if (item.cnnProb != null && item.cnnScore != null) {
+                // Successfully scanned remotely
                 holder.cnnButton.visibility = View.GONE
             } else {
-                // Not scanned yet
+                // Not scanned yet or failed/timed out -> keep button visible to allow redownload/retry
                 holder.cnnButton.visibility = View.VISIBLE
                 holder.cnnButton.setOnClickListener {
                     onCnnClick(item, position)
