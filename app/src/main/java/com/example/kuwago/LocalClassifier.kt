@@ -367,30 +367,36 @@ object LocalClassifier {
     }
 
     fun formatDetailsExplanation(result: DetectionResult): String {
-        val rfProbStr = String.format(java.util.Locale.US, "%.4f", result.rfProb)
-        val rfLogitStr = String.format(java.util.Locale.US, "%.4f", result.rfRawLogit)
-        val xgbProbStr = String.format(java.util.Locale.US, "%.4f", result.xgbProb)
+        val rfProbStr = String.format(java.util.Locale.US, "%.1f%%", result.rfProb * 100)
+        val xgbProbStr = String.format(java.util.Locale.US, "%.1f%%", result.xgbProb * 100)
         val localEnsembleScore = rfWeight * result.rfProb + xgbWeight * result.xgbProb
-        val localScoreStr = String.format(java.util.Locale.US, "%.4f", localEnsembleScore)
-        
+        val localScoreStr = String.format(java.util.Locale.US, "%.1f%%", localEnsembleScore * 100)
+        val localVerdictStr = result.localVerdict ?: result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
+
         val cnnScoreVal = result.cnnScore ?: result.cnnProb
-        val cnnScoreStr = if (cnnScoreVal != null) String.format(java.util.Locale.US, "%.4f", cnnScoreVal) else "N/A"
+        val cnnScoreStr = if (cnnScoreVal != null) String.format(java.util.Locale.US, "%.1f%%", cnnScoreVal * 100) else "N/A"
         val cnnVerdictStr = result.cnnVerdict ?: "N/A"
 
-        val urlVerdictStr = result.urlVerdict ?: (if (result.urlFound) "Found" else "None")
-        val urlScoreStr = if (result.urlScore != null) String.format(java.util.Locale.US, "%.4f", result.urlScore) else "N/A"
+        val hasUrl = result.urlFound
+        val urlScoreStr = if (result.urlScore != null) String.format(java.util.Locale.US, "%.1f%%", result.urlScore * 100) else "N/A"
+        val urlVerdictStr = result.urlVerdict ?: "N/A"
 
-        var details = "Model & API Analysis Breakdown:\n" +
-               "  • Random Forest Score: $rfProbStr (raw: $rfLogitStr)\n" +
-               "  • XGBoost Score:        $xgbProbStr\n" +
-               "  • Local Ensemble Score: $localScoreStr\n" +
-               "  • Remote CNN API:       $cnnScoreStr ($cnnVerdictStr)\n" +
-               "  • URL Analysis:         $urlVerdictStr (Score: $urlScoreStr)"
+        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble (50% CNN + 25% URL + 25% Local)" else "Ensemble (50% CNN + 50% Local)"
 
-        if (!result.explanation.isNullOrBlank()) {
-            details += "\n\nURL Analysis Explanation:\n" + result.explanation
+        return if (hasUrl) {
+            "Ensemble Calculation Breakdown:\n" +
+            "Formula: $formulaHeader\n\n" +
+            "  • Local Classifier (RF+XGB): $localScoreStr ($localVerdictStr)\n" +
+            "      └ RF: $rfProbStr | XGB: $xgbProbStr\n" +
+            "  • CNN-BiGRU API:             $cnnScoreStr ($cnnVerdictStr)\n" +
+            "  • URL Analysis:               $urlScoreStr ($urlVerdictStr)"
+        } else {
+            "Ensemble Calculation Breakdown:\n" +
+            "Formula: $formulaHeader\n\n" +
+            "  • Local Classifier (RF+XGB): $localScoreStr ($localVerdictStr)\n" +
+            "      └ RF: $rfProbStr | XGB: $xgbProbStr\n" +
+            "  • CNN-BiGRU API:             $cnnScoreStr ($cnnVerdictStr)\n" +
+            "  • URL Analysis:               No URL detected"
         }
-
-        return details
     }
 }

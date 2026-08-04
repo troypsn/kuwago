@@ -50,39 +50,43 @@ object SmishingDetector {
                 val cnnScore = cnn.score
                 val urlScore = url.score ?: 0f
                 val localScore = localResult.probability
+                val containsUrl = hasUrl || url.hasUrl
 
-                val urlVerdictLower = (url.verdict ?: "").lowercase()
-                val cnnVerdictLower = cnn.verdict.lowercase()
+                // Calculate weighted ensemble probability
+                val (finalProb, formulaStr) = if (containsUrl) {
+                    val score = (0.50f * cnnScore) + (0.25f * urlScore) + (0.25f * localScore)
+                    val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
+                    Pair(score, formula)
+                } else {
+                    val score = (0.50f * cnnScore) + (0.50f * localScore)
+                    val formula = "Weighted Ensemble: 50% CNN + 50% Local"
+                    Pair(score, formula)
+                }
 
-                val isUrlSmishing = urlVerdictLower in listOf("malicious", "suspicious", "phishing", "spam", "smishing")
-                val isCnnSmishing = cnnVerdictLower in listOf("spam", "phishing", "malicious", "smishing")
-                val isLocalSmishing = localResult.classification == Classification.SMISHING
-
+                // Determine final classification based on weighted probability score
                 val classification = when {
-                    isUrlSmishing || isCnnSmishing || isLocalSmishing -> Classification.SMISHING
-                    urlScore >= LocalClassifier.smishingThreshold || cnnScore >= LocalClassifier.smishingThreshold -> Classification.SMISHING
-                    urlScore >= LocalClassifier.suspiciousThreshold || cnnScore >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
-                    localResult.classification == Classification.SUSPICIOUS -> Classification.SUSPICIOUS
+                    finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
+                    finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
                     else -> Classification.SAFE
                 }
 
-                val overallProb = maxOf(cnnScore, urlScore, localScore)
-
-                Log.i("SmishingDetector", "FINAL CLASSIFICATION: verdict=$classification, prob=$overallProb (CNN score=$cnnScore, URL score=$urlScore, Local score=$localScore)")
+                Log.i("SmishingDetector", "FINAL CLASSIFICATION: verdict=$classification, prob=$finalProb ($formulaStr)")
 
                 val finalResult = DetectionResult(
                     sender = sender,
                     message = message,
                     classification = classification,
-                    probability = overallProb,
+                    probability = finalProb,
                     isScanning = false,
                     cnnScore = cnnScore,
                     cnnVerdict = cnn.verdict,
-                    urlFound = url.hasUrl || hasUrl,
+                    urlFound = containsUrl,
                     extractedUrl = url.extractedUrl ?: extractedUrl,
                     urlScore = url.score,
                     urlVerdict = url.verdict,
                     explanation = url.explanation,
+                    localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                    ensembleFormula = formulaStr,
                     rfProb = localResult.rfProb,
                     rfRawLogit = localResult.rfRawLogit,
                     xgbProb = localResult.xgbProb,
@@ -112,7 +116,9 @@ object SmishingDetector {
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,
-                cnnVerdict = "API Error: ${e.localizedMessage ?: "Failed to connect"}"
+                cnnVerdict = "API Error: ${e.localizedMessage ?: "Failed to connect"}",
+                localVerdict = localOnly.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = "Local Only (50% RF, 50% XGB)"
             )
         }
     }

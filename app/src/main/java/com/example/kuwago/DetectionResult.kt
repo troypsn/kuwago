@@ -1,4 +1,4 @@
-﻿package com.example.kuwago
+package com.example.kuwago
 
 import java.util.UUID
 
@@ -19,8 +19,10 @@ data class DetectionResult(
     val urlScore: Float? = null,
     val urlVerdict: String? = null,
     val explanation: String? = null,
+    val localVerdict: String? = null,
+    val ensembleFormula: String? = null,
 
-    // Local Model Scores (for compatibility with LocalClassifier)
+    // Local Model Scores
     val rfProb: Float = 0f,
     val rfRawLogit: Float = 0f,
     val xgbProb: Float = 0f,
