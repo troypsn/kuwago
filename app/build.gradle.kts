@@ -10,7 +10,9 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-val apiUrl: String = localProperties.getProperty("API_URL") ?: "https://kwagobackend.onrender.com/"
+val apiUrl: String = System.getenv("API_URL")
+    ?: localProperties.getProperty("API_URL")
+    ?: "https://kwagobackend.onrender.com/"
 
 android {
     namespace = "com.example.kuwago"
