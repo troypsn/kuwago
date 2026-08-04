@@ -362,12 +362,25 @@ object LocalClassifier {
         val xgbProbStr = String.format(java.util.Locale.US, "%.4f", result.xgbProb)
         val localEnsembleScore = rfWeight * result.rfProb + xgbWeight * result.xgbProb
         val localScoreStr = String.format(java.util.Locale.US, "%.4f", localEnsembleScore)
-        val cnnScoreStr = if (result.cnnProb != null) result.cnnProb.toString() else "N/A"
         
-        return "Individual Model Predictions:\n" +
-               "  - Random Forest Prob (scaled):  $rfProbStr (raw logit: $rfLogitStr)\n" +
-               "  - XGBoost Prob:                 $xgbProbStr\n" +
-               "  - Ensembled Local Score (${(rfWeight*100).toInt()}-${(xgbWeight*100).toInt()}): $localScoreStr\n" +
-               "  - Remote CNN API Score:         $cnnScoreStr"
+        val cnnScoreVal = result.cnnScore ?: result.cnnProb
+        val cnnScoreStr = if (cnnScoreVal != null) String.format(java.util.Locale.US, "%.4f", cnnScoreVal) else "N/A"
+        val cnnVerdictStr = result.cnnVerdict ?: "N/A"
+
+        val urlVerdictStr = result.urlVerdict ?: (if (result.urlFound) "Found" else "None")
+        val urlScoreStr = if (result.urlScore != null) String.format(java.util.Locale.US, "%.4f", result.urlScore) else "N/A"
+
+        var details = "Model & API Analysis Breakdown:\n" +
+               "  • Random Forest Score: $rfProbStr (raw: $rfLogitStr)\n" +
+               "  • XGBoost Score:        $xgbProbStr\n" +
+               "  • Local Ensemble Score: $localScoreStr\n" +
+               "  • Remote CNN API:       $cnnScoreStr ($cnnVerdictStr)\n" +
+               "  • URL Analysis:         $urlVerdictStr (Score: $urlScoreStr)"
+
+        if (!result.explanation.isNullOrBlank()) {
+            details += "\n\nURL Analysis Explanation:\n" + result.explanation
+        }
+
+        return details
     }
 }

@@ -9,6 +9,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -239,6 +240,8 @@ class HistoryFragment : Fragment() {
 
     private fun scanItemWithCnn(result: DetectionResult, position: Int) {
         val ctx = context ?: return
+        Log.d("HistoryFragment", "CNN Scan Button Pressed for message from: ${result.sender}")
+        Log.d("HistoryFragment", "Message: \"${result.message}\"")
 
         // 1. Visually set item state to scanning
         smsList[position] = result.copy(isScanning = true)
@@ -246,19 +249,35 @@ class HistoryFragment : Fragment() {
 
         // 2. Perform scan asynchronously
         scope.launch {
-            val finalResult = withContext(Dispatchers.Default) {
-                // Call hybrid scan (executes local + remote CNN API) with actual sender name
-                val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
-                scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
-            }
+            Log.d("HistoryFragment", "Launching CNN Scan Job for ID: ${result.id}")
+            try {
+                val finalResult = withContext(Dispatchers.Default) {
+                    // Call hybrid scan (executes local + remote CNN API) with actual sender name
+                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
+                    scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
+                }
 
-            // 3. Update list and notify adapter
-            if (position < smsList.size && smsList[position].id == result.id) {
-                smsList[position] = finalResult
-                smsAdapter.notifyItemChanged(position)
-                
-                // Add/Update to main repository recent detections list
-                DetectionRepository.addDetection(finalResult)
+                Log.d("HistoryFragment", "CNN Scan Job Finished. Verdict: ${finalResult.classification}, Confidence: ${finalResult.probability}")
+
+                // 3. Update list and notify adapter
+                withContext(Dispatchers.Main) {
+                    if (position < smsList.size && smsList[position].id == result.id) {
+                        smsList[position] = finalResult
+                        smsAdapter.notifyItemChanged(position)
+                        
+                        // Add/Update to main repository recent detections list
+                        DetectionRepository.addDetection(finalResult)
+                        Log.d("HistoryFragment", "UI and Repository updated for ID: ${result.id}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("HistoryFragment", "FATAL ERROR during CNN scan click", e)
+                withContext(Dispatchers.Main) {
+                    if (position < smsList.size && smsList[position].id == result.id) {
+                        smsList[position] = result.copy(isScanning = false)
+                        smsAdapter.notifyItemChanged(position)
+                    }
+                }
             }
         }
     }

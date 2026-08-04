@@ -11,7 +11,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import android.widget.Toast
 import java.util.Locale
 
 class HomeFragment : Fragment() {
@@ -37,15 +36,7 @@ class HomeFragment : Fragment() {
             updateDetectionsList(results)
         }
 
-        // Periodically check if Notification Access is on
-        view.postDelayed(object : Runnable {
-            override fun run() {
-                if (isAdded) {
-                    checkServiceStatus()
-                    view.postDelayed(this, 3000)
-                }
-            }
-        }, 1000)
+        checkServiceStatus()
     }
 
     private fun checkServiceStatus() {
@@ -106,40 +97,44 @@ class HomeFragment : Fragment() {
     }
 
     private fun showDetectionDetails(result: DetectionResult) {
-        val ctx = requireContext()
-        val confidencePercent = String.format(Locale.getDefault(), "%.1f%%", result.probability * 100)
-        val classification = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
-        val explanation = LocalClassifier.formatDetailsExplanation(result)
-        val isBlacklisted = BlacklistRepository.isBlacklisted(ctx, result.sender)
-
-        val builder = AlertDialog.Builder(ctx)
-            .setTitle("Detection Details")
-            .setMessage(
-                "Sender: ${result.sender}\n\n" +
-                "Classification: $classification\n" +
-                "Confidence: $confidencePercent\n\n" +
-                "$explanation\n\n" +
-                "Message:\n\"${result.message}\""
-            )
-            .setPositiveButton("OK", null)
-
-        if (isBlacklisted) {
-            builder.setNeutralButton("Remove from Blacklist") { _, _ ->
-                BlacklistRepository.removeEntry(ctx, result.sender)
-                Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            builder.setNeutralButton("Add to Blacklist") { _, _ ->
-                val calculatedRisk = when (result.classification) {
-                    Classification.SMISHING -> RiskLevel.HIGH
-                    Classification.SUSPICIOUS -> RiskLevel.MEDIUM
-                    Classification.SAFE -> RiskLevel.LOW
-                }
-                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, calculatedRisk, BlacklistMethod.MANUAL)
-                Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", Toast.LENGTH_SHORT).show()
-            }
+        val overallConfidence = String.format(Locale.getDefault(), "%.1f%%", result.probability * 100)
+        
+        val messageBuilder = StringBuilder()
+        
+        messageBuilder.append("Sender: ${result.sender}\n\n")
+        
+        // 1. Text Analysis
+        if (result.cnnVerdict != null) {
+            val cnnConf = String.format(Locale.getDefault(), "%.1f%%", (result.cnnScore ?: 0f) * 100)
+            messageBuilder.append("--- Text Analysis (CNN-BiGRU) ---\n")
+            messageBuilder.append("Verdict: ${result.cnnVerdict?.uppercase()}\n")
+            messageBuilder.append("Confidence: $cnnConf\n\n")
         }
 
-        builder.show()
+        // 2. URL Analysis
+        if (result.urlFound) {
+            val urlConf = String.format(Locale.getDefault(), "%.1f%%", (result.urlScore ?: 0f) * 100)
+            messageBuilder.append("--- URL Analysis (VirusTotal) ---\n")
+            messageBuilder.append("Link: ${result.extractedUrl}\n")
+            messageBuilder.append("Verdict: ${result.urlVerdict?.uppercase()}\n")
+            messageBuilder.append("Confidence: $urlConf\n")
+            if (!result.explanation.isNullOrBlank()) {
+                messageBuilder.append("\nNote: ${result.explanation}\n")
+            }
+            messageBuilder.append("\n")
+        } else {
+            messageBuilder.append("URL Analysis: No links found in message.\n\n")
+        }
+
+        messageBuilder.append("Overall Verdict: ${result.classification.name}\n")
+        messageBuilder.append("Highest Confidence: $overallConfidence\n\n")
+        
+        messageBuilder.append("Original Message:\n\"${result.message}\"")
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Detection Breakdown")
+            .setMessage(messageBuilder.toString())
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

@@ -1,23 +1,31 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val apiUrl: String = localProperties.getProperty("API_URL") ?: "https://kwagobackend.onrender.com/"
+
 android {
     namespace = "com.example.kuwago"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.kuwago"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "API_URL", "\"$apiUrl\"")
     }
 
     buildTypes {
@@ -32,6 +40,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 
@@ -50,12 +61,9 @@ dependencies {
 
     // ONNX Runtime
     implementation(libs.onnxruntime.android)
-    implementation(libs.androidx.cardview)
     testImplementation(libs.onnxruntime.jvm)
 
     testImplementation(libs.junit)
-    testImplementation(libs.onnxruntime.jvm)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation(libs.onnxruntime.android)
 }

@@ -1,24 +1,25 @@
 package com.example.kuwago
 
 import android.content.Context
-import android.util.Log
 import com.example.kuwago.network.RetrofitClient
 import com.example.kuwago.network.SmsScanRequest
+import com.example.kuwago.network.CnnAnalysis
+import com.example.kuwago.network.UrlAnalysis
+import android.util.Log
 import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val TIMEOUT_MS = 6000L // 6 seconds timeout for API queries
+    private const val TIMEOUT_MS = 35000L // 35 seconds to allow for cold starts + VirusTotal scan
 
-    suspend fun analyze(context: Context?, message: String, sender: String = "Unknown"): DetectionResult {
-        Log.i("SmishingDetector", "-----------------------------------------")
-        Log.i("SmishingDetector", "STARTING HYBRID SCAN FOR \"$sender\": \"$message\"")
-
-        // 1. Run local classification first
+    suspend fun analyze(context: Context, message: String, sender: String): DetectionResult {
+        Log.i("SmishingDetector", "=========================================")
+        Log.i("SmishingDetector", "STARTING ENSEMBLE SCAN: Sender=$sender, Message=\"$message\"")
+        
         val localResult = try {
             LocalClassifier.classify(context, message)
         } catch (e: Exception) {
-            Log.e("SmishingDetector", "LOCAL CLASSIFIER ERROR: ${e.message}", e)
+            Log.e("SmishingDetector", "Local Classifier error: ${e.message}", e)
             DetectionResult(
                 sender = sender,
                 message = message,
@@ -28,56 +29,82 @@ object SmishingDetector {
             )
         }
 
-        val actualSender = if (sender.isNotBlank() && sender != "Unknown") sender else localResult.sender
-
-        Log.i("SmishingDetector", "Local Classifier Result for $actualSender: prob=${localResult.probability}, class=${localResult.classification}")
-
-        var finalProb = localResult.probability
-        var cnnProb: Float? = null
-        var isCnnSuccess = false
-
-        // 2. Query remote CNN API with timeout
-        try {
+        return try {
             withTimeout(TIMEOUT_MS) {
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API...")
                 val request = SmsScanRequest(message)
-                Log.d("SmishingDetector", "Sending request to CNN API...")
                 val response = RetrofitClient.instance.scanSms(request)
-                Log.i("SmishingDetector", "CNN API SUCCESS! Response: $response")
+                Log.i("SmishingDetector", "API RESPONSE RECEIVED SUCCESSFULLY: $response")
+                
+                val cnn = response.cnnAnalysis ?: CnnAnalysis(0f, "benign")
+                val url = response.urlAnalysis ?: UrlAnalysis(false, null, null, null, null, null, emptyList())
 
-                val fetchedCnnProb = response.probability
-                cnnProb = fetchedCnnProb
-                isCnnSuccess = true
+                val cnnScore = cnn.score
+                val urlScore = url.score ?: 0f
+                val localScore = localResult.probability
 
-                // Compute combined hybrid score: 50% Local ensembled score + 50% CNN API score
-                finalProb = LocalClassifier.localWeight * localResult.probability + LocalClassifier.cnnWeight * fetchedCnnProb
-                Log.i("SmishingDetector", "CNN API Combined Hybrid Probability: $finalProb")
+                val urlVerdictLower = (url.verdict ?: "").lowercase()
+                val cnnVerdictLower = cnn.verdict.lowercase()
+
+                val isUrlSmishing = urlVerdictLower in listOf("malicious", "suspicious", "phishing", "spam", "smishing")
+                val isCnnSmishing = cnnVerdictLower in listOf("spam", "phishing", "malicious", "smishing")
+                val isLocalSmishing = localResult.classification == Classification.SMISHING
+
+                val classification = when {
+                    isUrlSmishing || isCnnSmishing || isLocalSmishing -> Classification.SMISHING
+                    urlScore >= LocalClassifier.smishingThreshold || cnnScore >= LocalClassifier.smishingThreshold -> Classification.SMISHING
+                    urlScore >= LocalClassifier.suspiciousThreshold || cnnScore >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+                    localResult.classification == Classification.SUSPICIOUS -> Classification.SUSPICIOUS
+                    else -> Classification.SAFE
+                }
+
+                val overallProb = maxOf(cnnScore, urlScore, localScore)
+
+                Log.i("SmishingDetector", "FINAL CLASSIFICATION: verdict=$classification, prob=$overallProb (CNN score=$cnnScore, URL score=$urlScore, Local score=$localScore)")
+
+                val finalResult = DetectionResult(
+                    sender = sender,
+                    message = message,
+                    classification = classification,
+                    probability = overallProb,
+                    isScanning = false,
+                    cnnScore = cnnScore,
+                    cnnVerdict = cnn.verdict,
+                    urlFound = url.hasUrl,
+                    extractedUrl = url.extractedUrl,
+                    urlScore = url.score,
+                    urlVerdict = url.verdict,
+                    explanation = url.explanation,
+                    rfProb = localResult.rfProb,
+                    rfRawLogit = localResult.rfRawLogit,
+                    xgbProb = localResult.xgbProb,
+                    cnnProb = cnnScore
+                )
+
+                // Auto-blacklist if enabled and high-risk smishing detected
+                if (classification == Classification.SMISHING && BlacklistRepository.isAutoBlacklistEnabled(context)) {
+                    Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: $sender")
+                    BlacklistRepository.addOrUpdateEntry(
+                        context = context,
+                        sender = sender,
+                        riskLevel = RiskLevel.HIGH,
+                        method = BlacklistMethod.AUTO
+                    )
+                }
+
+                finalResult
             }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.e("SmishingDetector", "CNN API TIMEOUT: API took longer than ${TIMEOUT_MS / 1000}s. Falling back to local.")
         } catch (e: Exception) {
-            Log.e("SmishingDetector", "CNN API FAILURE: ${e.javaClass.simpleName} - ${e.message}. Falling back to local.")
+            Log.e("SmishingDetector", "CNN-BiGRU API request failed or timed out: ${e.javaClass.simpleName} - ${e.message}", e)
+            val localOnly = LocalClassifier.classify(context, message)
+            localOnly.copy(
+                sender = sender,
+                message = message,
+                isScanning = false,
+                cnnProb = 0f,
+                cnnScore = 0f,
+                cnnVerdict = "API Error: ${e.localizedMessage ?: "Failed to connect"}"
+            )
         }
-
-        // 3. Determine final classification based on combined/local probability
-        val finalClassification = when {
-            finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
-            finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
-            else -> Classification.SAFE
-        }
-
-        Log.i("SmishingDetector", "FINAL DECISION FOR $actualSender: prob=$finalProb, class=$finalClassification, cnnSuccess=$isCnnSuccess")
-
-        return DetectionResult(
-            id = localResult.id,
-            sender = actualSender,
-            message = localResult.message,
-            classification = finalClassification,
-            probability = finalProb,
-            isScanning = false,
-            rfProb = localResult.rfProb,
-            rfRawLogit = localResult.rfRawLogit,
-            xgbProb = localResult.xgbProb,
-            cnnProb = cnnProb
-        )
     }
 }

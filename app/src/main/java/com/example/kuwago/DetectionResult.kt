@@ -10,6 +10,17 @@ data class DetectionResult(
     val probability: Float = 0f,
     val isScanning: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
+    
+    // Detailed Analysis
+    val cnnScore: Float? = null,
+    val cnnVerdict: String? = null,
+    val urlFound: Boolean = false,
+    val extractedUrl: String? = null,
+    val urlScore: Float? = null,
+    val urlVerdict: String? = null,
+    val explanation: String? = null,
+
+    // Local Model Scores (for compatibility with LocalClassifier)
     val rfProb: Float = 0f,
     val rfRawLogit: Float = 0f,
     val xgbProb: Float = 0f,

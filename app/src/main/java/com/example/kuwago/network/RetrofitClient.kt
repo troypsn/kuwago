@@ -1,12 +1,13 @@
 ﻿package com.example.kuwago.network
 
+import com.example.kuwago.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://kwagobackend.onrender.com/"
+    private val BASE_URL = BuildConfig.API_URL
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
