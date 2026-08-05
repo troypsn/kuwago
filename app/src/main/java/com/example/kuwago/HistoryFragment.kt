@@ -292,43 +292,11 @@ class HistoryFragment : Fragment() {
     }
 
     private fun showDetailsDialog(result: DetectionResult) {
-        val ctx = requireContext()
-        val confidencePercent = String.format(java.util.Locale.getDefault(), "%.1f%%", result.probability * 100)
-        val classification = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
-        val explanation = LocalClassifier.formatDetailsExplanation(result)
-        val isBlacklisted = BlacklistRepository.isBlacklisted(ctx, result.sender)
-
-        val builder = AlertDialog.Builder(ctx)
-            .setTitle("Detection Details")
-            .setMessage(
-                "Sender: ${result.sender}\n\n" +
-                "Classification: $classification\n" +
-                "Confidence: $confidencePercent\n\n" +
-                "$explanation\n\n" +
-                "Message:\n\"${result.message}\""
-            )
-            .setPositiveButton("OK", null)
-
-        if (isBlacklisted) {
-            builder.setNeutralButton("Remove from Blacklist") { _, _ ->
-                BlacklistRepository.removeEntry(ctx, result.sender)
-                Toast.makeText(ctx, "Removed ${result.sender} from Blacklist", Toast.LENGTH_SHORT).show()
-                loadAndClassifySms()
-            }
-        } else {
-            builder.setNeutralButton("Add to Blacklist") { _, _ ->
-                val calculatedRisk = when (result.classification) {
-                    Classification.SMISHING -> RiskLevel.HIGH
-                    Classification.SUSPICIOUS -> RiskLevel.MEDIUM
-                    Classification.SAFE -> RiskLevel.LOW
-                }
-                BlacklistRepository.addOrUpdateEntry(ctx, result.sender, calculatedRisk, BlacklistMethod.MANUAL)
-                Toast.makeText(ctx, "Added ${result.sender} to Blacklist (${calculatedRisk.name.lowercase()} risk)", Toast.LENGTH_SHORT).show()
-                loadAndClassifySms()
-            }
+        val modal = AnalysisDetailsBottomSheetFragment.newInstance(result)
+        modal.onBlacklistUpdatedListener = {
+            loadAndClassifySms()
         }
-
-        builder.show()
+        modal.show(parentFragmentManager, "AnalysisDetailsBottomSheetFragment")
     }
 }
 

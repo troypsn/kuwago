@@ -1,5 +1,6 @@
 package com.example.kuwago
 
+import java.io.Serializable
 import java.util.UUID
 
 data class DetectionResult(
@@ -27,10 +28,11 @@ data class DetectionResult(
     val rfRawLogit: Float = 0f,
     val xgbProb: Float = 0f,
     val cnnProb: Float? = null
-)
+) : Serializable
 
-enum class Classification {
+enum class Classification : Serializable {
     SAFE,
     SUSPICIOUS,
     SMISHING
 }
+

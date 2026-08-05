@@ -97,44 +97,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun showDetectionDetails(result: DetectionResult) {
-        val overallConfidence = String.format(Locale.getDefault(), "%.1f%%", result.probability * 100)
-        
-        val messageBuilder = StringBuilder()
-        
-        messageBuilder.append("Sender: ${result.sender}\n\n")
-        
-        // 1. Text Analysis
-        if (result.cnnVerdict != null) {
-            val cnnConf = String.format(Locale.getDefault(), "%.1f%%", (result.cnnScore ?: 0f) * 100)
-            messageBuilder.append("--- Text Analysis (CNN-BiGRU) ---\n")
-            messageBuilder.append("Verdict: ${result.cnnVerdict?.uppercase()}\n")
-            messageBuilder.append("Confidence: $cnnConf\n\n")
+        val modal = AnalysisDetailsBottomSheetFragment.newInstance(result)
+        modal.onBlacklistUpdatedListener = {
+            // Refresh detections if needed
         }
-
-        // 2. URL Analysis
-        if (result.urlFound) {
-            val urlConf = String.format(Locale.getDefault(), "%.1f%%", (result.urlScore ?: 0f) * 100)
-            messageBuilder.append("--- URL Analysis (VirusTotal) ---\n")
-            messageBuilder.append("Link: ${result.extractedUrl}\n")
-            messageBuilder.append("Verdict: ${result.urlVerdict?.uppercase()}\n")
-            messageBuilder.append("Confidence: $urlConf\n")
-            if (!result.explanation.isNullOrBlank()) {
-                messageBuilder.append("\nNote: ${result.explanation}\n")
-            }
-            messageBuilder.append("\n")
-        } else {
-            messageBuilder.append("URL Analysis: No links found in message.\n\n")
-        }
-
-        messageBuilder.append("Overall Verdict: ${result.classification.name}\n")
-        messageBuilder.append("Highest Confidence: $overallConfidence\n\n")
-        
-        messageBuilder.append("Original Message:\n\"${result.message}\"")
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Detection Breakdown")
-            .setMessage(messageBuilder.toString())
-            .setPositiveButton("OK", null)
-            .show()
+        modal.show(parentFragmentManager, "AnalysisDetailsBottomSheetFragment")
     }
 }
