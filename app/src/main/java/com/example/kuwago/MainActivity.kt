@@ -205,6 +205,12 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
+    /** Called by ScanFragment after a scan completes to jump to the History tab. */
+    fun navigateToHistory() {
+        switchFragment(HistoryFragment(), "history")
+        updateNavUI("history")
+    }
+
     private fun updateNavUI(selectedTab: String) {
         currentTab = selectedTab
 

@@ -114,4 +114,20 @@
     <!-- Blacklist Screen -->
     <string name="blacklist_title">Blacklist</string>
     <string name="blacklist_subtitle">View your list of muted scam senders.</string>
+
+    <!-- Scan Screen -->
+    <string name="scan_title">Scan SMS Message</string>
+    <string name="scan_subtitle">Manually enter text message for analysis.</string>
+    <string name="scan_sender_section_title">Sender Name or Contact Number</string>
+    <string name="scan_sender_section_desc">This is optional, but it may help in quickly identifying malicious senders based on our stored list of blacklisted contacts.\n\nThe calling code of the Philippines is +63. To write a contact number in international format, simply replace the leading 0 with +63.\n\nFor example: a local mobile number like 0917-123-4567 becomes +63 917 123 4567 in the proper international format.\n\nLikewise, we also support contact numbers from outside the Calling Code of the Philippines (other than +63).</string>
+    <string name="scan_country_code">+63</string>
+    <string name="scan_phone_hint">917 123 4567</string>
+    <string name="scan_name_hint">Or enter sender name (e.g. GCash, BDO)</string>
+    <string name="scan_message_section_title">Message Content</string>
+    <string name="scan_message_section_desc">Changing the contents may affect its chance of being flagged as phishing.\n\nIf there are any links in the text message, kindly include them as well.</string>
+    <string name="scan_message_hint">Please enter the text message here…</string>
+    <string name="scan_button_label">Full Analysis</string>
+    <string name="scan_error_empty_message">Please enter the message content before scanning.</string>
+    <string name="scan_analyzing">Analyzing message…</string>
+
 </resources>
