@@ -448,7 +448,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val btnConfirm = dialog.findViewById<Button>(R.id.btn_confirm_add)
         val btnCancel = dialog.findViewById<Button>(R.id.btn_cancel_add)
 
-        tvMessage.text = "Proceeding will add ${result.sender} from the blacklisted contact numbers."
+        tvMessage.text = "Proceeding will add ${result.sender} to the blacklisted contact numbers."
 
         btnClose.setOnClickListener { dialog.dismiss() }
         btnCancel.setOnClickListener { dialog.dismiss() }

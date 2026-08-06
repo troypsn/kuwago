@@ -57,7 +57,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:lineSpacingExtra="3dp"
-            android:text="Proceeding will add +63 949 651 0557 from the blacklisted contact numbers."
+            android:text="Proceeding will add +63 949 651 0557 to the blacklisted contact numbers."
             android:textColor="#CCCCCC"
             android:textSize="14sp" />
     </LinearLayout>

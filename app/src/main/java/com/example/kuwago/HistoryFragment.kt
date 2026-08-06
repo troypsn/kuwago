@@ -189,6 +189,14 @@ class HistoryFragment : Fragment() {
         scope.launch {
             val results = withContext(Dispatchers.IO) {
                 val list = mutableListOf<DetectionResult>()
+
+                // 1. Prepend manual scans from the Scan screen (DetectionRepository)
+                //    These use a "manual_" id prefix to avoid clashing with SMS inbox ids.
+                val manualScans = DetectionRepository.detections.value.orEmpty()
+                    .map { it.copy(id = "manual_${it.id}") }
+                list.addAll(manualScans)
+
+                // 2. Load SMS inbox entries (only if permission granted)
                 val cursor: Cursor? = ctx.contentResolver.query(
                     Uri.parse("content://sms/inbox"),
                     arrayOf("_id", "address", "body", "date"),
@@ -208,6 +216,9 @@ class HistoryFragment : Fragment() {
                         val sender = if (addrCol != -1) c.getString(addrCol) ?: "Unknown" else "Unknown"
                         val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
                         val date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
+
+                        // Skip if this SMS body was already added as a manual scan
+                        if (manualScans.any { it.message == body && it.sender == sender }) continue
 
                         // Check if we already have it scanned in the main repository
                         val cached = DetectionRepository.detections.value.orEmpty().find { it.message == body && it.sender == sender }
