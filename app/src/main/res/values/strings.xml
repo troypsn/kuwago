@@ -76,6 +76,10 @@
     <string name="settings_realtime_scan_desc">Scan incoming messages instantly</string>
     <string name="settings_realtime_scan_body">When turned on, the app automatically scans incoming text messages in the background to deliver near-instant alerts. You will receive an immediate push notification telling you whether the message is safe or a threat.\n\nThis active protection keeps you informed instantly, stopping phishing attempts before you even open the message!</string>
 
+    <!-- Scan Other Messaging Apps -->
+    <string name="settings_scan_other_apps_title">Scan Other Messaging Apps</string>
+    <string name="settings_scan_other_apps_desc">Also scan messages from WhatsApp, Telegram, and other messaging apps</string>
+
     <!-- Auto-blacklist -->
     <string name="settings_auto_blacklist_title">Auto-blacklist</string>
     <string name="settings_auto_blacklist_desc">Blacklist high-risk senders automatically</string>

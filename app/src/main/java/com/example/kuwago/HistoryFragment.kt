@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.database.Cursor
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -13,7 +14,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -68,8 +68,6 @@ class HistoryFragment : Fragment() {
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         smsAdapter = SmsHistoryAdapter(smsList, { result ->
             showDetailsDialog(result)
-        }, { result, position ->
-            scanItemWithCnn(result, position)
         })
         historyRecyclerView.adapter = smsAdapter
 
@@ -251,61 +249,17 @@ class HistoryFragment : Fragment() {
         }
     }
 
-    private fun scanItemWithCnn(result: DetectionResult, position: Int) {
-        val ctx = context ?: return
-        Log.i("HistoryFragment", "CNN Scan Button Pressed for message from: ${result.sender}")
-        Log.i("HistoryFragment", "Message: \"${result.message}\"")
-
-        // 1. Visually set item state to scanning
-        smsList[position] = result.copy(isScanning = true)
-        smsAdapter.notifyItemChanged(position)
-
-        // 2. Perform scan asynchronously
-        scope.launch {
-            Log.i("HistoryFragment", "Launching CNN Scan Job for ID: ${result.id}")
-            try {
-                val finalResult = withContext(Dispatchers.IO) {
-                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
-                    scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
-                }
-
-                Log.i("HistoryFragment", "CNN Scan Job Finished. Verdict: ${finalResult.classification}, Prob: ${finalResult.probability}, cnnProb=${finalResult.cnnProb}")
-
-                // 3. Update list and notify adapter
-                withContext(Dispatchers.Main) {
-                    if (position < smsList.size && smsList[position].id == result.id) {
-                        smsList[position] = finalResult
-                        smsAdapter.notifyItemChanged(position)
-                        
-                        // Add/Update to main repository recent detections list
-                        DetectionRepository.addDetection(finalResult)
-                        Log.i("HistoryFragment", "UI and Repository updated for ID: ${result.id}")
-
-                        if (finalResult.cnnProb != null) {
-                            Toast.makeText(ctx, "CNN API Scan Complete: ${finalResult.classification.name}", Toast.LENGTH_SHORT).show()
-                        } else {
-                            val err = finalResult.cnnVerdict ?: "API connection failed"
-                            Toast.makeText(ctx, "CNN Scan Failed: $err\nTap download icon to retry.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("HistoryFragment", "FATAL ERROR during CNN scan click", e)
-                withContext(Dispatchers.Main) {
-                    if (position < smsList.size && smsList[position].id == result.id) {
-                        smsList[position] = result.copy(isScanning = false)
-                        smsAdapter.notifyItemChanged(position)
-                    }
-                    Toast.makeText(ctx, "Scan error: ${e.message}\nTap download icon to retry.", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
     private fun showDetailsDialog(result: DetectionResult) {
         val modal = AnalysisDetailsBottomSheetFragment.newInstance(result)
         modal.onBlacklistUpdatedListener = {
             loadAndClassifySms()
+        }
+        modal.onResultUpdatedListener = { updatedResult ->
+            val idx = smsList.indexOfFirst { it.id == updatedResult.id }
+            if (idx != -1) {
+                smsList[idx] = updatedResult
+                smsAdapter.notifyItemChanged(idx)
+            }
         }
         modal.show(parentFragmentManager, "AnalysisDetailsBottomSheetFragment")
     }
@@ -314,8 +268,7 @@ class HistoryFragment : Fragment() {
 // Recycler Adapter for SMS List
 class SmsHistoryAdapter(
     private val items: List<DetectionResult>,
-    private val onItemClick: (DetectionResult) -> Unit,
-    private val onCnnClick: (DetectionResult, Int) -> Unit
+    private val onItemClick: (DetectionResult) -> Unit
 ) : RecyclerView.Adapter<SmsHistoryAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -323,7 +276,10 @@ class SmsHistoryAdapter(
         val messageText: TextView = view.findViewById(R.id.history_message)
         val statusBadge: TextView = view.findViewById(R.id.history_status)
         val progressBar: ProgressBar = view.findViewById(R.id.history_progress)
-        val cnnButton: ImageButton = view.findViewById(R.id.btn_cnn_scan)
+        val timeText: TextView = view.findViewById(R.id.history_time)
+        val chipMl: LinearLayout = view.findViewById(R.id.chip_ml)
+        val chipDl: LinearLayout = view.findViewById(R.id.chip_dl)
+        val chipUrl: LinearLayout = view.findViewById(R.id.chip_url)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -333,12 +289,17 @@ class SmsHistoryAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
+        val context = holder.itemView.context
+
         holder.senderText.text = item.sender
         holder.messageText.text = item.message
 
+        // Format timestamp
+        val sdf = java.text.SimpleDateFormat("h:mm a", java.util.Locale.US)
+        holder.timeText.text = sdf.format(java.util.Date(item.timestamp))
+
         if (item.isScanning) {
             holder.progressBar.visibility = View.VISIBLE
-            holder.cnnButton.visibility = View.GONE
             holder.statusBadge.visibility = View.GONE
             holder.itemView.isClickable = false
         } else {
@@ -346,12 +307,9 @@ class SmsHistoryAdapter(
             holder.statusBadge.visibility = View.VISIBLE
             holder.itemView.isClickable = true
 
-            // Set classification text
+            // Classification badge text + color
             val classificationName = item.classification.name.lowercase().replaceFirstChar { it.uppercase() }
             holder.statusBadge.text = classificationName
-
-            // Colors
-            val context = holder.itemView.context
             val (bgColor, textColor) = when (item.classification) {
                 Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_stroke)
                 Classification.SUSPICIOUS -> Pair(R.color.detection_orange_bg, R.color.percentage_orange)
@@ -360,22 +318,27 @@ class SmsHistoryAdapter(
             holder.statusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, bgColor))
             holder.statusBadge.setTextColor(ContextCompat.getColor(context, textColor))
 
-            // Hide/Show CNN Scan button depending on whether it has been scanned successfully
-            if (item.cnnProb != null && item.cnnScore != null) {
-                // Successfully scanned remotely
-                holder.cnnButton.visibility = View.GONE
-            } else {
-                // Not scanned yet or failed/timed out -> keep button visible to allow redownload/retry
-                holder.cnnButton.visibility = View.VISIBLE
-                holder.cnnButton.setOnClickListener {
-                    onCnnClick(item, position)
-                }
-            }
+            // ML chip — always scanned (local model always runs)
+            bindChip(holder.chipMl, scanned = true)
+
+            // DL chip — scanned if cnnProb or cnnScore is present
+            val dlScanned = item.cnnProb != null || item.cnnScore != null
+            bindChip(holder.chipDl, scanned = dlScanned)
+
+            // URL chip — relevant only if a URL was found and scanned
+            val urlScanned = item.urlFound && item.urlScore != null
+            bindChip(holder.chipUrl, scanned = urlScanned)
 
             holder.itemView.setOnClickListener {
                 onItemClick(item)
             }
         }
+    }
+
+    /** Lights up a chip (white icon + text) if scanned, dims it if pending */
+    private fun bindChip(chip: LinearLayout, scanned: Boolean) {
+        val alpha = if (scanned) 1.0f else 0.35f
+        chip.alpha = alpha
     }
 
     override fun getItemCount() = items.size
