@@ -3,80 +3,174 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     android:background="@drawable/bg_action_card"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:gravity="center_vertical">
+    android:orientation="vertical"
+    android:padding="14dp">
 
+    <!-- Top row: Sender + Status Badge -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/history_sender"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-black"
             android:text="Sender Name"
             android:textColor="@color/text_primary"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/history_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:text="Message content goes here..."
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginStart="8dp">
-
-        <!-- Progress Indicator for Scan -->
-        <ProgressBar
-            android:id="@+id/history_progress"
-            style="?android:attr/progressBarStyleSmall"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="8dp"
-            android:visibility="gone" />
-
-        <!-- CNN API Scan Button -->
-        <ImageButton
-            android:id="@+id/btn_cnn_scan"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_dl"
-            app:tint="@color/percentage_orange"
-            android:contentDescription="Scan with CNN API"
-            android:visibility="visible" />
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <!-- Classification Threat Badge -->
         <TextView
             android:id="@+id/history_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:background="@drawable/bg_status_badge"
+            android:fontFamily="sans-serif-black"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:text="Safe"
             android:textColor="@color/white"
-            android:textSize="10sp"
-            android:fontFamily="sans-serif-black" />
+            android:textSize="10sp" />
+
+    </LinearLayout>
+
+    <!-- Message Preview: exactly 2 lines, ellipsize -->
+    <TextView
+        android:id="@+id/history_message"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="Message content goes here..."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:lineSpacingMultiplier="1.2" />
+
+    <!-- Bottom row: ML / DL / URL chips + timestamp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- ML Chip -->
+        <LinearLayout
+            android:id="@+id/chip_ml"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_chip_unselected"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_ml"
+                android:contentDescription="ML"
+                app:tint="#888888" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ML"
+                android:textColor="#888888"
+                android:textSize="10sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <!-- DL Chip -->
+        <LinearLayout
+            android:id="@+id/chip_dl"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_chip_unselected"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_brain"
+                android:contentDescription="DL"
+                app:tint="#888888" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DL"
+                android:textColor="#888888"
+                android:textSize="10sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <!-- URL Chip -->
+        <LinearLayout
+            android:id="@+id/chip_url"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_chip_unselected"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_link"
+                android:contentDescription="URL"
+                app:tint="#888888" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="URL"
+                android:textColor="#888888"
+                android:textSize="10sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- Progress Indicator for Scan -->
+        <ProgressBar
+            android:id="@+id/history_progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone" />
+
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/history_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:24 AM"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+
     </LinearLayout>
 
 </LinearLayout>

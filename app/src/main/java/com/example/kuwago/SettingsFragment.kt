@@ -1,12 +1,19 @@
 package com.example.kuwago
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 
 class SettingsFragment : Fragment() {
+
+    companion object {
+        const val PREFS_NAME = "kuwago_settings"
+        const val KEY_SCAN_OTHER_APPS = "scan_other_messaging_apps"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -22,8 +29,6 @@ class SettingsFragment : Fragment() {
         view.findViewById<View>(R.id.settings_row_realtime_scan).setOnClickListener {
             openSubPage(SettingsRealtimeScanFragment())
         }
-
-
 
         view.findViewById<View>(R.id.settings_row_deep_analysis).setOnClickListener {
             openSubPage(SettingsDeepAnalysisFragment())
@@ -47,6 +52,14 @@ class SettingsFragment : Fragment() {
 
         view.findViewById<View>(R.id.settings_row_app_version).setOnClickListener {
             openSubPage(SettingsAppVersionFragment())
+        }
+
+        // Scan Other Messaging Apps toggle
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val switchScanOtherApps = view.findViewById<SwitchCompat>(R.id.switch_scan_other_apps)
+        switchScanOtherApps.isChecked = prefs.getBoolean(KEY_SCAN_OTHER_APPS, true)
+        switchScanOtherApps.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, isChecked).apply()
         }
     }
 

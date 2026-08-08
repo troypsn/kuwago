@@ -45,15 +45,24 @@ class SmsNotificationListener : NotificationListenerService() {
         val notification = sbn.notification
         val extras = notification.extras
 
-        // Only process messaging-related notifications
-        val isLikelyMessage = packageName.contains("message", ignoreCase = true) ||
+        // Read the "Scan Other Messaging Apps" preference (default: true = scan all)
+        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        val scanOtherApps = prefs.getBoolean(SettingsFragment.KEY_SCAN_OTHER_APPS, true)
+
+        // Native SMS/MMS/telephony package check (strict set for SMS-only mode)
+        val isNativeSms = packageName.contains("message", ignoreCase = true) ||
                 packageName.contains("sms", ignoreCase = true) ||
                 packageName.contains("mms", ignoreCase = true) ||
-                packageName.contains("telephony", ignoreCase = true) ||
+                packageName.contains("telephony", ignoreCase = true)
+
+        val isOtherMessagingApp = !isNativeSms && (
                 packageName.contains("chat", ignoreCase = true) ||
                 notification.category == Notification.CATEGORY_MESSAGE
+        )
 
-        if (!isLikelyMessage) return
+        if (!isNativeSms && !isOtherMessagingApp) return
+        if (!scanOtherApps && isOtherMessagingApp) return
+
 
         // Extract title (sender) and text safely
         var extractedSender = "Unknown"

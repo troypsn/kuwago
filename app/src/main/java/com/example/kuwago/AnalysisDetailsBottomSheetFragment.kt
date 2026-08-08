@@ -16,6 +16,11 @@ import android.widget.TextView
 import android.widget.Toast
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -24,6 +29,9 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private var detectionResult: DetectionResult? = null
     var onBlacklistUpdatedListener: (() -> Unit)? = null
+    var onResultUpdatedListener: ((DetectionResult) -> Unit)? = null
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
         private const val ARG_RESULT = "arg_detection_result"
@@ -231,14 +239,30 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val pbDlConfidence = view.findViewById<ProgressBar>(R.id.pb_dl_confidence)
         val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge)
         val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container)
+        val btnRunDeepAnalysis = view.findViewById<Button>(R.id.btn_run_deep_analysis)
+        val llDlPendingState = view.findViewById<LinearLayout>(R.id.ll_dl_pending_state)
+        val llDlResultState = view.findViewById<LinearLayout>(R.id.ll_dl_result_state)
 
-        val dlScore = result.cnnScore ?: result.cnnProb ?: (if (result.classification == Classification.SMISHING) 0.93f else 0.12f)
-        tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
-        tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
-        pbDlConfidence.progress = (dlScore * 100).toInt()
-        tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+        val hasDlData = result.cnnScore != null || result.cnnProb != null
+        val dlScore = result.cnnScore ?: result.cnnProb ?: 0f
 
-        populateDlMetrics(llDlMetricsContainer, result, dlScore)
+        if (hasDlData) {
+            tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
+            tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
+            pbDlConfidence.progress = (dlScore * 100).toInt()
+            tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+            llDlPendingState?.visibility = View.GONE
+            llDlResultState?.visibility = View.VISIBLE
+            populateDlMetrics(llDlMetricsContainer, result, dlScore)
+        } else {
+            tvDlScoreBadge.text = "–"
+            llDlPendingState?.visibility = View.VISIBLE
+            llDlResultState?.visibility = View.GONE
+        }
+
+        btnRunDeepAnalysis?.setOnClickListener {
+            runDeepAnalysis(view, result)
+        }
 
         headerDl.setOnClickListener {
             if (llDlDetails.visibility == View.VISIBLE) {
@@ -260,13 +284,27 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
         val llUrlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_url_metrics_container)
 
-        val urlScore = result.urlScore ?: (if (result.urlFound) 0.91f else 0.0f)
-        tvUrlScoreBadge.text = String.format(Locale.US, "%.2f", urlScore)
-        tvUrlConfidenceVal.text = String.format(Locale.US, "%.2f", urlScore)
-        pbUrlConfidence.progress = (urlScore * 100).toInt()
-        tvUrlClassifiedBadge.text = if (result.urlFound) "Classified as malicious link" else "No threats detected"
+        if (!result.urlFound) {
+            // No URL in message
+            tvUrlScoreBadge.text = "–"
+            tvUrlConfidenceVal.text = "N/A"
+            pbUrlConfidence.progress = 0
+            tvUrlClassifiedBadge.text = "No URLs found in this message"
+        } else if (result.urlScore == null) {
+            // URL found but not yet scanned
+            tvUrlScoreBadge.text = "–"
+            tvUrlConfidenceVal.text = "Pending"
+            pbUrlConfidence.progress = 0
+            tvUrlClassifiedBadge.text = "URL scan pending"
+        } else {
+            val urlScore = result.urlScore
+            tvUrlScoreBadge.text = String.format(Locale.US, "%.2f", urlScore)
+            tvUrlConfidenceVal.text = String.format(Locale.US, "%.2f", urlScore)
+            pbUrlConfidence.progress = (urlScore * 100).toInt()
+            tvUrlClassifiedBadge.text = if (urlScore >= 0.5f) "Classified as malicious link" else "No threats detected"
+        }
 
-        populateUrlMetrics(llUrlMetricsContainer, result, urlScore)
+        populateUrlMetrics(llUrlMetricsContainer, result, result.urlScore ?: 0f)
 
         headerUrl.setOnClickListener {
             if (llUrlDetails.visibility == View.VISIBLE) {
@@ -367,12 +405,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             0.75f * result.rfProb + 0.25f * result.xgbProb
         } else result.probability
 
-        val dlScore = result.cnnScore ?: result.cnnProb ?: (if (result.classification == Classification.SMISHING) 0.93f else 0.12f)
-        val urlScore = result.urlScore ?: (if (result.urlFound) 0.91f else 0.0f)
+        val hasDl = result.cnnScore != null || result.cnnProb != null
+        val dlScore = result.cnnScore ?: result.cnnProb
+        val hasUrl = result.urlScore != null
+        val urlScore = result.urlScore
 
         addBreakdownLine(llCombinedBreakdown, "ML Layer", "30% • " + String.format(Locale.US, "%.2f", mlScore))
-        addBreakdownLine(llCombinedBreakdown, "DL Layer", "40% • " + String.format(Locale.US, "%.2f", dlScore))
-        addBreakdownLine(llCombinedBreakdown, "URL Scan", "30% • " + String.format(Locale.US, "%.2f", urlScore))
+        addBreakdownLine(llCombinedBreakdown, "DL Layer", if (hasDl && dlScore != null) "40% • " + String.format(Locale.US, "%.2f", dlScore) else "40% • Pending Scan")
+        addBreakdownLine(llCombinedBreakdown, "URL Scan", if (hasUrl && urlScore != null) "30% • " + String.format(Locale.US, "%.2f", urlScore) else "30% • Pending Scan")
 
         tvEnsembleScoreVal.text = String.format(Locale.US, "%.3f", result.probability)
     }
@@ -390,16 +430,78 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             textSize = 12f
         }
 
+        val isPending = textVal.contains("Pending")
         val tvVal = TextView(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             text = textVal
-            setTextColor(Color.parseColor("#DDDDDD"))
+            setTextColor(if (isPending) Color.parseColor("#666666") else Color.parseColor("#DDDDDD"))
             textSize = 12f
         }
 
         row.addView(tvLabel)
         row.addView(tvVal)
         container.addView(row)
+    }
+
+    private fun runDeepAnalysis(view: View, result: DetectionResult) {
+        val ctx = context ?: return
+        val btnRunDeepAnalysis = view.findViewById<Button>(R.id.btn_run_deep_analysis) ?: return
+        val llDlPendingState = view.findViewById<LinearLayout>(R.id.ll_dl_pending_state) ?: return
+        val llDlResultState = view.findViewById<LinearLayout>(R.id.ll_dl_result_state) ?: return
+        val tvDlScoreBadge = view.findViewById<TextView>(R.id.tv_dl_score_badge) ?: return
+        val tvDlConfidenceVal = view.findViewById<TextView>(R.id.tv_dl_confidence_val) ?: return
+        val pbDlConfidence = view.findViewById<ProgressBar>(R.id.pb_dl_confidence) ?: return
+        val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge) ?: return
+        val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container) ?: return
+
+        btnRunDeepAnalysis.isEnabled = false
+        btnRunDeepAnalysis.text = "Scanning…"
+
+        scope.launch {
+            try {
+                val finalResult = withContext(Dispatchers.IO) {
+                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
+                    scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
+                }
+
+                val hasDlData = finalResult.cnnScore != null || finalResult.cnnProb != null
+                if (hasDlData) {
+                    val dlScore = finalResult.cnnScore ?: finalResult.cnnProb ?: 0f
+                    tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
+                    tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
+                    pbDlConfidence.progress = (dlScore * 100).toInt()
+                    tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+                    populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
+                    llDlPendingState.visibility = View.GONE
+                    llDlResultState.visibility = View.VISIBLE
+
+                    // Update the DL summary verdict in the top classification card
+                    view.findViewById<TextView>(R.id.tv_dl_summary_verdict)?.let {
+                        it.text = getVerdictText(dlScore)
+                        it.setTextColor(getVerdictColor(dlScore))
+                    }
+
+                    // Update the Combined Score card
+                    setupCombinedScore(view, finalResult)
+
+                    // Notify history list to update chip state
+                    detectionResult = finalResult
+                    DetectionRepository.addDetection(finalResult)
+                    onResultUpdatedListener?.invoke(finalResult)
+
+                    Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()
+                } else {
+                    val errMsg = finalResult.cnnVerdict ?: "API connection failed"
+                    Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
+                    btnRunDeepAnalysis.isEnabled = true
+                    btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                }
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                btnRunDeepAnalysis.isEnabled = true
+                btnRunDeepAnalysis.text = "Retry Deep Analysis"
+            }
+        }
     }
 
     private fun setupSecurityActions(view: View, result: DetectionResult) {
