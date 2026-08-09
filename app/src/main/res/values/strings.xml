@@ -96,9 +96,52 @@
     <string name="settings_url_scan_body">When a message contains a URL, it will be verified against known threat databases and security providers to determine if the link leads to a phishing or malicious site.\n\nRequires an active internet connection. Only the URL is checked — your message content is not transmitted.</string>
 
     <!-- Get Support -->
-    <string name="settings_get_support_title">Get Support</string>
-    <string name="settings_get_support_desc">Find quick solutions or reach out to us</string>
+    <string name="settings_get_support_title">Help and Support</string>
+    <string name="settings_get_support_desc">FAQs, guides, and contact info</string>
     <string name="settings_get_support_body">Browse our FAQ for quick answers to common questions, or contact our support team directly if you need further assistance.\n\nWe are committed to keeping your experience smooth and your device protected.</string>
+
+    <!-- Help and Support Page -->
+    <string name="help_support_title">Help and Support</string>
+
+    <!-- Section Headers -->
+    <string name="help_section_app_setup">App Setup and Basics</string>
+    <string name="help_section_blocked_list">Blocked List</string>
+    <string name="help_section_troubleshooting">Troubleshooting</string>
+    <string name="help_section_contact">Contact Developers</string>
+
+    <!-- App Setup and Basics — Questions -->
+    <string name="help_q_block_sender">How do I block a sender?</string>
+    <string name="help_q_how_blocking">How does blocking work?</string>
+    <string name="help_q_blocks_visible">Are blocks visible to senders?</string>
+
+    <!-- App Setup and Basics — Answers -->
+    <string name="help_a_block_sender">To block someone, open their message and tap the block button at the top of the screen. Please note that this action instantly stops all new texts and alerts from that specific number.\n\nThis quick block stops annoying spam messages from showing up in your main inbox!</string>
+    <string name="help_a_how_blocking">When you block a sender, Kuwago silently filters out all future messages from that number. You will no longer receive notifications or alerts from them.\n\nBlocked messages are still stored in the Blacklist tab so you can review them at any time.</string>
+    <string name="help_a_blocks_visible">No. Blocking is completely invisible to the sender. They will not be notified that their messages are being filtered.\n\nFrom their perspective, messages are sent normally — Kuwago simply prevents them from reaching your inbox.</string>
+
+    <!-- Blocked List — Questions -->
+    <string name="help_q_unblock">How to unblock a number?</string>
+    <string name="help_q_blocked_kept">Where are blocked messages kept?</string>
+    <string name="help_q_manual_add">Can I manually add numbers?</string>
+
+    <!-- Blocked List — Answers -->
+    <string name="help_a_unblock">1. Go to the Blacklist tab from the bottom navigation bar.\n2. Find the sender you want to unblock.\n3. Swipe left on their entry or tap the remove icon.\n4. Confirm the unblock action when prompted.\n\nOnce unblocked, future messages from that sender will appear normally again.</string>
+    <string name="help_a_blocked_kept">Blocked messages are stored in the Blacklist tab. You can access it anytime from the bottom navigation bar to review all senders that have been blocked.\n\nThis allows you to keep track of who has been filtered without losing any history.</string>
+    <string name="help_a_manual_add">Yes! You can manually add a phone number or sender name to the blacklist.\n\n1. Go to the Blacklist tab.\n2. Tap the add button.\n3. Enter the phone number or sender name.\n4. Confirm to add it to your blocked list.\n\nThis is useful for preemptively blocking known spam numbers.</string>
+
+    <!-- Troubleshooting — Questions -->
+    <string name="help_q_still_alerts">Why am I still getting alerts?</string>
+    <string name="help_q_app_stopped">Why did the app stop running?</string>
+    <string name="help_q_bg_permissions">How to fix background permissions?</string>
+
+    <!-- Troubleshooting — Answers -->
+    <string name="help_a_still_alerts">If you are still receiving alerts from a blocked sender, it may be because:\n\n• The sender is using a different number.\n• The block was applied to a sender name that has changed.\n• The Notification Listener permission has been revoked.\n\nTry re-checking your Blacklist entries and ensure Notification Access is enabled in Settings.</string>
+    <string name="help_a_app_stopped">Android may stop Kuwago from running in the background to save battery. This is common on devices with aggressive battery optimization.\n\nTo fix this:\n1. Go to your phone\'s Settings → Apps → Kuwago.\n2. Tap Battery and select "Unrestricted" or "No restrictions."\n3. Also ensure Notification Access remains enabled.\n\nThis allows Kuwago to continuously monitor incoming messages.</string>
+    <string name="help_a_bg_permissions">To ensure Kuwago can run properly in the background:\n\n1. Open your phone\'s Settings.\n2. Go to Apps → Kuwago → Battery.\n3. Select "Unrestricted" or disable battery optimization.\n4. Go back and check Notifications → ensure all are enabled.\n5. Verify Notification Listener access is turned on under Special App Access.\n\nThese steps help prevent the system from killing the app while it protects you.</string>
+
+    <!-- Contact Developers -->
+    <string name="help_contact_title">Still Need Help?</string>
+    <string name="help_contact_desc">Reach out to us directly via email</string>
 
     <!-- Help Train AI -->
     <string name="settings_train_ai_title">Help Train the AI</string>
