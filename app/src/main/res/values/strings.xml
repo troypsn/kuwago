@@ -72,8 +72,8 @@
     <string name="settings_group_about">About</string>
 
     <!-- Real-time Scan -->
-    <string name="settings_realtime_scan_title">Real-time Scan</string>
-    <string name="settings_realtime_scan_desc">Scan incoming messages instantly</string>
+    <string name="settings_realtime_scan_title">Blocks Malicious Notifications Automatically.</string>
+    <string name="settings_realtime_scan_desc">Blocks malicious SMS notifications automatically.</string>
     <string name="settings_realtime_scan_body">When turned on, the app automatically scans incoming text messages in the background to deliver near-instant alerts. You will receive an immediate push notification telling you whether the message is safe or a threat.\n\nThis active protection keeps you informed instantly, stopping phishing attempts before you even open the message!</string>
 
     <!-- Scan Other Messaging Apps -->
@@ -161,6 +161,28 @@
     <!-- Blacklist Screen -->
     <string name="blacklist_title">Blacklist</string>
     <string name="blacklist_subtitle">View your list of muted scam senders.</string>
+
+    <!-- Notification Channels -->
+    <string name="notif_channel_scanning_name">Scanning Status</string>
+    <string name="notif_channel_scanning_desc">Shows when Kuwago is actively scanning a message</string>
+    <string name="notif_channel_result_name">Scan Results</string>
+    <string name="notif_channel_result_desc">Delivers the result of each scanned message</string>
+
+    <!-- Ongoing Scanning Notification -->
+    <string name="notif_scanning_title">Scanning message…</string>
+    <string name="notif_scanning_text">Kuwago is checking this message for threats.</string>
+
+    <!-- Result Notifications -->
+    <string name="notif_result_safe_title">Message verified safe ✓</string>
+    <string name="notif_result_safe_text">Message from %1$s passed Kuwago\'s scan.</string>
+    <string name="notif_result_suspicious_title">⚠ Suspicious message intercepted</string>
+    <string name="notif_result_suspicious_text">Message from %1$s — %2$s confidence it is a threat.</string>
+    <string name="notif_result_smishing_title">🚨 Smishing detected &amp; blocked</string>
+    <string name="notif_result_smishing_text">Message from %1$s has been blocked (%2$s confidence).</string>
+
+    <!-- Scan Instantly Setting -->
+    <string name="settings_scan_instantly_title">Scan Incoming Messages Instantly</string>
+    <string name="settings_scan_instantly_desc">Block message notifications until the scan is complete. Only safe messages pass through.</string>
 
     <!-- Scan Screen -->
     <string name="scan_title">Scan SMS Message</string>

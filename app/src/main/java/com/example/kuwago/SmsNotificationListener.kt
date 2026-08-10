@@ -1,21 +1,41 @@
 package com.example.kuwago
 
 import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 class SmsNotificationListener : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val handler = Handler(Looper.getMainLooper())
+
+    // Auto-incrementing IDs for Kuwago's own notifications
+    private val notifIdCounter = AtomicInteger(1000)
+
+    // Maps scan-job ID → the captured original notification data (for clone-on-safe flow)
+    private data class CapturedNotif(
+        val title: String,
+        val text: String,
+        val originalKey: String,
+        val packageName: String,
+        val contentIntent: PendingIntent?
+    )
+    private val pendingClones = ConcurrentHashMap<String, CapturedNotif>()
 
     companion object {
         var instance: SmsNotificationListener? = null
@@ -42,14 +62,15 @@ class SmsNotificationListener : NotificationListenerService() {
 
     private fun processNotification(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
+        if (packageName == this.packageName) return
         val notification = sbn.notification
         val extras = notification.extras
 
-        // Read the "Scan Other Messaging Apps" preference (default: true = scan all)
-        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val scanOtherApps = prefs.getBoolean(SettingsFragment.KEY_SCAN_OTHER_APPS, true)
+        val scanInstantly = prefs.getBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false)
 
-        // Native SMS/MMS/telephony package check (strict set for SMS-only mode)
+        // --- App-filter logic (unchanged) ---
         val isNativeSms = packageName.contains("message", ignoreCase = true) ||
                 packageName.contains("sms", ignoreCase = true) ||
                 packageName.contains("mms", ignoreCase = true) ||
@@ -63,12 +84,10 @@ class SmsNotificationListener : NotificationListenerService() {
         if (!isNativeSms && !isOtherMessagingApp) return
         if (!scanOtherApps && isOtherMessagingApp) return
 
-
-        // Extract title (sender) and text safely
+        // --- Extract sender + text (unchanged logic) ---
         var extractedSender = "Unknown"
         var extractedText = ""
 
-        // 1. Try modern MessagingStyle first (used by Google Messages)
         try {
             val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
             if (style != null) {
@@ -78,29 +97,21 @@ class SmsNotificationListener : NotificationListenerService() {
                     val personName = lastMessage.person?.name?.toString()
                     val personUri = lastMessage.person?.uri
                     val legacySender = lastMessage.sender?.toString()
-                    Log.d("SmsNotifListener", "Extracted from MessagingStyle -> Name: $personName, URI: $personUri, LegacySender: $legacySender")
-                    
-                    // Prefer URI (often tel:number) if available, otherwise name/sender
                     val senderIdentifier = personUri ?: personName ?: legacySender
                     if (!senderIdentifier.isNullOrBlank()) {
                         extractedSender = senderIdentifier.toString()
-                        // Strip "tel:" prefix if present
                         if (extractedSender.startsWith("tel:")) {
                             extractedSender = extractedSender.substring(4)
                         }
                     }
-                    
                     val msgText = lastMessage.text?.toString()
                     if (!msgText.isNullOrBlank()) extractedText = msgText
                 }
-            } else {
-                Log.d("SmsNotifListener", "MessagingStyle is null")
             }
         } catch (e: Exception) {
             Log.w("SmsNotifListener", "Could not parse MessagingStyle", e)
         }
 
-        // 2. Fallback to classic EXTRA_TITLE
         if (extractedSender == "Unknown") {
             extractedSender = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
                 ?: extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()
@@ -108,19 +119,12 @@ class SmsNotificationListener : NotificationListenerService() {
         }
 
         var text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
-        if (text.isEmpty()) {
-            text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
-        }
-        if (text.isEmpty()) {
-            text = extras.getCharSequence("android.text")?.toString() ?: ""
-        }
+        if (text.isEmpty()) text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
+        if (text.isEmpty()) text = extras.getCharSequence("android.text")?.toString() ?: ""
 
-        // Facebook Messenger often hides links in MessagingStyle as "sent a link to you"
-        // but puts the real URL in EXTRA_TEXT. Let's make sure we don't lose it.
         if (extractedText.isEmpty()) {
             extractedText = text
         } else if (text.isNotEmpty() && text.length > extractedText.length) {
-            // If the classic EXTRA_TEXT has more details (like the actual URL), use it instead!
             extractedText = text
         }
 
@@ -132,61 +136,342 @@ class SmsNotificationListener : NotificationListenerService() {
             return
         }
 
-        // Check if sender is blacklisted
+        // --- Blacklist check (takes priority over everything) ---
         val isSenderBlacklisted = BlacklistRepository.isBlacklisted(this, extractedSender)
         val isTextBlacklisted = extractedText.length < 50 && BlacklistRepository.isBlacklisted(this, extractedText)
         val isBlacklisted = isSenderBlacklisted || isTextBlacklisted
-        
-        Log.d("SmsNotifListener", "Blacklist Check -> Sender Match: $isSenderBlacklisted, Text Match: $isTextBlacklisted, Result: $isBlacklisted")
+
+        Log.d("SmsNotifListener", "Blacklist → sender=$isSenderBlacklisted, text=$isTextBlacklisted")
 
         if (isBlacklisted) {
-            Log.i("SmsNotifListener", "BLACKLISTED sender detected: $extractedSender - cancelling notification ${sbn.key}")
+            Log.i("SmsNotifListener", "BLACKLISTED sender detected: $extractedSender — cancelling ${sbn.key}")
             cancelNotificationSafely(sbn.key)
-
-            // Also kill any group summary and other notifications from same app
             killAllBlacklistedFromApp(packageName)
-
-            // Re-check multiple times to catch re-posts
             for (delay in longArrayOf(200, 600, 1500, 3000)) {
                 handler.postDelayed({ killAllBlacklistedFromApp(packageName) }, delay)
             }
             return
         }
 
-        // Not blacklisted - scan it
-        Log.i("SmsNotifListener", "Scanning message from: $extractedSender")
+        // --- Two-flow scan ---
+        if (scanInstantly) {
+            // FLOW A: Suppress original → scan → only let safe through
+            scanInstantlyFlow(sbn, extractedSender, extractedText)
+        } else {
+            // FLOW B: Let original through → scan in background → post result notification
+            scanPassthroughFlow(sbn, extractedSender, extractedText)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // FLOW A — "Scan Incoming Messages Instantly" is ON
+    //   1. Cancel the original notification immediately.
+    //   2. Post an ongoing "Scanning…" notification.
+    //   3. Run the scan.
+    //   4. Cancel the scanning notification.
+    //   5a. SAFE → re-post a clone of the original.
+    //   5b. SUSPICIOUS/SMISHING → post a threat result notification only.
+    // -------------------------------------------------------------------------
+    private fun scanInstantlyFlow(
+        sbn: StatusBarNotification,
+        sender: String,
+        messageText: String
+    ) {
+        Log.i("SmsNotifListener", "[INSTANT] Intercepting notification from $sender")
+
+        // Capture the original notification data before we cancel it
+        val contentIntent: PendingIntent? = sbn.notification.contentIntent
+
+        val captured = CapturedNotif(
+            title = sender,
+            text = messageText,
+            originalKey = sbn.key,
+            packageName = sbn.packageName,
+            contentIntent = contentIntent
+        )
+
+        // 1. Cancel the original notification immediately
+        cancelNotificationSafely(sbn.key)
+
+        // 2. Post a "Scanning…" notification
+        val scanNotifId = notifIdCounter.getAndIncrement()
+        postScanningNotification(scanNotifId, sender)
+
+        // 3. Run the scan
         scope.launch {
             try {
                 val placeholder = DetectionResult(
-                    sender = extractedSender,
-                    message = extractedText,
+                    sender = sender,
+                    message = messageText,
                     isScanning = true
                 )
                 DetectionRepository.addDetection(placeholder)
 
-                val finalResult = SmishingDetector.analyze(this@SmsNotificationListener, extractedText, extractedSender).copy(
-                    id = placeholder.id,
-                    sender = extractedSender
-                )
+                val finalResult = SmishingDetector.analyze(
+                    this@SmsNotificationListener, messageText, sender
+                ).copy(id = placeholder.id, sender = sender)
 
                 DetectionRepository.updateDetection(finalResult)
 
-                if (finalResult.classification != Classification.SAFE &&
-                    !BlacklistRepository.isBlacklisted(this@SmsNotificationListener, extractedSender) &&
-                    !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, extractedSender)
-                ) {
-                    PendingWarningRepository.savePendingWarning(
-                        this@SmsNotificationListener,
-                        sender = extractedSender,
-                        message = extractedText,
-                        confidence = String.format(java.util.Locale.US, "%.1f%%", finalResult.probability * 100)
-                    )
+                // 4. Cancel the scanning notification
+                cancelOwnNotification(scanNotifId)
+
+                val confidencePct = String.format(
+                    java.util.Locale.US, "%.1f%%", finalResult.probability * 100
+                )
+
+                // 5a. Safe → re-post a safe clone
+                if (finalResult.classification == Classification.SAFE) {
+                    Log.i("SmsNotifListener", "[INSTANT] SAFE — re-posting clone for $sender")
+                    postSafeCloneNotification(captured, confidencePct)
+                } else {
+                    // 5b. Threat → post a threat notification
+                    Log.i("SmsNotifListener", "[INSTANT] THREAT (${finalResult.classification}) — posting result for $sender")
+                    postThreatNotification(sender, finalResult.classification, confidencePct)
+
+                    // Save pending warning for in-app overlay
+                    if (!BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender) &&
+                        !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, sender)
+                    ) {
+                        PendingWarningRepository.savePendingWarning(
+                            this@SmsNotificationListener,
+                            sender = sender,
+                            message = messageText,
+                            confidence = confidencePct
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("SmsNotifListener", "Error during scan", e)
+                Log.e("SmsNotifListener", "[INSTANT] Error during scan", e)
+                cancelOwnNotification(scanNotifId)
             }
         }
     }
+
+    // -------------------------------------------------------------------------
+    // FLOW B — "Scan Incoming Messages Instantly" is OFF
+    //   Original notification passes through untouched.
+    //   Kuwago posts an ongoing "Scanning…" notification, then a result notification.
+    // -------------------------------------------------------------------------
+    private fun scanPassthroughFlow(
+        sbn: StatusBarNotification,
+        sender: String,
+        messageText: String
+    ) {
+        Log.i("SmsNotifListener", "[PASSTHROUGH] Scanning message from: $sender")
+
+        // Post a "Scanning…" notification
+        val scanNotifId = notifIdCounter.getAndIncrement()
+        postScanningNotification(scanNotifId, sender)
+
+        scope.launch {
+            try {
+                val placeholder = DetectionResult(
+                    sender = sender,
+                    message = messageText,
+                    isScanning = true
+                )
+                DetectionRepository.addDetection(placeholder)
+
+                val finalResult = SmishingDetector.analyze(
+                    this@SmsNotificationListener, messageText, sender
+                ).copy(id = placeholder.id, sender = sender)
+
+                DetectionRepository.updateDetection(finalResult)
+
+                // Cancel the scanning notification
+                cancelOwnNotification(scanNotifId)
+
+                val confidencePct = String.format(
+                    java.util.Locale.US, "%.1f%%", finalResult.probability * 100
+                )
+
+                // Always post a result notification so the user knows Kuwago checked it
+                if (finalResult.classification == Classification.SAFE) {
+                    postSafeResultNotification(sender, confidencePct)
+                } else {
+                    postThreatNotification(sender, finalResult.classification, confidencePct)
+
+                    if (!BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender) &&
+                        !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, sender)
+                    ) {
+                        PendingWarningRepository.savePendingWarning(
+                            this@SmsNotificationListener,
+                            sender = sender,
+                            message = messageText,
+                            confidence = confidencePct
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SmsNotifListener", "[PASSTHROUGH] Error during scan", e)
+                cancelOwnNotification(scanNotifId)
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Notification helpers
+    // -------------------------------------------------------------------------
+
+    /** Posts an ongoing "Scanning message…" notification on the low-priority channel. */
+    private fun postScanningNotification(notifId: Int, sender: String) {
+        val tapIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pi = PendingIntent.getActivity(
+            this, notifId, tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_SCANNING)
+            .setSmallIcon(R.drawable.ic_scan)
+            .setContentTitle(getString(R.string.notif_scanning_title))
+            .setContentText(getString(R.string.notif_scanning_text))
+            .setSubText(sender)
+            .setOngoing(true)
+            .setProgress(0, 0, true)          // indeterminate progress bar
+            .setContentIntent(pi)
+            .setAutoCancel(false)
+            .build()
+
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.notify(notifId, notif)
+        } catch (e: Exception) {
+            Log.e("SmsNotifListener", "Failed to post scanning notification", e)
+        }
+    }
+
+    /**
+     * Posts a safe-result notification in Flow B (passthrough mode).
+     * Shows a brief "verified safe" confirmation under the result channel.
+     */
+    private fun postSafeResultNotification(sender: String, confidencePct: String) {
+        val tapIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pi = PendingIntent.getActivity(
+            this, notifIdCounter.get(), tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(getString(R.string.notif_result_safe_title))
+            .setContentText(getString(R.string.notif_result_safe_text, sender))
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .build()
+
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.notify(notifIdCounter.getAndIncrement(), notif)
+        } catch (e: Exception) {
+            Log.e("SmsNotifListener", "Failed to post safe result notification", e)
+        }
+    }
+
+    /**
+     * In Flow A (scan-instantly), if the message is SAFE we re-post the original message
+     * as a Kuwago-branded clone so the user can still read it.
+     */
+    private fun postSafeCloneNotification(captured: CapturedNotif, confidencePct: String) {
+        // Try to use the original contentIntent (opens the messaging app); fall back to Kuwago.
+        val tapIntent = captured.contentIntent ?: PendingIntent.getActivity(
+            this,
+            notifIdCounter.get(),
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle("✓ ${captured.title}")          // Kuwago-branded safe badge
+            .setContentText(captured.text)
+            .setSubText(getString(R.string.notif_result_safe_title))
+            .setContentIntent(tapIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setCategory(Notification.CATEGORY_MESSAGE)
+            .build()
+
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.notify(notifIdCounter.getAndIncrement(), notif)
+        } catch (e: Exception) {
+            Log.e("SmsNotifListener", "Failed to post safe clone notification", e)
+        }
+    }
+
+    /** Posts a threat (suspicious / smishing) result notification. */
+    private fun postThreatNotification(
+        sender: String,
+        classification: Classification,
+        confidencePct: String
+    ) {
+        val (title, body, icon) = when (classification) {
+            Classification.SUSPICIOUS -> Triple(
+                getString(R.string.notif_result_suspicious_title),
+                getString(R.string.notif_result_suspicious_text, sender, confidencePct),
+                R.drawable.ic_warning_triangle
+            )
+            Classification.SMISHING -> Triple(
+                getString(R.string.notif_result_smishing_title),
+                getString(R.string.notif_result_smishing_text, sender, confidencePct),
+                R.drawable.ic_block
+            )
+            else -> return
+        }
+
+        val tapIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_SENDER", sender)
+            putExtra("EXTRA_MESSAGE", body)
+            putExtra("EXTRA_CONFIDENCE", confidencePct)
+        }
+        val pi = PendingIntent.getActivity(
+            this, notifIdCounter.get(), tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
+            .setSmallIcon(icon)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .build()
+
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.notify(notifIdCounter.getAndIncrement(), notif)
+        } catch (e: Exception) {
+            Log.e("SmsNotifListener", "Failed to post threat notification", e)
+        }
+    }
+
+    /** Cancels one of Kuwago's own notifications by its int ID. */
+    private fun cancelOwnNotification(notifId: Int) {
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.cancel(notifId)
+        } catch (e: Exception) {
+            Log.e("SmsNotifListener", "Failed to cancel own notification $notifId", e)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Existing helpers (unchanged)
+    // -------------------------------------------------------------------------
 
     private fun cancelNotificationSafely(key: String) {
         try {
@@ -211,7 +496,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 if (notif.packageName != pkg) continue
 
                 val isGroupSummary = (notif.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0
-                
+
                 var isSenderBlacklisted = false
                 try {
                     val style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notif.notification)
@@ -220,9 +505,7 @@ class SmsNotificationListener : NotificationListenerService() {
                             val personUri = msg.person?.uri?.removePrefix("tel:")
                             val personName = msg.person?.name?.toString()
                             val legacySender = msg.sender?.toString()
-                            
                             val senderToCheck = personUri ?: personName ?: legacySender
-                            
                             if (!senderToCheck.isNullOrBlank() && BlacklistRepository.isBlacklisted(this, senderToCheck)) {
                                 isSenderBlacklisted = true
                                 break

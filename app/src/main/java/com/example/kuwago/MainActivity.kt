@@ -1,8 +1,11 @@
 package com.example.kuwago
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.ImageView
@@ -60,12 +63,18 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupNavigation()
         checkSmsPermissions()
+        createNotificationChannels()
 
         // Set default fragment
         if (savedInstanceState == null) {
             switchFragment(HomeFragment(), "home")
             updateNavUI("home")
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 
     override fun onResume() {
@@ -79,6 +88,31 @@ class MainActivity : AppCompatActivity() {
      * If so, show the warning popup now that the user has opened the app.
      */
     private fun checkForPendingWarnings() {
+        // 1. Check if we have extras from a notification tap
+        val intentSender = intent.getStringExtra("EXTRA_SENDER")
+        val intentMessage = intent.getStringExtra("EXTRA_MESSAGE")
+        val intentConfidence = intent.getStringExtra("EXTRA_CONFIDENCE")
+
+        if (intentSender != null && intentMessage != null) {
+            // Clear these extras so we don't show the popup repeatedly on every onResume
+            intent.removeExtra("EXTRA_SENDER")
+            intent.removeExtra("EXTRA_MESSAGE")
+            intent.removeExtra("EXTRA_CONFIDENCE")
+
+            if (!BlacklistRepository.isBlacklisted(this, intentSender) &&
+                !BlacklistRepository.isWarningAcknowledged(this, intentSender)
+            ) {
+                val overlayIntent = Intent(this, WarningOverlayActivity::class.java).apply {
+                    putExtra("EXTRA_SENDER", intentSender)
+                    putExtra("EXTRA_MESSAGE", intentMessage)
+                    putExtra("EXTRA_CONFIDENCE", intentConfidence ?: "High Threat")
+                }
+                startActivity(overlayIntent)
+                return
+            }
+        }
+
+        // 2. Fallback to PendingWarningRepository (when app is opened normally)
         val pending = PendingWarningRepository.getPendingWarning(this) ?: return
 
         // Only show if the sender is still not blacklisted and not already acknowledged
@@ -92,17 +126,59 @@ class MainActivity : AppCompatActivity() {
         // Clear it first so it doesn't re-trigger on next onResume
         PendingWarningRepository.clearPendingWarning(this)
 
-        val intent = Intent(this, WarningOverlayActivity::class.java).apply {
+        val overlayIntent = Intent(this, WarningOverlayActivity::class.java).apply {
             putExtra("EXTRA_SENDER", pending.sender)
             putExtra("EXTRA_MESSAGE", pending.message)
             putExtra("EXTRA_CONFIDENCE", pending.confidence)
         }
-        startActivity(intent)
+        startActivity(overlayIntent)
     }
 
     private fun checkSmsPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), SMS_PERMISSION_CODE)
+        val permissions = mutableListOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        val ungranted = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (ungranted.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, ungranted.toTypedArray(), SMS_PERMISSION_CODE)
+        }
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val nm = getSystemService(NotificationManager::class.java)
+
+            // Channel 1 – ongoing scanning progress (low importance = no sound/heads-up)
+            val scanningChannel = NotificationChannel(
+                SettingsFragment.CHANNEL_SCANNING,
+                getString(R.string.notif_channel_scanning_name),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = getString(R.string.notif_channel_scanning_desc)
+                setShowBadge(false)
+            }
+
+            // Channel 2 – scan result alerts (high importance = sound + heads-up popup)
+            val resultChannel = NotificationChannel(
+                SettingsFragment.CHANNEL_RESULT,
+                getString(R.string.notif_channel_result_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = getString(R.string.notif_channel_result_desc)
+                setShowBadge(true)
+            }
+
+            nm.deleteNotificationChannel("kuwago_result") // Clean up old channel
+            nm.createNotificationChannel(scanningChannel)
+            nm.createNotificationChannel(resultChannel)
         }
     }
 

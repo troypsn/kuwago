@@ -74,6 +74,22 @@ class SmsReceiver : BroadcastReceiver() {
                         // 5. Update UI
                         DetectionRepository.updateDetection(finalResult)
                         Log.d("SmsReceiver", "Final result updated for $sender")
+
+                        // 6. Save pending warning for in-app overlay
+                        if (finalResult.classification != Classification.SAFE &&
+                            !BlacklistRepository.isBlacklisted(context, sender) &&
+                            !BlacklistRepository.isWarningAcknowledged(context, sender)
+                        ) {
+                            val confidencePct = String.format(
+                                java.util.Locale.US, "%.1f%%", finalResult.probability * 100
+                            )
+                            PendingWarningRepository.savePendingWarning(
+                                context,
+                                sender = sender,
+                                message = fullBody,
+                                confidence = confidencePct
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("SmsReceiver", "Error in background SMS processing", e)

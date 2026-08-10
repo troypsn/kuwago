@@ -13,6 +13,11 @@ class SettingsFragment : Fragment() {
     companion object {
         const val PREFS_NAME = "kuwago_settings"
         const val KEY_SCAN_OTHER_APPS = "scan_other_messaging_apps"
+        const val KEY_SCAN_INSTANTLY = "scan_incoming_instantly"
+
+        // Notification channel IDs
+        const val CHANNEL_SCANNING = "kuwago_scanning"
+        const val CHANNEL_RESULT = "kuwago_result_v2"
     }
 
     override fun onCreateView(
