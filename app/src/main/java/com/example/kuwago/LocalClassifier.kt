@@ -25,8 +25,8 @@ object LocalClassifier {
     var xgbWeight = 0.25f
     var localWeight = 0.50f
     var cnnWeight = 0.50f
-    var suspiciousThreshold = 0.50f
-    var smishingThreshold = 0.80f
+    var suspiciousThreshold = 0.70f
+    var smishingThreshold = 0.85f
 
     private var isInitialized = false
 

@@ -244,8 +244,4 @@ class SmsNotificationListener : NotificationListenerService() {
             Log.e("SmsNotifListener", "Error in killAllBlacklistedFromApp", e)
         }
     }
-
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // Not used
-    }
 }

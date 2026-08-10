@@ -13,7 +13,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -39,7 +38,6 @@ class BlacklistFragment : Fragment() {
     private lateinit var chipHighRisk: TextView
     private lateinit var chipMediumRisk: TextView
     private lateinit var chipUnknown: TextView
-    private lateinit var chipAuto: TextView
     private lateinit var chipManual: TextView
     private lateinit var chipSortHighLow: TextView
     private lateinit var chipSortLowHigh: TextView
@@ -71,7 +69,6 @@ class BlacklistFragment : Fragment() {
         chipHighRisk = view.findViewById(R.id.chip_high_risk)
         chipMediumRisk = view.findViewById(R.id.chip_medium_risk)
         chipUnknown = view.findViewById(R.id.chip_unknown)
-        chipAuto = view.findViewById(R.id.chip_auto)
         chipManual = view.findViewById(R.id.chip_manual)
         chipSortHighLow = view.findViewById(R.id.chip_sort_high_low)
         chipSortLowHigh = view.findViewById(R.id.chip_sort_low_high)
@@ -150,7 +147,7 @@ class BlacklistFragment : Fragment() {
         })
 
         // Filter chips (category / sender type)
-        val categoryChips = listOf(chipAll, chipHighRisk, chipMediumRisk, chipUnknown, chipAuto, chipManual)
+        val categoryChips = listOf(chipAll, chipHighRisk, chipMediumRisk, chipUnknown, chipManual)
         categoryChips.forEach { chip ->
             chip.setOnClickListener {
                 if (activeFilterChip == chip) {
@@ -209,7 +206,6 @@ class BlacklistFragment : Fragment() {
                 // "Unknown" = sender looks like a raw phone number (starts with + or is all digits)
                 it.sender.startsWith("+") || it.sender.all { c -> c.isDigit() || c == ' ' }
             }
-            chipAuto      -> result.filter { it.method == BlacklistMethod.AUTO }
             chipManual    -> result.filter { it.method == BlacklistMethod.MANUAL }
             else          -> result // "All" or null
         }
@@ -280,10 +276,7 @@ class BlacklistAdapter(
         val flagWord = if (item.flaggedCount == 1) "flagged message" else "flagged messages"
         holder.flaggedCount.text = "${item.flaggedCount} $flagWord"
 
-        val methodLabel = when (item.method) {
-            BlacklistMethod.AUTO   -> "Auto-blacklisted"
-            BlacklistMethod.MANUAL -> "Manually added"
-        }
+        val methodLabel = "Manually added"
         val dateLabel = formatTimestamp(item.timestamp)
         holder.meta.text = "$methodLabel • $dateLabel"
 

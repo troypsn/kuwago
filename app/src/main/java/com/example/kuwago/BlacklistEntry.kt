@@ -1,4 +1,4 @@
-﻿package com.example.kuwago
+package com.example.kuwago
 
 /**
  * Represents a single entry in the user's blacklist.
@@ -19,6 +19,5 @@ enum class RiskLevel {
 }
 
 enum class BlacklistMethod {
-    AUTO,
     MANUAL
 }

@@ -12,7 +12,6 @@ object BlacklistRepository {
 
     private const val PREFS_NAME = "kuwago_blacklist_prefs"
     private const val KEY_ENTRIES = "blacklist_entries"
-    private const val KEY_AUTO_BLACKLIST = "auto_blacklist_enabled"
     private const val KEY_ACKNOWLEDGED_WARNINGS = "acknowledged_warnings"
 
     private val _blacklistLiveData = MutableLiveData<List<BlacklistEntry>>(emptyList())
@@ -49,7 +48,7 @@ object BlacklistRepository {
                             sender = sender,
                             riskLevel = RiskLevel.valueOf(obj.optString("riskLevel", "HIGH")),
                             flaggedCount = obj.optInt("flaggedCount", 1),
-                            method = BlacklistMethod.valueOf(obj.optString("method", "AUTO")),
+                            method = BlacklistMethod.valueOf(obj.optString("method", "MANUAL").replace("AUTO", "MANUAL")),
                             timestamp = obj.optLong("timestamp", System.currentTimeMillis())
                         )
                     )
@@ -104,7 +103,7 @@ object BlacklistRepository {
         context: Context,
         sender: String,
         riskLevel: RiskLevel = RiskLevel.HIGH,
-        method: BlacklistMethod = BlacklistMethod.AUTO
+        method: BlacklistMethod = BlacklistMethod.MANUAL
     ) {
         if (sender.isBlank()) return
         loadIfNeeded(context)
@@ -153,14 +152,6 @@ object BlacklistRepository {
         if (set.remove(cleanSender)) {
             prefs.edit().putStringSet(KEY_ACKNOWLEDGED_WARNINGS, set).apply()
         }
-    }
-
-    fun isAutoBlacklistEnabled(context: Context): Boolean {
-        return getPrefs(context).getBoolean(KEY_AUTO_BLACKLIST, false)
-    }
-
-    fun setAutoBlacklistEnabled(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_AUTO_BLACKLIST, enabled).apply()
     }
 
     fun markWarningAcknowledged(context: Context, sender: String) {
