@@ -115,7 +115,12 @@ class SmsNotificationListener : NotificationListenerService() {
             text = extras.getCharSequence("android.text")?.toString() ?: ""
         }
 
+        // Facebook Messenger often hides links in MessagingStyle as "sent a link to you"
+        // but puts the real URL in EXTRA_TEXT. Let's make sure we don't lose it.
         if (extractedText.isEmpty()) {
+            extractedText = text
+        } else if (text.isNotEmpty() && text.length > extractedText.length) {
+            // If the classic EXTRA_TEXT has more details (like the actual URL), use it instead!
             extractedText = text
         }
 

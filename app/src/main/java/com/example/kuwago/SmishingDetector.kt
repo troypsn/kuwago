@@ -52,15 +52,15 @@ object SmishingDetector {
                 val localScore = localResult.probability
                 val containsUrl = hasUrl || url.hasUrl
 
-                // Calculate weighted ensemble probability
+                // Calculate ensemble probability (Use MAX instead of average to avoid one model diluting the other)
                 val (finalProb, formulaStr) = if (containsUrl) {
-                    val score = (0.50f * cnnScore) + (0.25f * urlScore) + (0.25f * localScore)
-                    val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
-                    Pair(score, formula)
+                    val maxScore = maxOf(cnnScore, urlScore, localScore)
+                    val formula = "Maximum Risk: Highest of CNN, URL, or Local"
+                    Pair(maxScore, formula)
                 } else {
-                    val score = (0.50f * cnnScore) + (0.50f * localScore)
-                    val formula = "Weighted Ensemble: 50% CNN + 50% Local"
-                    Pair(score, formula)
+                    val maxScore = maxOf(cnnScore, localScore)
+                    val formula = "Maximum Risk: Highest of CNN or Local"
+                    Pair(maxScore, formula)
                 }
 
                 // Determine final classification based on weighted probability score
@@ -92,17 +92,6 @@ object SmishingDetector {
                     xgbProb = localResult.xgbProb,
                     cnnProb = cnnScore
                 )
-
-                // Auto-blacklist if enabled and high-risk smishing detected
-                if (classification == Classification.SMISHING && BlacklistRepository.isAutoBlacklistEnabled(context)) {
-                    Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: $sender")
-                    BlacklistRepository.addOrUpdateEntry(
-                        context = context,
-                        sender = sender,
-                        riskLevel = RiskLevel.HIGH,
-                        method = BlacklistMethod.AUTO
-                    )
-                }
 
                 finalResult
             }
