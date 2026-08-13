@@ -28,11 +28,14 @@ jobs:
 
       - name: Run Unit Tests
         run: ./gradlew test
+        env:
+          KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
         env:
-          API_URL: "https://kwagobackend.onrender.com/" # Replace with custom URL or ${{ secrets.API_URL }} if configured
+          API_URL: "https://kwagobackend.onrender.com/"
+          KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
 
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2

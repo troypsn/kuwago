@@ -18,6 +18,15 @@ object RetrofitClient {
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val requestBuilder = original.newBuilder()
+            val token = BuildConfig.KWAGO_API_KEY
+            if (token.isNotEmpty()) {
+                requestBuilder.header("Authorization", "Bearer $token")
+            }
+            chain.proceed(requestBuilder.build())
+        }
         .addInterceptor(logging)
         .build()
 

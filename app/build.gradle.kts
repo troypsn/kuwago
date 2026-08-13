@@ -14,6 +14,10 @@ val apiUrl: String = System.getenv("API_URL")
     ?: localProperties.getProperty("API_URL")
     ?: "https://kwagobackend.onrender.com/"
 
+val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")
+    ?: localProperties.getProperty("KWAGO_API_KEY")
+    ?: ""
+
 android {
     namespace = "com.example.kuwago"
     compileSdk = 37
@@ -28,6 +32,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField("String", "API_URL", "\"$apiUrl\"")
+        buildConfigField("String", "KWAGO_API_KEY", "\"$kwagoApiKey\"")
     }
 
     buildTypes {
