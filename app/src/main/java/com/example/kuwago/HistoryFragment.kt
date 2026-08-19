@@ -75,6 +75,24 @@ class HistoryFragment : Fragment() {
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        DetectionRepository.detections.observe(viewLifecycleOwner) { liveList ->
+            for (liveItem in liveList) {
+                val index = smsList.indexOfFirst {
+                    it.id == liveItem.id || (it.message == liveItem.message && it.sender == liveItem.sender)
+                }
+                if (index != -1) {
+                    val current = smsList[index]
+                    if (liveItem.cnnProb != current.cnnProb || liveItem.isScanning != current.isScanning || liveItem.classification != current.classification) {
+                        smsList[index] = liveItem.copy(id = current.id, timestamp = current.timestamp)
+                        smsAdapter.notifyItemChanged(index)
+                    }
+                }
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         syncPermissionState()
