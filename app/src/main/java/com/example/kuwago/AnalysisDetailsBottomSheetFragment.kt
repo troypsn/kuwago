@@ -80,6 +80,19 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val btnBack = view.findViewById<ImageView>(R.id.btn_back)
         btnBack.setOnClickListener { dismiss() }
 
+        val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
+        if (btnDeepScan != null) {
+            val hasDlData = result.cnnScore != null || result.cnnProb != null
+            if (hasDlData) {
+                btnDeepScan.visibility = View.GONE
+            } else {
+                btnDeepScan.visibility = View.VISIBLE
+                btnDeepScan.setOnClickListener {
+                    runDeepAnalysis(view, result)
+                }
+            }
+        }
+
         setupClassificationSection(view, result)
         setupMessagePreviewSection(view, result)
         setupAnalysisAccordions(view, result)
@@ -453,9 +466,11 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val pbDlConfidence = view.findViewById<ProgressBar>(R.id.pb_dl_confidence) ?: return
         val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge) ?: return
         val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container) ?: return
+        val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
 
         btnRunDeepAnalysis.isEnabled = false
         btnRunDeepAnalysis.text = "Scanning…"
+        btnDeepScan?.isEnabled = false
 
         scope.launch {
             try {
@@ -474,6 +489,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
                     llDlPendingState.visibility = View.GONE
                     llDlResultState.visibility = View.VISIBLE
+                    btnDeepScan?.visibility = View.GONE
 
                     // Update the DL summary verdict in the top classification card
                     view.findViewById<TextView>(R.id.tv_dl_summary_verdict)?.let {
@@ -495,11 +511,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
                     btnRunDeepAnalysis.isEnabled = true
                     btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                    btnDeepScan?.isEnabled = true
+                    btnDeepScan?.visibility = View.VISIBLE
                 }
             } catch (e: Exception) {
                 Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 btnRunDeepAnalysis.isEnabled = true
                 btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                btnDeepScan?.isEnabled = true
+                btnDeepScan?.visibility = View.VISIBLE
             }
         }
     }

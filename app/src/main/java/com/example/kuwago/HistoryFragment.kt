@@ -273,11 +273,7 @@ class HistoryFragment : Fragment() {
             loadAndClassifySms()
         }
         modal.onResultUpdatedListener = { updatedResult ->
-            val idx = smsList.indexOfFirst { it.id == updatedResult.id }
-            if (idx != -1) {
-                smsList[idx] = updatedResult
-                smsAdapter.notifyItemChanged(idx)
-            }
+            loadAndClassifySms()
         }
         modal.show(parentFragmentManager, "AnalysisDetailsBottomSheetFragment")
     }
