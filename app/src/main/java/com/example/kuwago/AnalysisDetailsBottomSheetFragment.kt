@@ -355,6 +355,18 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun populateUrlMetrics(container: LinearLayout, result: DetectionResult, score: Float) {
         container.removeAllViews()
+        val hasCnnRun = result.cnnScore != null || result.cnnProb != null
+        if (!hasCnnRun) {
+            val tvNotScanned = TextView(requireContext()).apply {
+                text = "Not scanned yet"
+                setTextColor(Color.parseColor("#888888"))
+                textSize = 13f
+                setPadding(0, 10, 0, 10)
+            }
+            container.addView(tvNotScanned)
+            return
+        }
+
         if (result.urlFound) {
             addMetricRow(container, "Links found", "1 detected", true)
             addMetricRow(container, "Domain age", "3 days old", true)
@@ -491,10 +503,25 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     llDlResultState.visibility = View.VISIBLE
                     btnDeepScan?.visibility = View.GONE
 
-                    // Update the DL summary verdict in the top classification card
-                    view.findViewById<TextView>(R.id.tv_dl_summary_verdict)?.let {
-                        it.text = getVerdictText(dlScore)
-                        it.setTextColor(getVerdictColor(dlScore))
+                    // Update the top classification card (Risk badge, Title, Total percentage, summaries, etc.)
+                    setupClassificationSection(view, finalResult)
+
+                    // Update URL accordion dropdown metrics and headers immediately
+                    val llUrlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_url_metrics_container)
+                    if (llUrlMetricsContainer != null) {
+                        populateUrlMetrics(llUrlMetricsContainer, finalResult, finalResult.urlScore ?: 0f)
+                    }
+                    view.findViewById<TextView>(R.id.tv_url_score_badge)?.let {
+                        it.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", finalResult.urlScore) else "–"
+                    }
+                    val pbUrlConfidence = view.findViewById<ProgressBar>(R.id.pb_url_confidence)
+                    val tvUrlConfidenceVal = view.findViewById<TextView>(R.id.tv_url_confidence_val)
+                    val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
+                    if (finalResult.urlFound) {
+                        val urlScore = finalResult.urlScore ?: 0f
+                        pbUrlConfidence?.progress = (urlScore * 100).toInt()
+                        tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
+                        tvUrlClassifiedBadge?.text = if (urlScore >= 0.5f) "Classified as malicious link" else "No threats detected"
                     }
 
                     // Update the Combined Score card
