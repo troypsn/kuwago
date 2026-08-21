@@ -77,6 +77,7 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        context?.let { DetectionRepository.loadIfNeeded(it) }
         DetectionRepository.detections.observe(viewLifecycleOwner) { liveList ->
             for (liveItem in liveList) {
                 val index = smsList.indexOfFirst {

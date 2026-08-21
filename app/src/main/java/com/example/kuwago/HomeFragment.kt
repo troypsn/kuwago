@@ -33,7 +33,9 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
+        context?.let { DetectionRepository.loadIfNeeded(it) }
+
         DetectionRepository.detections.observe(viewLifecycleOwner) { results ->
             updateDetectionsList(results)
             updateDetectionsMetrics(results)
@@ -52,18 +54,21 @@ class HomeFragment : Fragment() {
 
     private fun updateDetectionsList(results: List<DetectionResult>) {
         detectionsContainer.removeAllViews()
-        
-        for (result in results) {
+
+        // Show only the 3 most recent detections under "Recent Detections" to prevent home screen clutter
+        val recentResults = results.take(3)
+
+        for (result in recentResults) {
             val itemView = LayoutInflater.from(context).inflate(R.layout.item_detection, detectionsContainer, false)
-            
+
             val senderText = itemView.findViewById<TextView>(R.id.detection_sender)
             val messageText = itemView.findViewById<TextView>(R.id.detection_message)
             val statusBadge = itemView.findViewById<TextView>(R.id.detection_status)
             val progressBar = itemView.findViewById<ProgressBar>(R.id.detection_progress)
-            
+
             senderText.text = result.sender
             messageText.text = result.message
-            
+
             if (result.isScanning) {
                 statusBadge.visibility = View.GONE
                 progressBar.visibility = View.VISIBLE
@@ -72,16 +77,16 @@ class HomeFragment : Fragment() {
                 statusBadge.visibility = View.VISIBLE
                 progressBar.visibility = View.GONE
                 itemView.isClickable = true
-                
+
                 val classificationName = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
                 statusBadge.text = classificationName
-                
+
                 val (bgColor, textColor) = when (result.classification) {
                     Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_stroke)
                     Classification.SUSPICIOUS -> Pair(R.color.detection_orange_bg, R.color.percentage_orange)
                     Classification.SMISHING -> Pair(R.color.detection_red_bg, R.color.percentage_red)
                 }
-                
+
                 statusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), bgColor))
                 statusBadge.setTextColor(ContextCompat.getColor(requireContext(), textColor))
 
@@ -89,7 +94,7 @@ class HomeFragment : Fragment() {
                     showDetectionDetails(result)
                 }
             }
-            
+
             detectionsContainer.addView(itemView)
         }
     }
