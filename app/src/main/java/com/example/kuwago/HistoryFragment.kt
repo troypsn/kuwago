@@ -227,6 +227,7 @@ class HistoryFragment : Fragment() {
                     val bodyCol = c.getColumnIndex("body")
                     val dateCol = c.getColumnIndex("date")
 
+                    val newlyClassified = mutableListOf<DetectionResult>()
                     while (c.moveToNext()) {
                         val smsId = if (idCol != -1) c.getString(idCol) else java.util.UUID.randomUUID().toString()
                         val sender = if (addrCol != -1) c.getString(addrCol) ?: "Unknown" else "Unknown"
@@ -243,8 +244,13 @@ class HistoryFragment : Fragment() {
                         } else {
                             // Classify locally on-the-fly
                             val classificationResult = LocalClassifier.classify(ctx, body)
-                            list.add(classificationResult.copy(id = smsId, sender = sender, timestamp = date))
+                            val finalRes = classificationResult.copy(id = smsId, sender = sender, timestamp = date)
+                            list.add(finalRes)
+                            newlyClassified.add(finalRes)
                         }
+                    }
+                    if (newlyClassified.isNotEmpty()) {
+                        DetectionRepository.addDetections(newlyClassified)
                     }
                 }
                 list
