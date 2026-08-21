@@ -12,6 +12,35 @@ object SmishingDetector {
 
     private const val TIMEOUT_MS = 60000L // 60 seconds for backend CNN + VirusTotal URL scan
 
+    fun censorSender(sender: String): String {
+        if (sender.isBlank() || sender.equals("Unknown", ignoreCase = true)) {
+            return "Unknown"
+        }
+        val clean = sender.replace(Regex("[\\s\\-()]"), "")
+        val isPhone = clean.matches(Regex("\\+?\\d{3,15}"))
+        if (isPhone) {
+            val len = clean.length
+            return if (clean.startsWith("+")) {
+                if (len >= 10) {
+                    clean.substring(0, 3) + "****" + clean.substring(len - 4)
+                } else {
+                    clean.substring(0, 2) + "****" + clean.substring(len - 2)
+                }
+            } else {
+                if (len >= 8) {
+                    clean.substring(0, 3) + "****" + clean.substring(len - 3)
+                } else {
+                    clean.substring(0, 2) + "****" + clean.substring(len - 2)
+                }
+            }
+        }
+        val len = sender.length
+        if (len <= 2) return sender
+        val start = sender.substring(0, 1)
+        val end = sender.substring(len - 1)
+        return start + "*".repeat(len - 2) + end
+    }
+
     suspend fun analyze(context: Context, message: String, sender: String): DetectionResult {
         Log.i("SmishingDetector", "=========================================")
         Log.i("SmishingDetector", "STARTING ENSEMBLE SCAN: Sender=$sender, Message=\"$message\"")
@@ -33,13 +62,22 @@ object SmishingDetector {
         val extractedUrl = LocalClassifier.extractUrl(message)
         Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl, extractedUrl=$extractedUrl")
 
+        // Retrieve "help train the AI" setting (allow_save)
+        val prefs = context.getSharedPreferences("kuwago_settings", Context.MODE_PRIVATE)
+        val allowSave = prefs.getBoolean("help_train_ai", false)
+
+        val censoredSenderName = censorSender(sender)
+        Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave, Sender (Censored)=\"$censoredSenderName\"")
+
         return try {
             withTimeout(TIMEOUT_MS) {
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, extracted_url=$extractedUrl)...")
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave)...")
                 val request = SmsScanRequest(
                     message = message,
                     hasUrl = hasUrl,
-                    extractedUrl = extractedUrl
+                    extractedUrl = extractedUrl,
+                    allowSave = allowSave,
+                    sender = censoredSenderName
                 )
                 val response = RetrofitClient.instance.scanSms(request)
                 Log.i("SmishingDetector", "API RESPONSE RECEIVED SUCCESSFULLY: $response")
@@ -52,15 +90,15 @@ object SmishingDetector {
                 val localScore = localResult.probability
                 val containsUrl = hasUrl || url.hasUrl
 
-                // Calculate ensemble probability (Use MAX instead of average to avoid one model diluting the other)
+                // Calculate weighted ensemble probability
                 val (finalProb, formulaStr) = if (containsUrl) {
-                    val maxScore = maxOf(cnnScore, urlScore, localScore)
-                    val formula = "Maximum Risk: Highest of CNN, URL, or Local"
-                    Pair(maxScore, formula)
+                    val score = (0.50f * cnnScore) + (0.25f * urlScore) + (0.25f * localScore)
+                    val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
+                    Pair(score, formula)
                 } else {
-                    val maxScore = maxOf(cnnScore, localScore)
-                    val formula = "Maximum Risk: Highest of CNN or Local"
-                    Pair(maxScore, formula)
+                    val score = (0.50f * cnnScore) + (0.50f * localScore)
+                    val formula = "Weighted Ensemble: 50% CNN + 50% Local"
+                    Pair(score, formula)
                 }
 
                 // Determine final classification based on weighted probability score
@@ -93,12 +131,22 @@ object SmishingDetector {
                     cnnProb = cnnScore
                 )
 
+                // Auto-blacklist if enabled and high-risk smishing detected
+                if (classification == Classification.SMISHING && BlacklistRepository.isAutoBlacklistEnabled(context)) {
+                    Log.i("SmishingDetector", "Auto-blacklisting high-risk sender: $sender")
+                    BlacklistRepository.addOrUpdateEntry(
+                        context = context,
+                        sender = sender,
+                        riskLevel = RiskLevel.HIGH,
+                        method = BlacklistMethod.MANUAL
+                    )
+                }
+
                 finalResult
             }
         } catch (e: Exception) {
             Log.e("SmishingDetector", "CNN-BiGRU API request failed or timed out: ${e.javaClass.simpleName} - ${e.message}", e)
             val localOnly = LocalClassifier.classify(context, message)
-            // cnnProb and cnnScore remain NULL so the UI knows the remote scan did NOT complete successfully and allows retrying!
             localOnly.copy(
                 sender = sender,
                 message = message,

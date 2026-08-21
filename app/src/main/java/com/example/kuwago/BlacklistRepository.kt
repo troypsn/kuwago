@@ -167,6 +167,11 @@ object BlacklistRepository {
         return set.contains(cleanSender)
     }
 
+    fun isAutoBlacklistEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("kuwago_settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean("auto_blacklist", false)
+    }
+
     fun normalizeSender(sender: String): String {
         var clean = sender.trim().lowercase().replace(Regex("[^a-zA-Z0-9]"), "")
         if (clean.startsWith("639") && clean.length == 12) {
