@@ -9,7 +9,9 @@ data class SmsScanRequest(
     @SerializedName("has_url") val hasUrl: Boolean = false,
     @SerializedName("extracted_url") val extractedUrl: String? = null,
     @SerializedName("allow_save") val allowSave: Boolean = false,
-    val sender: String? = null
+    val sender: String? = null,
+    @SerializedName("ml_prediction") val mlPrediction: String? = null,
+    @SerializedName("ml_confidence") val mlConfidence: Float? = null
 )
 
 data class CnnAnalysis(

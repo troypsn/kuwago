@@ -67,15 +67,24 @@ object SmishingDetector {
         val censoredSenderName = censorSender(sender)
         Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave")
 
+        val mlPrediction = when (localResult.classification) {
+            Classification.SAFE -> "benign"
+            Classification.SUSPICIOUS -> "suspicious"
+            Classification.SMISHING -> "smishing"
+        }
+        val mlConfidence = localResult.probability
+
         return try {
             withTimeout(TIMEOUT_MS) {
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave)...")
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave, ml_pred=$mlPrediction)...")
                 val request = SmsScanRequest(
                     message = message,
                     hasUrl = hasUrl,
                     extractedUrl = extractedUrl,
                     allowSave = allowSave,
-                    sender = censoredSenderName
+                    sender = censoredSenderName,
+                    mlPrediction = mlPrediction,
+                    mlConfidence = mlConfidence
                 )
                 val response = RetrofitClient.instance.scanSms(request)
                 Log.i("SmishingDetector", "API response received successfully")
