@@ -10,10 +10,12 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.kuwago.db.SmsLocalRepository
 
 class HomeFragment : Fragment() {
 
     private lateinit var detectionsContainer: LinearLayout
+    private lateinit var tvSmsReceivedCount: TextView
     private lateinit var tvSmsScannedCount: TextView
     private lateinit var tvSuspiciousCount: TextView
     private lateinit var tvSmishingCount: TextView
@@ -25,6 +27,7 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
         detectionsContainer = view.findViewById(R.id.detections_container)
+        tvSmsReceivedCount = view.findViewById(R.id.tv_sms_received_count)
         tvSmsScannedCount = view.findViewById(R.id.tv_sms_scanned_count)
         tvSuspiciousCount = view.findViewById(R.id.tv_suspicious_count)
         tvSmishingCount = view.findViewById(R.id.tv_smishing_count)
@@ -34,22 +37,23 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        context?.let { DetectionRepository.loadIfNeeded(it) }
+        val ctx = context ?: return
+        DetectionRepository.loadIfNeeded(ctx)
 
+        // Observe Home Page statistics directly from the encrypted local Room database
+        SmsLocalRepository.getHomeStatsLiveData(ctx).observe(viewLifecycleOwner) { stats ->
+            if (stats != null) {
+                tvSmsReceivedCount.text = stats.totalReceived.toString()
+                tvSmsScannedCount.text = stats.totalScanned.toString()
+                tvSuspiciousCount.text = stats.totalSuspicious.toString()
+                tvSmishingCount.text = stats.totalSmishing.toString()
+            }
+        }
+
+        // Observe recent detections list for UI rendering
         DetectionRepository.detections.observe(viewLifecycleOwner) { results ->
             updateDetectionsList(results)
-            updateDetectionsMetrics(results)
         }
-    }
-
-    private fun updateDetectionsMetrics(results: List<DetectionResult>) {
-        val total = results.size
-        val suspicious = results.count { it.classification == Classification.SUSPICIOUS }
-        val smishing = results.count { it.classification == Classification.SMISHING }
-
-        tvSmsScannedCount.text = total.toString()
-        tvSuspiciousCount.text = suspicious.toString()
-        tvSmishingCount.text = smishing.toString()
     }
 
     private fun updateDetectionsList(results: List<DetectionResult>) {

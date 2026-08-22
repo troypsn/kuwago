@@ -66,13 +66,44 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tv_sms_received_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/sms_received_count"
+                        android:textColor="@color/text_primary"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sms_received_label"
+                        android:textAlignment="center"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="@color/divider_gray" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
                         android:id="@+id/tv_sms_scanned_count"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/sms_scanned_count"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="20sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -80,7 +111,7 @@
                         android:text="@string/sms_scanned_label"
                         android:textAlignment="center"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <View
@@ -103,7 +134,7 @@
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/suspicious_count"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="20sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -111,7 +142,7 @@
                         android:text="@string/suspicious_label"
                         android:textAlignment="center"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <View
@@ -134,7 +165,7 @@
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/smishing_count"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="20sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -142,7 +173,7 @@
                         android:text="@string/smishing_label"
                         android:textAlignment="center"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

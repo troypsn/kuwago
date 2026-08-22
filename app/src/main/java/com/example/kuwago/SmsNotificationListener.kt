@@ -128,8 +128,7 @@ class SmsNotificationListener : NotificationListenerService() {
             extractedText = text
         }
 
-        Log.d("SmsNotifListener", "Final Extracted Sender: $extractedSender")
-        Log.d("SmsNotifListener", "Final Extracted Text: ${extractedText.take(50)}")
+        Log.d("SmsNotifListener", "Extracted notification event (length=${extractedText.length})")
 
         if (extractedText.isEmpty()) {
             Log.d("SmsNotifListener", "Text is empty, returning early")
@@ -141,10 +140,10 @@ class SmsNotificationListener : NotificationListenerService() {
         val isTextBlacklisted = extractedText.length < 50 && BlacklistRepository.isBlacklisted(this, extractedText)
         val isBlacklisted = isSenderBlacklisted || isTextBlacklisted
 
-        Log.d("SmsNotifListener", "Blacklist → sender=$isSenderBlacklisted, text=$isTextBlacklisted")
+        Log.d("SmsNotifListener", "Blacklist check complete: sender=$isSenderBlacklisted, text=$isTextBlacklisted")
 
         if (isBlacklisted) {
-            Log.i("SmsNotifListener", "BLACKLISTED sender detected: $extractedSender — cancelling ${sbn.key}")
+            Log.i("SmsNotifListener", "Blacklisted notification intercepted — cancelling event")
             cancelNotificationSafely(sbn.key)
             killAllBlacklistedFromApp(packageName)
             for (delay in longArrayOf(200, 600, 1500, 3000)) {

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
 import kotlinx.coroutines.*
+import java.util.UUID
 
 class SmsReceiver : BroadcastReceiver() {
     
@@ -17,65 +18,60 @@ class SmsReceiver : BroadcastReceiver() {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (messages.isNullOrEmpty()) return
 
-            // Mark the broadcast as asynchronous
             val pendingResult = goAsync()
             
             scope.launch {
                 try {
-                    // 1. Group multi-part SMS by sender
-                    // Usually, one intent contains all parts of one message, but we group to be safe.
                     val groupedMessages = messages.groupBy { it.displayOriginatingAddress ?: "Unknown" }
                     
                     for ((sender, parts) in groupedMessages) {
-                        // 2. Concatenate all parts into one full message
                         val fullBody = parts.joinToString("") { it.displayMessageBody ?: "" }
+                        val firstTimestamp = parts.firstOrNull()?.timestampMillis ?: System.currentTimeMillis()
+
+                        // Stable ID generation using metadata + provider timestamp
+                        val rawSeed = "rcv_${sender.hashCode()}_${fullBody.hashCode()}_${firstTimestamp}"
+                        val smsId = UUID.nameUUIDFromBytes(rawSeed.toByteArray()).toString()
                         
-                        Log.d("SmsReceiver", "Consolidated SMS from $sender (${parts.size} parts): \"$fullBody\"")
+                        Log.d("SmsReceiver", "Processing SMS broadcast (id=$smsId, parts=${parts.size})")
                         
-                        // 3. Create placeholder
                         val placeholder = DetectionResult(
+                            id = smsId,
                             sender = sender,
                             message = fullBody,
-                            isScanning = true
+                            isScanning = true,
+                            timestamp = firstTimestamp
                         )
-                        DetectionRepository.addDetection(placeholder)
+                        DetectionRepository.addDetection(context, placeholder)
 
-                        // 3.5. INSTANT KILL: Bypass Android's OEM NotificationListenerService delays
                         val isBlacklisted = BlacklistRepository.isBlacklisted(context, sender) || 
                                 (fullBody.length < 50 && BlacklistRepository.isBlacklisted(context, fullBody))
                         
                         if (isBlacklisted) {
-                            Log.i("SmsReceiver", "BLACKLISTED sender detected instantly in SmsReceiver: $sender")
-                            // We don't have the notification key here, but we can trigger the NotificationListenerService
-                            // to aggressively poll and kill it the exact millisecond Google Messages posts it!
+                            Log.i("SmsReceiver", "Blacklisted sender intercepted (id=$smsId)")
                             SmsNotificationListener.instance?.triggerAggressiveKill("com.google.android.apps.messaging")
                             
-                            // We still run the analyzer just to update the History tab properly,
-                            // but we could also skip it if we wanted to save CPU. Let's just update the UI.
                             val finalResult = DetectionResult(
-                                id = placeholder.id,
+                                id = smsId,
                                 sender = sender,
                                 message = fullBody,
                                 classification = Classification.SUSPICIOUS,
                                 probability = 1.0f,
-                                isScanning = false
+                                isScanning = false,
+                                timestamp = firstTimestamp
                             )
-                            DetectionRepository.updateDetection(finalResult)
-                            Log.d("SmsReceiver", "Final result updated for $sender (Skipped AI, was blacklisted)")
+                            DetectionRepository.updateDetection(context, finalResult)
                             continue
                         }
                         
-                        // 4. Analyze
                         val finalResult = SmishingDetector.analyze(context, fullBody, sender).copy(
-                            id = placeholder.id,
-                            sender = sender
+                            id = smsId,
+                            sender = sender,
+                            timestamp = firstTimestamp
                         )
                         
-                        // 5. Update UI
-                        DetectionRepository.updateDetection(finalResult)
-                        Log.d("SmsReceiver", "Final result updated for $sender")
+                        DetectionRepository.updateDetection(context, finalResult)
+                        Log.d("SmsReceiver", "Analysis completed for id=$smsId")
 
-                        // 6. Save pending warning for in-app overlay
                         if (finalResult.classification != Classification.SAFE &&
                             !BlacklistRepository.isBlacklisted(context, sender) &&
                             !BlacklistRepository.isWarningAcknowledged(context, sender)
@@ -92,9 +88,8 @@ class SmsReceiver : BroadcastReceiver() {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("SmsReceiver", "Error in background SMS processing", e)
+                    Log.e("SmsReceiver", "Error processing background SMS", e)
                 } finally {
-                    // CRITICAL: Always finish the pending result
                     pendingResult.finish()
                     Log.d("SmsReceiver", "Broadcast processing completed.")
                 }
