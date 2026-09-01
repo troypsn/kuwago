@@ -137,7 +137,7 @@ interface AnalysisDao {
         SELECT COUNT(*) > 0
         FROM url_analysis ua
         JOIN final_decision fd ON ua.sms_id = fd.sms_id
-        WHERE UPPER(fd.risk_level) = 'SMISHING'
+        WHERE UPPER(fd.risk_level) IN ('SMISHING', 'SUSPICIOUS')
         AND ua.normalized_host IS NOT NULL
     """)
     suspend fun hasSmishingUrlResults(): Boolean

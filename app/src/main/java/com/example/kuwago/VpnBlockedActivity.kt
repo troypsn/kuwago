@@ -22,6 +22,7 @@ class VpnBlockedActivity : AppCompatActivity() {
     companion object {
         /** Intent extra key — the blocked hostname (e.g. "phishing-site.com"). */
         const val EXTRA_HOSTNAME = "extra_vpn_blocked_hostname"
+        const val EXTRA_RISK_LEVEL = "extra_vpn_blocked_risk_level"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +30,7 @@ class VpnBlockedActivity : AppCompatActivity() {
         setContentView(R.layout.activity_vpn_blocked)
 
         val hostname = intent.getStringExtra(EXTRA_HOSTNAME) ?: "unknown site"
+        val riskLevelStr = intent.getStringExtra(EXTRA_RISK_LEVEL) ?: "SMISHING"
 
         val tvHostname   = findViewById<TextView>(R.id.vpn_blocked_hostname)
         val tvDetail     = findViewById<TextView>(R.id.vpn_blocked_detail)
@@ -37,7 +39,8 @@ class VpnBlockedActivity : AppCompatActivity() {
         val btnDisableVpn  = findViewById<TextView>(R.id.btn_vpn_blocked_disable_shield)
 
         tvHostname.text = hostname
-        tvDetail.text   = getString(R.string.vpn_blocked_detail, hostname)
+        val label = if (riskLevelStr.equals("SUSPICIOUS", ignoreCase = true)) "suspicious" else "phishing"
+        tvDetail.text = "This domain ($hostname) was previously identified as a $label destination by Kuwago's scanner. The connection was blocked to protect your device and personal information."
 
         btnDismiss.setOnClickListener {
             finish()

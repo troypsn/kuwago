@@ -260,10 +260,10 @@ class KuwagoVpnService : VpnService() {
         }
 
         val responsePayload: ByteArray
-        if (classification == Classification.SMISHING) {
-            Log.i(TAG, "BLOCKING smishing host: $qname (host=$normalizedHost)")
+        if (classification == Classification.SMISHING || classification == Classification.SUSPICIOUS) {
+            Log.i(TAG, "BLOCKING threat host ($classification): $qname (host=$normalizedHost)")
             responsePayload = DnsPacketHelper.buildNxdomainResponse(dnsPayload)
-            notifyBlocked(qname)
+            notifyBlocked(qname, classification)
         } else {
             // Forward to upstream resolver and relay the response
             responsePayload = forwardDns(dnsPayload) ?: return
@@ -298,7 +298,7 @@ class KuwagoVpnService : VpnService() {
                 val result = db.analysisDao().getHostReputation(host)
                     ?: return@withContext Classification.SAFE
                 try {
-                    Classification.valueOf(result.riskLevel)
+                    Classification.valueOf(result.riskLevel.uppercase())
                 } catch (_: IllegalArgumentException) {
                     Classification.SAFE
                 }
@@ -337,10 +337,11 @@ class KuwagoVpnService : VpnService() {
     // User notification when a host is blocked
     // ─────────────────────────────────────────────────────────────────────────
 
-    private fun notifyBlocked(hostname: String) {
+    private fun notifyBlocked(hostname: String, classification: Classification) {
         val tapIntent = Intent(this, VpnBlockedActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(VpnBlockedActivity.EXTRA_HOSTNAME, hostname)
+            putExtra(VpnBlockedActivity.EXTRA_RISK_LEVEL, classification.name)
         }
         val pi = PendingIntent.getActivity(
             this,
@@ -349,13 +350,15 @@ class KuwagoVpnService : VpnService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val riskTypeLabel = if (classification == Classification.SMISHING) "phishing" else "suspicious"
+
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_BLOCK)
             .setSmallIcon(R.drawable.ic_block)
             .setContentTitle("🛡️ Connection Blocked")
-            .setContentText("Kuwago blocked $hostname — previously identified as phishing")
+            .setContentText("Kuwago blocked $hostname — previously identified as $riskTypeLabel")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Kuwago blocked a connection to $hostname because this site was previously identified as a phishing destination. Tap to learn more.")
+                    .bigText("Kuwago blocked a connection to $hostname because this site was previously identified as a $riskTypeLabel destination. Tap to learn more.")
             )
             .setContentIntent(pi)
             .setAutoCancel(true)
