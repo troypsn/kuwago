@@ -79,7 +79,8 @@ data class AnalysisResultEntity(
     ],
     indices = [
         Index(value = ["sms_id"]),
-        Index(value = ["extracted_url"], name = "idx_url_analysis_extracted_url")
+        Index(value = ["extracted_url"], name = "idx_url_analysis_extracted_url"),
+        Index(value = ["normalized_host"],  name = "idx_url_analysis_host")
     ]
 )
 data class UrlAnalysisEntity(
@@ -94,7 +95,17 @@ data class UrlAnalysisEntity(
     val extractedUrl: String,
 
     @ColumnInfo(name = "is_malicious", defaultValue = "0")
-    val isMalicious: Int = 0
+    val isMalicious: Int = 0,
+
+    /**
+     * Canonical hostname extracted by [com.example.kuwago.UrlNormalizer].
+     * Stored in lowercased, www-stripped form (e.g. "phishing-site.com").
+     * Used by [com.example.kuwago.KuwagoVpnService] for host-based reputation
+     * lookups without needing to parse full URLs at query time.
+     * Null when no valid hostname could be extracted.
+     */
+    @ColumnInfo(name = "normalized_host")
+    val normalizedHost: String? = null
 )
 
 @Entity(

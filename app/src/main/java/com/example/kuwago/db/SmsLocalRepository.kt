@@ -6,6 +6,7 @@ import androidx.lifecycle.MediatorLiveData
 import com.example.kuwago.Classification
 import com.example.kuwago.DetectionResult
 import com.example.kuwago.LocalClassifier
+import com.example.kuwago.UrlNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
@@ -83,18 +84,21 @@ object SmsLocalRepository {
             dlConfidence = result.cnnScore ?: result.cnnProb
         )
 
-        // 3. Build UrlAnalysisEntity list (DO NOT STORE scan_result)
+        // 3. Build UrlAnalysisEntity list
         val urlEntities = mutableListOf<UrlAnalysisEntity>()
         val hasUrl = LocalClassifier.hasUrl(result.message) || result.urlFound
         val extractedUrl = result.extractedUrl ?: LocalClassifier.extractUrl(result.message)
         if (hasUrl && !extractedUrl.isNullOrBlank()) {
             val isMalicious = if (result.urlScore != null && result.urlScore > 0.5f) 1 else 0
+            // Normalize the hostname so the VPN can match it by host at enforcement time
+            val normalizedHost = UrlNormalizer.extractHost(extractedUrl.trim())
             urlEntities.add(
                 UrlAnalysisEntity(
                     urlId = UUID.randomUUID().toString(),
                     smsId = result.id,
                     extractedUrl = extractedUrl.trim(),
-                    isMalicious = isMalicious
+                    isMalicious = isMalicious,
+                    normalizedHost = normalizedHost
                 )
             )
         }
@@ -121,7 +125,7 @@ object SmsLocalRepository {
             )
         } else null
 
-        // Execute as a atomic database transaction
+        // Execute as an atomic database transaction
         db.withTransaction {
             kotlin.runCatching {
                 analysisDao.insertAnalysisResult(analysisEntity)
@@ -138,6 +142,17 @@ object SmsLocalRepository {
                     arrayOf(result.id)
                 )
             }
+        }
+
+        // If a SMISHING result with a URL host was saved, flag the suggestion dialog
+        // so that MainActivity can offer to enable URL Shield on next open.
+        val hasMaliciousUrl = result.classification == Classification.SMISHING &&
+                urlEntities.any { it.normalizedHost != null }
+        if (hasMaliciousUrl) {
+            context.getSharedPreferences("kuwago_vpn_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("suggest_vpn_shield", true)
+                .apply()
         }
     }
 

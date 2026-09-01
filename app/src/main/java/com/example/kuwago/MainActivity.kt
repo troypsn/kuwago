@@ -3,6 +3,7 @@ package com.example.kuwago
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -20,6 +21,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -79,8 +84,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Navigate to the requested tab if launched from a notification
+        val navTab = intent.getStringExtra("NAV_TAB")
+        if (navTab != null) {
+            intent.removeExtra("NAV_TAB")
+            when (navTab) {
+                "history" -> { switchFragment(HistoryFragment(), "history"); updateNavUI("history") }
+                else      -> {}
+            }
+        }
         checkForPendingWarnings()
         checkNotificationPermission()
+        checkVpnShieldSuggestion()
     }
 
     /**
@@ -179,10 +194,67 @@ class MainActivity : AppCompatActivity() {
             nm.deleteNotificationChannel("kuwago_result") // Clean up old channel
             nm.createNotificationChannel(scanningChannel)
             nm.createNotificationChannel(resultChannel)
+
+            // Channel 3 – VPN block alert (high importance — fires when a site is blocked)
+            val vpnBlockChannel = NotificationChannel(
+                SettingsFragment.CHANNEL_VPN_BLOCK,
+                "URL Shield — Blocked Sites",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alerts when Kuwago URL Shield blocks a phishing site."
+                setShowBadge(true)
+            }
+
+            // Channel 4 – VPN ongoing status (low importance — persistent key icon)
+            val vpnOngoingChannel = NotificationChannel(
+                SettingsFragment.CHANNEL_VPN_ONGOING,
+                "URL Shield — Active Status",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows while Kuwago URL Shield is active."
+                setShowBadge(false)
+            }
+
+            nm.createNotificationChannel(vpnBlockChannel)
+            nm.createNotificationChannel(vpnOngoingChannel)
         }
     }
 
+    /**
+     * Shows a one-time dialog suggesting the user enable URL Shield after
+     * Kuwago's scanner has identified at least one SMISHING URL.
+     *
+     * The flag [SmsLocalRepository] sets is cleared here so the dialog
+     * only appears once per unique trigger event.
+     */
+    private fun checkVpnShieldSuggestion() {
+        val vpnPrefs = getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+        val suggestFlag = vpnPrefs.getBoolean("suggest_vpn_shield", false)
+        val vpnAlreadyActive = vpnPrefs.getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
 
+        if (!suggestFlag || vpnAlreadyActive) return
+
+        // Clear the flag so we don't show this dialog again until a new SMISHING URL is found
+        vpnPrefs.edit().putBoolean("suggest_vpn_shield", false).apply()
+
+        AlertDialog.Builder(this)
+            .setTitle("🛡️ URL Shield Available")
+            .setMessage(
+                "Kuwago detected a phishing URL in a recent message.\n\n" +
+                "URL Shield can automatically block phishing sites at the network level, " +
+                "so even if you accidentally tap a link in an old message, the connection " +
+                "will be stopped before your browser opens it.\n\n" +
+                "You can enable or disable URL Shield anytime in Settings → Security."
+            )
+            .setPositiveButton("Enable URL Shield") { _, _ ->
+                switchFragment(SettingsFragment(), "settings")
+                updateNavUI("settings")
+                // Let the fragment stack open the VPN sub-page automatically
+                // (user can tap URL Shield row in Settings)
+            }
+            .setNegativeButton("Maybe Later", null)
+            .show()
+    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)

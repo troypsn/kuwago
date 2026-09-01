@@ -12,12 +12,17 @@ class SettingsFragment : Fragment() {
 
     companion object {
         const val PREFS_NAME = "kuwago_settings"
-        const val KEY_SCAN_OTHER_APPS = "scan_other_messaging_apps"
-        const val KEY_SCAN_INSTANTLY = "scan_incoming_instantly"
+        const val KEY_SCAN_OTHER_APPS  = "scan_other_messaging_apps"
+        const val KEY_SCAN_INSTANTLY   = "scan_incoming_instantly"
+        const val KEY_VPN_SHIELD_ENABLED = "vpn_shield_enabled"
 
         // Notification channel IDs
-        const val CHANNEL_SCANNING = "kuwago_scanning"
-        const val CHANNEL_RESULT = "kuwago_result_v2"
+        const val CHANNEL_SCANNING    = "kuwago_scanning"
+        const val CHANNEL_RESULT      = "kuwago_result_v2"
+        /** High-priority channel — fires when VPN blocks a phishing host. */
+        const val CHANNEL_VPN_BLOCK   = "kuwago_vpn_block"
+        /** Low-priority channel — ongoing VPN-active status notification. */
+        const val CHANNEL_VPN_ONGOING = "kuwago_vpn_ongoing"
     }
 
     override fun onCreateView(
@@ -41,6 +46,10 @@ class SettingsFragment : Fragment() {
 
         view.findViewById<View>(R.id.settings_row_url_scan).setOnClickListener {
             openSubPage(SettingsUrlScanFragment())
+        }
+
+        view.findViewById<View>(R.id.settings_row_vpn_shield).setOnClickListener {
+            openSubPage(SettingsVpnShieldFragment())
         }
 
         view.findViewById<View>(R.id.settings_row_get_support).setOnClickListener {

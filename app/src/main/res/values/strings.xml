@@ -201,4 +201,29 @@
     <string name="scan_error_empty_message">Please enter the message content before scanning.</string>
     <string name="scan_analyzing">Analyzing message…</string>
 
+    <!-- ========== URL Shield (VPN) ========== -->
+
+    <!-- Settings row (in Security group) -->
+    <string name="settings_vpn_shield_title">URL Shield</string>
+    <string name="settings_vpn_shield_desc">Block phishing sites at the network level</string>
+
+    <!-- Settings sub-page toggle label -->
+    <string name="settings_vpn_shield_toggle_label">Enable URL Shield</string>
+
+    <!-- Status labels shown under the switch -->
+    <string name="vpn_shield_status_active">Active — phishing sites are being blocked</string>
+    <string name="vpn_shield_status_inactive">Inactive — phishing sites are not blocked</string>
+
+    <!-- Warning banner on the settings sub-page -->
+    <string name="vpn_shield_warning">URL Shield requires Android\'s VPN permission to intercept DNS queries. You will see a system consent dialog the first time you enable it. Kuwago does NOT inspect your internet browsing content.</string>
+
+    <!-- Main body description on settings sub-page -->
+    <string name="settings_vpn_shield_body">When turned on, URL Shield monitors DNS queries from your device and blocks connections to sites that Kuwago\'s scanner has previously classified as phishing destinations.\n\nBlocking happens at the DNS level — when your device looks up the address of a phishing site, Kuwago intercepts the query and returns "not found" before any connection is made.\n\nThis means that even if you accidentally tap a link from an old phishing SMS, your browser will show a "site not found" error instead of loading the phishing page. You will also receive an immediate notification from Kuwago explaining the block.\n\nURL Shield only blocks sites that Kuwago has already scanned and classified as SMISHING. Sites with no scan history are always allowed through.</string>
+
+    <!-- Privacy clarification on settings sub-page -->
+    <string name="vpn_shield_privacy_note">🔒 Privacy note: URL Shield does not log your browsing history and does not send any data to Kuwago\'s servers. All blocking decisions are made locally, using only scan results already stored on your device. Non-DNS traffic (web pages, images, videos) passes through your normal network connection completely unaffected.</string>
+
+    <!-- VpnBlockedActivity detail text (placeholder %1$s = hostname) -->
+    <string name="vpn_blocked_detail">This domain (%1$s) was previously identified as a phishing destination by Kuwago\'s scanner. The connection was blocked to protect your device and personal information.</string>
+
 </resources>
