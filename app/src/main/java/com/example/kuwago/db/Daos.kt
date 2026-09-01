@@ -119,11 +119,21 @@ interface AnalysisDao {
      * The VPN calls this on a cache miss and blocks if risk_level == 'SMISHING'.
      */
     @Query("""
-        SELECT fd.risk_level AS riskLevel
+        SELECT 
+            CASE 
+                WHEN ua.is_malicious = 1 THEN 'SMISHING'
+                ELSE fd.risk_level 
+            END AS riskLevel
         FROM url_analysis ua
         JOIN final_decision fd ON ua.sms_id = fd.sms_id
-        WHERE ua.normalized_host = :host
-        ORDER BY fd.decision_timestamp DESC
+        WHERE (
+            ua.normalized_host = :host 
+            OR :host LIKE '%.' || ua.normalized_host 
+            OR ua.normalized_host LIKE '%.' || :host
+        )
+        ORDER BY 
+            (CASE WHEN ua.is_malicious = 1 THEN 1 ELSE 0 END) DESC,
+            fd.decision_timestamp DESC
         LIMIT 1
     """)
     suspend fun getHostReputation(host: String): HostReputationResult?
