@@ -14,7 +14,7 @@ import net.sqlcipher.database.SupportFactory
         FinalDecisionEntity::class,
         NotificationEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

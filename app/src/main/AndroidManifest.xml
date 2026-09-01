@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required to create and bind a VPN interface via VpnService -->
+    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
+    <!-- Required to call startForeground() from KuwagoVpnService -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required on Android 14+ for foreground services with type=specialUse -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:allowBackup="true"
@@ -52,6 +58,34 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!--
+            KuwagoVpnService — DNS-proxy VPN that enforces previously-established
+            SMISHING decisions from Kuwago's scanner without inspecting content.
+
+            android:foregroundServiceType="specialUse" is required on Android 14+
+            (API 34) when the service type does not fit one of the predefined types.
+            VpnService manages its own ongoing notification via the system VPN
+            notification, but we also call startForeground() for lifecycle safety.
+        -->
+        <service
+            android:name=".KuwagoVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <!-- VPN block warning — shown from a notification when a connection is blocked -->
+        <activity
+            android:name=".VpnBlockedActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Mykotlinapp"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
     </application>
 
 </manifest>

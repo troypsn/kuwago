@@ -15,6 +15,13 @@ data class HomeStats(
     val totalSmishing: Int = 0
 )
 
+/**
+ * Returned by [AnalysisDao.getHostReputation] for VPN enforcement lookups.
+ */
+data class HostReputationResult(
+    val riskLevel: String
+)
+
 data class FullSmsRecord(
     val sms: SmsMessageEntity,
     val analysis: AnalysisResultEntity?,
@@ -102,4 +109,36 @@ interface AnalysisDao {
 
     @Query("SELECT * FROM final_decision ORDER BY decision_timestamp DESC")
     fun getAllFinalDecisionsLiveData(): LiveData<List<FinalDecisionEntity>>
+
+    /**
+     * Reputation lookup used by the VPN enforcement layer.
+     *
+     * Returns the risk_level of the most recent [FinalDecisionEntity] for any
+     * SMS that contained [host] as its [UrlAnalysisEntity.normalizedHost].
+     *
+     * The VPN calls this on a cache miss and blocks if risk_level == 'SMISHING'.
+     */
+    @Query("""
+        SELECT fd.risk_level AS riskLevel
+        FROM url_analysis ua
+        JOIN final_decision fd ON ua.sms_id = fd.sms_id
+        WHERE ua.normalized_host = :host
+        ORDER BY fd.decision_timestamp DESC
+        LIMIT 1
+    """)
+    suspend fun getHostReputation(host: String): HostReputationResult?
+
+    /**
+     * Returns true if at least one SMISHING result with a known URL host exists.
+     * Used by [com.example.kuwago.MainActivity] to decide whether to suggest
+     * enabling URL Shield to the user.
+     */
+    @Query("""
+        SELECT COUNT(*) > 0
+        FROM url_analysis ua
+        JOIN final_decision fd ON ua.sms_id = fd.sms_id
+        WHERE UPPER(fd.risk_level) = 'SMISHING'
+        AND ua.normalized_host IS NOT NULL
+    """)
+    suspend fun hasSmishingUrlResults(): Boolean
 }
