@@ -89,7 +89,13 @@ object SmsLocalRepository {
         val hasUrl = LocalClassifier.hasUrl(result.message) || result.urlFound
         val extractedUrl = result.extractedUrl ?: LocalClassifier.extractUrl(result.message)
         if (hasUrl && !extractedUrl.isNullOrBlank()) {
-            val isMalicious = if (result.urlScore != null && result.urlScore > 0.5f) 1 else 0
+            val isUrlMaliciousOrSuspicious =
+                (result.urlScore != null && result.urlScore > 0.3f) ||
+                (result.urlVerdict != null && !result.urlVerdict.equals("clean", ignoreCase = true) && !result.urlVerdict.equals("benign", ignoreCase = true)) ||
+                result.classification == Classification.SMISHING ||
+                result.classification == Classification.SUSPICIOUS
+
+            val isMalicious = if (isUrlMaliciousOrSuspicious) 1 else 0
             // Normalize the hostname so the VPN can match it by host at enforcement time
             val normalizedHost = UrlNormalizer.extractHost(extractedUrl.trim())
             urlEntities.add(

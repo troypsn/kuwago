@@ -35,15 +35,24 @@ object UrlNormalizer {
     fun extractHost(rawUrl: String): String? {
         if (rawUrl.isBlank()) return null
         val candidate = rawUrl.trim()
-        // Prepend a scheme if missing so java.net.URI can parse the authority
         val withScheme = if (candidate.contains("://")) candidate else "https://$candidate"
         return try {
             val uri = URI(withScheme)
-            val host = uri.host ?: return null
-            normalizeHost(host)
+            val host = uri.host
+            if (host != null) normalizeHost(host) else extractHostFallback(candidate)
         } catch (_: Exception) {
-            null
+            extractHostFallback(candidate)
         }
+    }
+
+    private fun extractHostFallback(candidate: String): String? {
+        val clean = candidate
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .removePrefix("HTTP://")
+            .removePrefix("HTTPS://")
+        val hostPart = clean.substringBefore("/").substringBefore("?").substringBefore("#").substringBefore(":")
+        return normalizeHost(hostPart)
     }
 
     /**
