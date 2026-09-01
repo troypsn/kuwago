@@ -144,11 +144,11 @@ object SmsLocalRepository {
             }
         }
 
-        // If a SMISHING result with a URL host was saved, flag the suggestion dialog
+        // If a SMISHING or SUSPICIOUS result with a URL host was saved, flag the suggestion dialog
         // so that MainActivity can offer to enable URL Shield on next open.
-        val hasMaliciousUrl = result.classification == Classification.SMISHING &&
+        val hasThreatUrl = (result.classification == Classification.SMISHING || result.classification == Classification.SUSPICIOUS) &&
                 urlEntities.any { it.normalizedHost != null }
-        if (hasMaliciousUrl) {
+        if (hasThreatUrl) {
             context.getSharedPreferences("kuwago_vpn_prefs", Context.MODE_PRIVATE)
                 .edit()
                 .putBoolean("suggest_vpn_shield", true)

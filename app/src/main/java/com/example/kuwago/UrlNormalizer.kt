@@ -60,6 +60,8 @@ object UrlNormalizer {
         var h = host.trim().lowercase()
         // Strip port
         if (h.contains(":")) h = h.substringBefore(":")
+        // Strip trailing dots, slashes, and common punctuation from text extraction
+        h = h.trimEnd('.', '/', ',', ')', '?', '!', ';', ':', '\'')
         // Strip www. prefix only
         if (h.startsWith("www.")) h = h.removePrefix("www.")
         // Reject IP addresses
