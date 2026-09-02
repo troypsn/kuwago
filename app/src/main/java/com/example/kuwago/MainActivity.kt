@@ -29,6 +29,8 @@ import kotlinx.coroutines.withContext
 class MainActivity : AppCompatActivity() {
 
     private val SMS_PERMISSION_CODE = 101
+    private var isRequestingSmsPermissions = false
+    private var hasShownNotificationAccessDialog = false
 
     // Nav item containers
     private lateinit var navHome: LinearLayout
@@ -168,6 +170,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (ungranted.isNotEmpty()) {
+            isRequestingSmsPermissions = true
             ActivityCompat.requestPermissions(this, ungranted.toTypedArray(), SMS_PERMISSION_CODE)
         }
     }
@@ -261,7 +264,10 @@ class MainActivity : AppCompatActivity() {
                             "You can enable or disable URL Shield anytime in Settings → Security."
                         )
                         .setPositiveButton("Enable URL Shield") { _, _ ->
-                            switchFragment(SettingsFragment(), "settings")
+                            val vpnFragment = SettingsVpnShieldFragment().apply {
+                                arguments = Bundle().apply { putBoolean("auto_enable", true) }
+                            }
+                            switchFragment(vpnFragment, "settings")
                             updateNavUI("settings")
                         }
                         .setNegativeButton("Maybe Later", null)
@@ -273,7 +279,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        // Handled silently
+        if (requestCode == SMS_PERMISSION_CODE) {
+            isRequestingSmsPermissions = false
+        }
     }
 
     fun isNotificationServiceEnabled(): Boolean {
@@ -292,17 +300,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkNotificationPermission() {
+        if (isRequestingSmsPermissions || hasShownNotificationAccessDialog) return
         if (!isNotificationServiceEnabled()) {
+            hasShownNotificationAccessDialog = true
             AlertDialog.Builder(this)
                 .setTitle("Notification Access Required")
                 .setMessage("Kuwago needs Notification Access to intercept and block scam SMS messages before you see them. Please enable it in the next screen.")
                 .setPositiveButton("Enable in Settings") { _, _ ->
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }
-                .setCancelable(false)
+                .setNegativeButton("Maybe Later", null)
                 .show()
         }
     }
+
 
 
 

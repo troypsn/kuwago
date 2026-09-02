@@ -79,6 +79,12 @@ class SettingsVpnShieldFragment : Fragment() {
         setSwitchCheckedProgrammatically(isActive)
         updateStatusText(isActive)
 
+        val autoEnable = arguments?.getBoolean("auto_enable", false) == true
+        if (autoEnable && !isActive) {
+            arguments?.remove("auto_enable")
+            requestVpnPermission()
+        }
+
         switchVpnShield.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (isChecked) {
