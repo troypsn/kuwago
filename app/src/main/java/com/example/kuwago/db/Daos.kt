@@ -33,24 +33,24 @@ data class FullSmsRecord(
 @Dao
 interface HomeStatsDao {
 
-    @Query("SELECT COUNT(*) FROM sms_message")
+    @Query("SELECT COUNT(*) FROM sms_message WHERE sms_id NOT LIKE 'synced_%'")
     fun getTotalSmsReceived(): LiveData<Int>
 
-    @Query("SELECT COUNT(fd.decision_id) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id")
+    @Query("SELECT COUNT(fd.decision_id) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE s.sms_id NOT LIKE 'synced_%'")
     fun getTotalSmsScanned(): LiveData<Int>
 
-    @Query("SELECT COUNT(*) FROM final_decision WHERE UPPER(risk_level) = 'SUSPICIOUS'")
+    @Query("SELECT COUNT(*) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE UPPER(fd.risk_level) = 'SUSPICIOUS' AND s.sms_id NOT LIKE 'synced_%'")
     fun getTotalSuspiciousMessages(): LiveData<Int>
 
-    @Query("SELECT COUNT(*) FROM final_decision WHERE UPPER(risk_level) = 'SMISHING'")
+    @Query("SELECT COUNT(*) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE UPPER(fd.risk_level) = 'SMISHING' AND s.sms_id NOT LIKE 'synced_%'")
     fun getTotalSmishingMessages(): LiveData<Int>
 
     @Query("""
         SELECT 
-            (SELECT COUNT(*) FROM sms_message) AS totalReceived,
-            (SELECT COUNT(fd.decision_id) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id) AS totalScanned,
-            (SELECT COUNT(*) FROM final_decision WHERE UPPER(risk_level) = 'SUSPICIOUS') AS totalSuspicious,
-            (SELECT COUNT(*) FROM final_decision WHERE UPPER(risk_level) = 'SMISHING') AS totalSmishing
+            (SELECT COUNT(*) FROM sms_message WHERE sms_id NOT LIKE 'synced_%') AS totalReceived,
+            (SELECT COUNT(fd.decision_id) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE s.sms_id NOT LIKE 'synced_%') AS totalScanned,
+            (SELECT COUNT(*) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE UPPER(fd.risk_level) = 'SUSPICIOUS' AND s.sms_id NOT LIKE 'synced_%') AS totalSuspicious,
+            (SELECT COUNT(*) FROM final_decision fd INNER JOIN sms_message s ON fd.sms_id = s.sms_id WHERE UPPER(fd.risk_level) = 'SMISHING' AND s.sms_id NOT LIKE 'synced_%') AS totalSmishing
     """)
     fun getHomeStatsLiveData(): LiveData<HomeStats>
 }
@@ -70,10 +70,10 @@ interface SmsDao {
     @Query("SELECT * FROM sms_message WHERE sms_id = :smsId")
     suspend fun getSmsById(smsId: String): SmsMessageEntity?
 
-    @Query("SELECT * FROM sms_message ORDER BY received_timestamp DESC")
+    @Query("SELECT * FROM sms_message WHERE sms_id NOT LIKE 'synced_%' ORDER BY received_timestamp DESC")
     fun getAllSmsLiveData(): LiveData<List<SmsMessageEntity>>
 
-    @Query("SELECT * FROM sms_message ORDER BY received_timestamp DESC")
+    @Query("SELECT * FROM sms_message WHERE sms_id NOT LIKE 'synced_%' ORDER BY received_timestamp DESC")
     suspend fun getAllSmsList(): List<SmsMessageEntity>
 
     @Query("DELETE FROM sms_message WHERE sms_id = :smsId")

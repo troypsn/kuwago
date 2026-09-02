@@ -205,7 +205,7 @@ object SmsLocalRepository {
                     )
                 }
                 withContext(Dispatchers.Main) {
-                    resultMediator.value = detectionResults
+                    resultMediator.value = detectionResults.filter { !it.id.startsWith("synced_") && it.sender != "Kuwago Database" }
                 }
             }
         }

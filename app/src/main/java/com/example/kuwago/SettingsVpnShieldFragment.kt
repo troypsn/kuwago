@@ -40,6 +40,7 @@ class SettingsVpnShieldFragment : Fragment() {
     private lateinit var tvStatus: TextView
 
     private val TAG = "VpnShieldSettings"
+    private var isProgrammaticChange = false
 
     // ActivityResultLauncher for the Android VPN permission dialog
     private val vpnPermissionLauncher = registerForActivityResult(
@@ -48,9 +49,10 @@ class SettingsVpnShieldFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             Log.i(TAG, "VPN permission granted by user")
             startVpnService()
+            setSwitchCheckedProgrammatically(true)
         } else {
             Log.i(TAG, "VPN permission denied by user")
-            switchVpnShield.isChecked = false
+            setSwitchCheckedProgrammatically(false)
             updateStatusText(false)
         }
     }
@@ -74,9 +76,8 @@ class SettingsVpnShieldFragment : Fragment() {
 
         // Reflect actual running state
         val isActive = isVpnCurrentlyActive()
-        switchVpnShield.isChecked = isActive
+        setSwitchCheckedProgrammatically(isActive)
         updateStatusText(isActive)
-        var isProgrammaticChange = false
 
         switchVpnShield.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticChange) return@setOnCheckedChangeListener
@@ -90,15 +91,11 @@ class SettingsVpnShieldFragment : Fragment() {
                         updateStatusText(false)
                     }
                     .setNegativeButton("Cancel") { dialog, _ ->
-                        isProgrammaticChange = true
-                        switchVpnShield.isChecked = true
-                        isProgrammaticChange = false
+                        setSwitchCheckedProgrammatically(true)
                         dialog.dismiss()
                     }
                     .setOnCancelListener {
-                        isProgrammaticChange = true
-                        switchVpnShield.isChecked = true
-                        isProgrammaticChange = false
+                        setSwitchCheckedProgrammatically(true)
                     }
                     .show()
             }
@@ -109,8 +106,14 @@ class SettingsVpnShieldFragment : Fragment() {
         super.onResume()
         // Re-sync switch state in case the VPN was killed externally
         val active = isVpnCurrentlyActive()
-        switchVpnShield.isChecked = active
+        setSwitchCheckedProgrammatically(active)
         updateStatusText(active)
+    }
+
+    private fun setSwitchCheckedProgrammatically(checked: Boolean) {
+        isProgrammaticChange = true
+        switchVpnShield.isChecked = checked
+        isProgrammaticChange = false
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -165,3 +168,4 @@ class SettingsVpnShieldFragment : Fragment() {
         )
     }
 }
+

@@ -236,29 +236,39 @@ class MainActivity : AppCompatActivity() {
         val vpnPrefs = getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
         val suggestFlag = vpnPrefs.getBoolean("suggest_vpn_shield", false)
         val vpnAlreadyActive = vpnPrefs.getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
+        val hasPrompted = vpnPrefs.getBoolean("has_prompted_vpn_shield", false)
 
-        if (!suggestFlag || vpnAlreadyActive) return
+        if (vpnAlreadyActive || (hasPrompted && !suggestFlag)) return
 
-        // Clear the flag so we don't show this dialog again until a new SMISHING URL is found
-        vpnPrefs.edit().putBoolean("suggest_vpn_shield", false).apply()
+        CoroutineScope(Dispatchers.IO).launch {
+            val db = com.example.kuwago.db.SmsLocalRepository.getDatabase(applicationContext)
+            val hasSmishingUrls = db.analysisDao().hasSmishingUrlResults()
+            if (suggestFlag || hasSmishingUrls) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    vpnPrefs.edit()
+                        .putBoolean("suggest_vpn_shield", false)
+                        .putBoolean("has_prompted_vpn_shield", true)
+                        .apply()
 
-        AlertDialog.Builder(this)
-            .setTitle("🛡️ URL Shield Available")
-            .setMessage(
-                "Kuwago detected a phishing URL in a recent message.\n\n" +
-                "URL Shield can automatically block phishing sites at the network level, " +
-                "so even if you accidentally tap a link in an old message, the connection " +
-                "will be stopped before your browser opens it.\n\n" +
-                "You can enable or disable URL Shield anytime in Settings → Security."
-            )
-            .setPositiveButton("Enable URL Shield") { _, _ ->
-                switchFragment(SettingsFragment(), "settings")
-                updateNavUI("settings")
-                // Let the fragment stack open the VPN sub-page automatically
-                // (user can tap URL Shield row in Settings)
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("🛡️ URL Shield Available")
+                        .setMessage(
+                            "Kuwago detected phishing URLs in its threat database.\n\n" +
+                            "URL Shield can automatically block phishing sites at the network level, " +
+                            "so even if you accidentally tap a link in a message, the connection " +
+                            "will be stopped before your browser opens it.\n\n" +
+                            "You can enable or disable URL Shield anytime in Settings → Security."
+                        )
+                        .setPositiveButton("Enable URL Shield") { _, _ ->
+                            switchFragment(SettingsFragment(), "settings")
+                            updateNavUI("settings")
+                        }
+                        .setNegativeButton("Maybe Later", null)
+                        .show()
+                }
             }
-            .setNegativeButton("Maybe Later", null)
-            .show()
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
