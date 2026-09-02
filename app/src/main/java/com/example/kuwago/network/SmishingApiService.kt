@@ -35,7 +35,28 @@ data class SmsScanResponse(
     @SerializedName("url_analysis") val urlAnalysis: UrlAnalysis? = null
 )
 
+data class UrlSyncItem(
+    @SerializedName("extracted_url") val extractedUrl: String = "",
+    @SerializedName("normalized_host") val normalizedHost: String? = null,
+    @SerializedName("verdict") val verdict: String? = null,
+    @SerializedName("score") val score: Float? = null,
+    @SerializedName("total_weight") val totalWeight: Float? = null,
+    @SerializedName("explanation") val explanation: String? = null,
+    @SerializedName("contributions") val contributions: List<String>? = emptyList()
+)
+
+data class UrlSyncResponse(
+    @SerializedName("total_records") val totalRecords: Int = 0,
+    @SerializedName("last_synced_at") val lastSyncedAt: String? = null,
+    @SerializedName("urls") val urls: List<UrlSyncItem> = emptyList()
+)
+
 interface SmishingApiService {
     @POST("scan-sms")
     suspend fun scanSms(@Body request: SmsScanRequest): SmsScanResponse
+
+    @retrofit2.http.GET("url-reputations")
+    suspend fun syncUrlReputations(
+        @retrofit2.http.Query("since_timestamp") sinceTimestamp: Long
+    ): UrlSyncResponse
 }

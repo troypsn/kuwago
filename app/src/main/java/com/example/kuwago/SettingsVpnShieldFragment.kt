@@ -13,6 +13,9 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Settings sub-page for the Kuwago URL Shield (VPN-based enforcement).
@@ -124,12 +127,17 @@ class SettingsVpnShieldFragment : Fragment() {
     }
 
     private fun startVpnService() {
-        val ctx = requireContext()
+        val ctx = requireContext().applicationContext
         val intent = Intent(ctx, KuwagoVpnService::class.java).apply {
             action = KuwagoVpnService.ACTION_START
         }
         ctx.startService(intent)
         updateStatusText(true)
+
+        // Asynchronously sync URL analysis database from the last 3 months
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(ctx)
+        }
     }
 
     private fun stopVpnService() {

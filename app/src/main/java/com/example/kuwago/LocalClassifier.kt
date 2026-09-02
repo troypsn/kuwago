@@ -28,7 +28,8 @@ object LocalClassifier {
     var suspiciousThreshold = 0.70f
     var smishingThreshold = 0.85f
 
-    private var isInitialized = false
+    val isInitialized: Boolean
+        get() = (env != null && tfidfSession != null && scalerSession != null && rfSession != null && xgbSession != null)
 
     private val STOPWORDS = setOf(
         "kung", "any", "shouldn't", "naman", "para", "sila", "by", "did", "they're", "under", "mo", "it'd", "alin", "isn", "because", "pa", "d", "couldn", "to", "your", "it's", "himself", "was", "her", "nang", "some", "siya", "kasi", "own", "has", "sino", "he'll", "are", "being", "you", "for", "between", "itself", "it'll", "ourselves", "mga", "ma", "not", "again", "now", "shan", "nila", "at", "out", "she'll", "have", "m", "more", "pala", "you'll", "above", "on", "shouldn", "their", "mightn", "dito", "din", "yours", "should", "you'd", "is", "into", "ll", "through", "them", "ko", "were", "no", "having", "our", "be", "myself", "re", "pero", "and", "nor", "yourself", "will", "she", "wouldn", "all", "ka", "iyon", "he", "theirs", "aren't", "once", "same", "weren't", "me", "how", "we've", "hadn't", "ang", "wala", "needn", "had", "during", "haven", "am", "couldn't", "why", "themselves", "lang", "i'm", "we're", "just", "that'll", "a", "saan", "na", "yung", "up", "they've", "ain", "natin", "rin", "yourselves", "ours", "namin", "who", "off", "kami", "opo", "hindi", "where", "as", "o", "such", "didn't", "against", "t", "s", "few", "herself", "he's", "before", "wasn", "niya", "when", "so", "doesn't", "you're", "may", "if", "haven't", "mustn", "or", "shan't", "then", "they'll", "raw", "aren", "bakit", "mightn't", "i'd", "hasn't", "we", "do", "i'll", "my", "daw", "can", "from", "doesn", "ba", "you've", "po", "weren", "tayo", "but", "other", "hasn", "below", "won", "most", "after", "each", "does", "the", "she'd", "he'd", "don't", "wasn't", "don", "didn", "ng", "that", "doing", "we'd", "i've", "whom", "won't", "i", "wouldn't", "him", "than", "its", "there", "both", "in", "what", "talaga", "until", "we'll", "ano", "here", "down", "about", "y", "too", "they'd", "should've", "of", "doon", "hadn", "been", "ay", "hers", "very", "mustn't", "with", "they", "nga", "an", "this", "ho", "ve", "she's", "further", "his", "these", "sa", "those", "isn't", "needn't", "ito", "while", "only", "which", "it"
@@ -102,8 +103,7 @@ object LocalClassifier {
             scalerSession = env?.createSession(readAsset(context, "scaler.onnx"))
             rfSession = env?.createSession(readAsset(context, "rf_model.onnx"))
             xgbSession = env?.createSession(readAsset(context, "xgboost_model.onnx"))
-            isInitialized = true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
         }
     }
@@ -246,7 +246,13 @@ object LocalClassifier {
         val prep = preprocessText(cleaned)
         val rawNum = extractNumericalFeatures(message)
 
-        val envLocal = env ?: OrtEnvironment.getEnvironment()
+        val envLocal = env ?: return DetectionResult(
+            sender = "Unknown",
+            message = message,
+            classification = Classification.SAFE,
+            probability = 0.0f,
+            isScanning = false
+        )
 
         // 1. Scale numerical features (19 dimensions)
         val scalerInputTensor = OnnxTensor.createTensor(

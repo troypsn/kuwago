@@ -212,4 +212,71 @@ object SmsLocalRepository {
 
         return resultMediator
     }
+
+    /**
+     * Syncs pre-analyzed URLs from the backend (URLs created/analyzed in the last 3 months).
+     * Populates both the local encrypted Room database and the in-memory UrlReputationCache
+     * for instant VPN enforcement.
+     */
+    suspend fun syncUrlReputationsFromBackend(context: Context) {
+        withContext(Dispatchers.IO) {
+            try {
+                // Calculate timestamp for 3 months ago (90 days in milliseconds)
+                val threeMonthsAgoMs = System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000)
+                android.util.Log.i("SmsLocalRepository", "Syncing URL reputations older than 3 months (since_timestamp=$threeMonthsAgoMs)...")
+                val response = com.example.kuwago.network.RetrofitClient.instance.syncUrlReputations(threeMonthsAgoMs)
+                android.util.Log.i("SmsLocalRepository", "Received ${response.urls.size} pre-analyzed URLs from backend sync")
+
+                val db = getDatabase(context)
+                for (item in response.urls) {
+                    val rawUrl = item.extractedUrl.trim()
+                    if (rawUrl.isEmpty()) continue
+
+                    val host = item.normalizedHost ?: UrlNormalizer.extractHost(rawUrl) ?: continue
+
+                    val isMaliciousOrSuspicious =
+                        item.verdict?.equals("malicious", ignoreCase = true) == true ||
+                        item.verdict?.equals("spam", ignoreCase = true) == true ||
+                        (item.score != null && item.score >= 0.5f)
+
+                    val classification = if (isMaliciousOrSuspicious) Classification.SMISHING else Classification.SAFE
+
+                    // Populate in-memory LRU cache for VPN
+                    com.example.kuwago.UrlReputationCache.put(host, classification)
+
+                    // Ensure record exists in local database so getHostReputation query succeeds
+                    val syntheticSmsId = "synced_${Math.abs(host.hashCode())}"
+                    val smsEntity = SmsMessageEntity(
+                        smsId = syntheticSmsId,
+                        senderNumber = "Kuwago Database",
+                        messageContent = "Pre-synced URL reputation: $rawUrl",
+                        receivedTimestamp = System.currentTimeMillis(),
+                        isProcessed = 1
+                    )
+                    db.smsDao().insertSms(smsEntity)
+
+                    val urlEntity = UrlAnalysisEntity(
+                        urlId = "url_$syntheticSmsId",
+                        smsId = syntheticSmsId,
+                        extractedUrl = rawUrl,
+                        isMalicious = if (isMaliciousOrSuspicious) 1 else 0,
+                        normalizedHost = host
+                    )
+                    db.analysisDao().insertUrlAnalyses(listOf(urlEntity))
+
+                    val decisionEntity = FinalDecisionEntity(
+                        decisionId = "dec_$syntheticSmsId",
+                        smsId = syntheticSmsId,
+                        finalScore = item.score ?: (if (isMaliciousOrSuspicious) 1.0f else 0.0f),
+                        riskLevel = classification.name,
+                        actionTaken = "SYNCED",
+                        decisionTimestamp = System.currentTimeMillis()
+                    )
+                    db.analysisDao().insertFinalDecision(decisionEntity)
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("SmsLocalRepository", "URL reputation sync warning: ${e.message}")
+            }
+        }
+    }
 }

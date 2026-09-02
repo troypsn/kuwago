@@ -70,6 +70,11 @@ class MainActivity : AppCompatActivity() {
         checkSmsPermissions()
         createNotificationChannels()
 
+        // Trigger initial bulk sync for URL reputations (3 months old or younger)
+        CoroutineScope(Dispatchers.IO).launch {
+            com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(applicationContext)
+        }
+
         // Set default fragment
         if (savedInstanceState == null) {
             switchFragment(HomeFragment(), "home")
