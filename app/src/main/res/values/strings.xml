@@ -177,10 +177,10 @@
     <!-- Result Notifications -->
     <string name="notif_result_safe_title">Message verified safe ✓</string>
     <string name="notif_result_safe_text">Message from %1$s passed Kuwago\'s scan.</string>
-    <string name="notif_result_suspicious_title">⚠ Suspicious message intercepted</string>
-    <string name="notif_result_suspicious_text">Message from %1$s — %2$s confidence it is a threat.</string>
-    <string name="notif_result_smishing_title">🚨 Smishing detected &amp; blocked</string>
-    <string name="notif_result_smishing_text">Message from %1$s has been blocked (%2$s confidence).</string>
+    <string name="notif_result_suspicious_title">⚠️ Suspicious message intercepted</string>
+    <string name="notif_result_suspicious_text">Message from %1$s — %2$s confidence it is a threat. We flagged this for your safety.</string>
+    <string name="notif_result_smishing_title">🛑 Smishing threat blocked</string>
+    <string name="notif_result_smishing_text">🛑 Message from %1$s has been blocked (%2$s confidence). We blocked this to protect you.</string>
 
     <!-- Scan Instantly Setting -->
     <string name="settings_scan_instantly_title">Scan Incoming Messages Instantly</string>

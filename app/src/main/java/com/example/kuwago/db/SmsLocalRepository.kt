@@ -180,7 +180,10 @@ object SmsLocalRepository {
                     } ?: Classification.SAFE
 
                     val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
+                    val isMalicious = urls.firstOrNull()?.isMalicious == 1
                     val firstUrl = urls.firstOrNull()?.extractedUrl
+                    val urlScore = if (urls.isNotEmpty()) (if (isMalicious) 1.0f else 0.0f) else null
+                    val urlVerdict = if (urls.isNotEmpty()) (if (isMalicious) "malicious" else "clean") else null
 
                     DetectionResult(
                         id = sms.smsId,
@@ -194,7 +197,9 @@ object SmsLocalRepository {
                         cnnVerdict = analysis?.dlPrediction,
                         urlFound = urls.isNotEmpty(),
                         extractedUrl = firstUrl,
-                        urlScore = urls.firstOrNull()?.isMalicious?.toFloat(),
+                        urlScore = urlScore,
+                        urlVerdict = urlVerdict,
+                        explanation = if (isMalicious) "Flagged as malicious by local URL reputation database." else null,
                         localVerdict = analysis?.mlPrediction,
                         rfProb = analysis?.mlConfidence ?: 0f
                     )

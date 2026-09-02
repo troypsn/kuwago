@@ -75,6 +75,50 @@ object SmishingDetector {
         val mlConfidence = localResult.probability
 
         return try {
+            // --- Local URL reputation cache check (avoids API round-trip for known hosts) ---
+            val normalizedHost = if (hasUrl && extractedUrl != null) UrlNormalizer.normalizeHost(extractedUrl) else null
+            val cachedReputation = if (normalizedHost != null) UrlReputationCache.get(normalizedHost) else null
+            val isVpnActive = context.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+                .getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
+
+            // Use cached URL reputation if available AND VPN is not active (no need to refresh blocklist)
+            if (cachedReputation != null && !isVpnActive) {
+                Log.i("SmishingDetector", "URL cache hit for host=$normalizedHost → $cachedReputation. Skipping backend URL scan.")
+                val cachedUrlScore = if (cachedReputation == Classification.SMISHING) 1.0f
+                                     else if (cachedReputation == Classification.SUSPICIOUS) 0.6f
+                                     else 0.0f
+                val cachedUrlVerdict = if (cachedReputation == Classification.SMISHING) "malicious"
+                                       else if (cachedReputation == Classification.SUSPICIOUS) "suspicious"
+                                       else "clean"
+                val localScore = localResult.probability
+                val finalProb = (0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore)
+                val classification = when {
+                    finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
+                    finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+                    else -> Classification.SAFE
+                }
+                return DetectionResult(
+                    sender = sender,
+                    message = message,
+                    classification = classification,
+                    probability = finalProb,
+                    isScanning = false,
+                    cnnScore = null,
+                    cnnVerdict = "Served from cache",
+                    urlFound = hasUrl,
+                    extractedUrl = extractedUrl,
+                    urlScore = cachedUrlScore,
+                    urlVerdict = cachedUrlVerdict,
+                    explanation = "Result from local URL cache for host: $normalizedHost",
+                    localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                    ensembleFormula = "Cache hit: 75% Local + 25% Cached URL",
+                    rfProb = localResult.rfProb,
+                    rfRawLogit = localResult.rfRawLogit,
+                    xgbProb = localResult.xgbProb,
+                    cnnProb = null
+                )
+            }
+
             withTimeout(TIMEOUT_MS) {
                 Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave, ml_pred=$mlPrediction)...")
                 val request = SmsScanRequest(
@@ -96,6 +140,17 @@ object SmishingDetector {
                 val urlScore = url.score ?: 0f
                 val localScore = localResult.probability
                 val containsUrl = hasUrl || url.hasUrl
+
+                // Update cache with fresh result from API
+                if (normalizedHost != null) {
+                    val freshReputation = when {
+                        url.verdict?.lowercase() == "malicious" || urlScore >= 0.5f -> Classification.SMISHING
+                        url.verdict?.lowercase() == "suspicious" || urlScore >= 0.3f -> Classification.SUSPICIOUS
+                        else -> Classification.SAFE
+                    }
+                    UrlReputationCache.put(normalizedHost, freshReputation)
+                    Log.i("SmishingDetector", "Updated URL cache: $normalizedHost → $freshReputation")
+                }
 
                 val (finalProb, formulaStr) = if (containsUrl) {
                     val score = (0.50f * cnnScore) + (0.25f * urlScore) + (0.25f * localScore)
@@ -128,6 +183,8 @@ object SmishingDetector {
                     urlScore = url.score,
                     urlVerdict = url.verdict,
                     explanation = url.explanation,
+                    urlTotalWeight = url.totalWeight,
+                    urlContributions = url.contributions,
                     localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
                     ensembleFormula = formulaStr,
                     rfProb = localResult.rfProb,

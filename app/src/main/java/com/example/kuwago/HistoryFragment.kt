@@ -78,18 +78,45 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         context?.let { DetectionRepository.loadIfNeeded(it) }
+
+        view.findViewById<View>(R.id.btn_refresh_history)?.setOnClickListener {
+            loadAndClassifySms()
+        }
+
         DetectionRepository.detections.observe(viewLifecycleOwner) { liveList ->
-            for (liveItem in liveList) {
+            if (liveList.isEmpty()) return@observe
+
+            var hasNewItems = false
+            // Iterate in reverse order to preserve latest-first order when inserting at index 0
+            for (liveItem in liveList.asReversed()) {
                 val index = smsList.indexOfFirst {
                     it.id == liveItem.id || (it.message == liveItem.message && it.sender == liveItem.sender)
                 }
                 if (index != -1) {
                     val current = smsList[index]
-                    if (liveItem.cnnProb != current.cnnProb || liveItem.isScanning != current.isScanning || liveItem.classification != current.classification) {
+                    if (liveItem.cnnProb != current.cnnProb ||
+                        liveItem.isScanning != current.isScanning ||
+                        liveItem.classification != current.classification ||
+                        liveItem.probability != current.probability ||
+                        liveItem.urlScore != current.urlScore
+                    ) {
                         smsList[index] = liveItem.copy(id = current.id, timestamp = current.timestamp)
                         smsAdapter.notifyItemChanged(index)
                     }
+                } else {
+                    // Newly intercepted or scanned message! Prepend to history list
+                    smsList.add(0, liveItem)
+                    smsAdapter.notifyItemInserted(0)
+                    hasNewItems = true
                 }
+            }
+
+            if (hasNewItems) {
+                historyRecyclerView.scrollToPosition(0)
+            }
+            if (smsList.isNotEmpty()) {
+                historyRecyclerView.visibility = View.VISIBLE
+                layoutEmptyState.visibility = View.GONE
             }
         }
     }
@@ -116,8 +143,32 @@ class HistoryFragment : Fragment() {
                     requestSmsPermission()
                 }
             } else {
-                // Disable Integration
-                clearSmsList()
+                // Confirm turning off SMS inbox integration
+                AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"SMS Inbox Integration\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        tvPermissionDesc.text = "Grant permission to analyze device SMS history"
+                        val scans = DetectionRepository.detections.value.orEmpty()
+                        smsList.clear()
+                        smsList.addAll(scans)
+                        smsAdapter.notifyDataSetChanged()
+                        if (smsList.isEmpty()) {
+                            historyRecyclerView.visibility = View.GONE
+                            layoutEmptyState.visibility = View.VISIBLE
+                        }
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isUserAction = false
+                        switchSmsPermission.isChecked = true
+                        isUserAction = true
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isUserAction = false
+                        switchSmsPermission.isChecked = true
+                        isUserAction = true
+                    }
+                    .show()
             }
         }
     }
@@ -185,7 +236,17 @@ class HistoryFragment : Fragment() {
         } else {
             switchSmsPermission.isChecked = false
             tvPermissionDesc.text = "Grant permission to analyze device SMS history"
-            clearSmsList()
+            // Retain any scans currently in repository so they don't disappear
+            val scans = DetectionRepository.detections.value.orEmpty()
+            if (scans.isNotEmpty()) {
+                smsList.clear()
+                smsList.addAll(scans)
+                smsAdapter.notifyDataSetChanged()
+                historyRecyclerView.visibility = View.VISIBLE
+                layoutEmptyState.visibility = View.GONE
+            } else {
+                clearSmsList()
+            }
         }
         isUserAction = true
     }
@@ -207,54 +268,48 @@ class HistoryFragment : Fragment() {
             val results = withContext(Dispatchers.IO) {
                 val list = mutableListOf<DetectionResult>()
 
-                // 1. Prepend manual scans from the Scan screen (DetectionRepository)
-                //    These use a "manual_" id prefix to avoid clashing with SMS inbox ids.
-                val manualScans = DetectionRepository.detections.value.orEmpty()
-                    .map { it.copy(id = "manual_${it.id}") }
-                list.addAll(manualScans)
+                // 1. First keep existing repository detections (from manual scans and live listener)
+                val repoDetections = DetectionRepository.detections.value.orEmpty()
+                list.addAll(repoDetections)
 
                 // 2. Load SMS inbox entries (only if permission granted)
-                val cursor: Cursor? = ctx.contentResolver.query(
-                    Uri.parse("content://sms/inbox"),
-                    arrayOf("_id", "address", "body", "date"),
-                    null,
-                    null,
-                    "date DESC LIMIT 50" // Limit to last 50 for performance
-                )
+                if (hasSmsPermission()) {
+                    val cursor: Cursor? = ctx.contentResolver.query(
+                        Uri.parse("content://sms/inbox"),
+                        arrayOf("_id", "address", "body", "date"),
+                        null,
+                        null,
+                        "date DESC LIMIT 50" // Limit to last 50 for performance
+                    )
 
-                cursor?.use { c ->
-                    val idCol = c.getColumnIndex("_id")
-                    val addrCol = c.getColumnIndex("address")
-                    val bodyCol = c.getColumnIndex("body")
-                    val dateCol = c.getColumnIndex("date")
+                    cursor?.use { c ->
+                        val idCol = c.getColumnIndex("_id")
+                        val addrCol = c.getColumnIndex("address")
+                        val bodyCol = c.getColumnIndex("body")
+                        val dateCol = c.getColumnIndex("date")
 
-                    val newlyClassified = mutableListOf<DetectionResult>()
-                    while (c.moveToNext()) {
-                        val smsId = if (idCol != -1) c.getString(idCol) else java.util.UUID.randomUUID().toString()
-                        val sender = if (addrCol != -1) c.getString(addrCol) ?: "Unknown" else "Unknown"
-                        val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
-                        val date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
+                        val newlyClassified = mutableListOf<DetectionResult>()
+                        while (c.moveToNext()) {
+                            val smsId = if (idCol != -1) c.getString(idCol) else java.util.UUID.randomUUID().toString()
+                            val sender = if (addrCol != -1) c.getString(addrCol) ?: "Unknown" else "Unknown"
+                            val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
+                            val date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
 
-                        // Skip if this SMS body was already added as a manual scan
-                        if (manualScans.any { it.message == body && it.sender == sender }) continue
+                            // Skip if already present in list
+                            if (list.any { it.message == body && it.sender == sender }) continue
 
-                        // Check if we already have it scanned in the main repository
-                        val cached = DetectionRepository.detections.value.orEmpty().find { it.message == body && it.sender == sender }
-                        if (cached != null) {
-                            list.add(cached.copy(id = smsId, timestamp = date))
-                        } else {
                             // Classify locally on-the-fly
                             val classificationResult = LocalClassifier.classify(ctx, body)
                             val finalRes = classificationResult.copy(id = smsId, sender = sender, timestamp = date)
                             list.add(finalRes)
                             newlyClassified.add(finalRes)
                         }
-                    }
-                    if (newlyClassified.isNotEmpty()) {
-                        DetectionRepository.addDetections(newlyClassified)
+                        if (newlyClassified.isNotEmpty()) {
+                            DetectionRepository.addDetections(newlyClassified)
+                        }
                     }
                 }
-                list
+                list.sortedByDescending { it.timestamp }
             }
 
             smsList.clear()
@@ -267,7 +322,6 @@ class HistoryFragment : Fragment() {
                 tvEmptyTitle.text = "No Messages Found"
                 tvEmptyMessage.text = "There are no SMS messages in your device inbox."
             } else {
-                historyRecyclerView.visibility = View.GONE
                 layoutEmptyState.visibility = View.GONE
                 historyRecyclerView.visibility = View.VISIBLE
             }
@@ -319,14 +373,24 @@ class SmsHistoryAdapter(
         val sdf = java.text.SimpleDateFormat("h:mm a", java.util.Locale.US)
         holder.timeText.text = sdf.format(java.util.Date(item.timestamp))
 
+        holder.itemView.isClickable = true
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
+        }
+
         if (item.isScanning) {
             holder.progressBar.visibility = View.VISIBLE
-            holder.statusBadge.visibility = View.GONE
-            holder.itemView.isClickable = false
+            holder.statusBadge.visibility = View.VISIBLE
+            holder.statusBadge.text = "Scanning…"
+            holder.statusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#334155"))
+            holder.statusBadge.setTextColor(Color.parseColor("#94A3B8"))
+
+            bindChip(holder.chipMl, scanned = false)
+            bindChip(holder.chipDl, scanned = false)
+            bindChip(holder.chipUrl, scanned = false)
         } else {
             holder.progressBar.visibility = View.GONE
             holder.statusBadge.visibility = View.VISIBLE
-            holder.itemView.isClickable = true
 
             // Classification badge text + color
             val classificationName = item.classification.name.lowercase().replaceFirstChar { it.uppercase() }
@@ -349,10 +413,6 @@ class SmsHistoryAdapter(
             // URL chip — relevant only if a URL was found and scanned
             val urlScanned = item.urlFound && item.urlScore != null
             bindChip(holder.chipUrl, scanned = urlScanned)
-
-            holder.itemView.setOnClickListener {
-                onItemClick(item)
-            }
         }
     }
 

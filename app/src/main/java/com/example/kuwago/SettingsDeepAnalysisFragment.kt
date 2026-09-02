@@ -22,8 +22,31 @@ class SettingsDeepAnalysisFragment : Fragment() {
         )
         val switchDeepAnalysis = view.findViewById<SwitchCompat>(R.id.switch_deep_analysis)
         switchDeepAnalysis.isChecked = prefs.getBoolean("deep_analysis", true)
+        var isProgrammaticChange = false
+
         switchDeepAnalysis.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("deep_analysis", isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"Deep Analysis\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        prefs.edit().putBoolean("deep_analysis", false).apply()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchDeepAnalysis.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchDeepAnalysis.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean("deep_analysis", true).apply()
+            }
         }
 
         return view

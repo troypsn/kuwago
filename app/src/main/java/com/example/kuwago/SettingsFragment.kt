@@ -72,13 +72,42 @@ class SettingsFragment : Fragment() {
         val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val switchScanOtherApps = view.findViewById<SwitchCompat>(R.id.switch_scan_other_apps)
         switchScanOtherApps.isChecked = prefs.getBoolean(KEY_SCAN_OTHER_APPS, true)
+        var isProgrammaticChange = false
+
         switchScanOtherApps.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"Scan Other Messaging Apps\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, false).apply()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchScanOtherApps.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchScanOtherApps.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, true).apply()
+            }
         }
     }
 
     private fun openSubPage(fragment: Fragment) {
         parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fragment_enter,
+                R.anim.fragment_exit,
+                R.anim.fragment_pop_enter,
+                R.anim.fragment_pop_exit
+            )
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()

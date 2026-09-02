@@ -22,8 +22,31 @@ class SettingsTrainAiFragment : Fragment() {
         )
         val switchTrainAi = view.findViewById<SwitchCompat>(R.id.switch_train_ai)
         switchTrainAi.isChecked = prefs.getBoolean("help_train_ai", false)
+        var isProgrammaticChange = false
+
         switchTrainAi.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("help_train_ai", isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"Help Train AI\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        prefs.edit().putBoolean("help_train_ai", false).apply()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchTrainAi.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchTrainAi.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean("help_train_ai", true).apply()
+            }
         }
 
         return view

@@ -354,11 +354,11 @@ class KuwagoVpnService : VpnService() {
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_BLOCK)
             .setSmallIcon(R.drawable.ic_block)
-            .setContentTitle("🛡️ Connection Blocked")
+            .setContentTitle("🛑 Connection Blocked")
             .setContentText("Kuwago blocked $hostname — previously identified as $riskTypeLabel")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Kuwago blocked a connection to $hostname because this site was previously identified as a $riskTypeLabel destination. Tap to learn more.")
+                    .bigText("🛑 Kuwago blocked a connection to $hostname because this site was previously identified as a $riskTypeLabel destination. Tap to learn more.")
             )
             .setContentIntent(pi)
             .setAutoCancel(true)

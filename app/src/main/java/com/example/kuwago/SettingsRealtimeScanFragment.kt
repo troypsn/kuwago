@@ -17,14 +17,36 @@ class SettingsRealtimeScanFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        // Wire the toggle to the shared preference
         val prefs = requireContext().getSharedPreferences(
             SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE
         )
         val switchInstant = view.findViewById<SwitchCompat>(R.id.switch_realtime_scan)
         switchInstant.isChecked = prefs.getBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false)
+        var isProgrammaticChange = false
+
         switchInstant.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"Real-time Scanning\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false).apply()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchInstant.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchInstant.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, true).apply()
+            }
         }
 
         return view

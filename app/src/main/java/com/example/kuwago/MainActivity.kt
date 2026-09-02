@@ -349,11 +349,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchFragment(fragment: Fragment, tag: String) {
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fragment_enter,
+                R.anim.fragment_exit,
+                R.anim.fragment_pop_enter,
+                R.anim.fragment_pop_exit
+            )
             .replace(R.id.fragment_container, fragment, tag)
             .commit()
     }
 
-    /** Called by ScanFragment after a scan completes to jump to the History tab. */
+    /** Called by ScanFragment and HomeFragment after scan/view-all to jump to the History tab. */
     fun navigateToHistory() {
         switchFragment(HistoryFragment(), "history")
         updateNavUI("history")

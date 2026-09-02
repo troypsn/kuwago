@@ -37,11 +37,15 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val ctx = context ?: return
-        DetectionRepository.loadIfNeeded(ctx)
+        context?.let { DetectionRepository.loadIfNeeded(it) }
+
+        // "View All" link navigates to History tab
+        view.findViewById<TextView>(R.id.tv_view_all)?.setOnClickListener {
+            (activity as? MainActivity)?.navigateToHistory()
+        }
 
         // Observe Home Page statistics directly from the encrypted local Room database
-        SmsLocalRepository.getHomeStatsLiveData(ctx).observe(viewLifecycleOwner) { stats ->
+        SmsLocalRepository.getHomeStatsLiveData(requireContext()).observe(viewLifecycleOwner) { stats ->
             if (stats != null) {
                 tvSmsReceivedCount.text = stats.totalReceived.toString()
                 tvSmsScannedCount.text = stats.totalScanned.toString()

@@ -22,8 +22,31 @@ class SettingsUrlScanFragment : Fragment() {
         )
         val switchUrlScan = view.findViewById<SwitchCompat>(R.id.switch_url_scan)
         switchUrlScan.isChecked = prefs.getBoolean("url_scan", true)
+        var isProgrammaticChange = false
+
         switchUrlScan.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("url_scan", isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"URL Scan\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        prefs.edit().putBoolean("url_scan", false).apply()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchUrlScan.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchUrlScan.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
+            } else {
+                prefs.edit().putBoolean("url_scan", true).apply()
+            }
         }
 
         return view

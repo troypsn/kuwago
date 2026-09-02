@@ -22,6 +22,8 @@ data class DetectionResult(
     val explanation: String? = null,
     val localVerdict: String? = null,
     val ensembleFormula: String? = null,
+    val urlTotalWeight: Float? = null,
+    val urlContributions: List<String>? = null,
 
     // Local Model Scores
     val rfProb: Float = 0f,

@@ -73,13 +73,31 @@ class SettingsVpnShieldFragment : Fragment() {
         val isActive = isVpnCurrentlyActive()
         switchVpnShield.isChecked = isActive
         updateStatusText(isActive)
+        var isProgrammaticChange = false
 
         switchVpnShield.setOnCheckedChangeListener { _, isChecked ->
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (isChecked) {
                 requestVpnPermission()
             } else {
-                stopVpnService()
-                updateStatusText(false)
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setMessage("Are you sure you want to turn off \"URL Shield\"?")
+                    .setPositiveButton("Turn Off") { _, _ ->
+                        stopVpnService()
+                        updateStatusText(false)
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        isProgrammaticChange = true
+                        switchVpnShield.isChecked = true
+                        isProgrammaticChange = false
+                        dialog.dismiss()
+                    }
+                    .setOnCancelListener {
+                        isProgrammaticChange = true
+                        switchVpnShield.isChecked = true
+                        isProgrammaticChange = false
+                    }
+                    .show()
             }
         }
     }

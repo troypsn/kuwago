@@ -59,15 +59,34 @@
             app:trackTint="@color/text_secondary" />
     </LinearLayout>
 
-    <TextView
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:layout_marginBottom="12dp"
-        android:fontFamily="sans-serif-black"
-        android:text="@string/detections_history_title"
-        android:textColor="@color/text_primary"
-        android:textSize="14sp" />
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/detections_history_title"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/btn_refresh_history"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_history"
+            android:contentDescription="Refresh history"
+            app:tint="@color/text_secondary" />
+    </RelativeLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
