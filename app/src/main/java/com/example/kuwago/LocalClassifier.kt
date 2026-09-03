@@ -17,8 +17,8 @@ object LocalClassifier {
 
     // Constants for model dimensions
     private const val TFIDF_FEATURES_COUNT = 1500
-    private const val NUMERICAL_FEATURES_COUNT = 19
-    private const val TOTAL_FEATURES_COUNT = 1519
+    private const val NUMERICAL_FEATURES_COUNT = 21
+    private const val TOTAL_FEATURES_COUNT = 1521
 
     // Default configuration weights (can be updated dynamically or loaded from JSON)
     var rfWeight = 0.75f
@@ -102,7 +102,7 @@ object LocalClassifier {
             tfidfSession = env?.createSession(readAsset(context, "tfidf.onnx"))
             scalerSession = env?.createSession(readAsset(context, "scaler.onnx"))
             rfSession = env?.createSession(readAsset(context, "rf_model.onnx"))
-            xgbSession = env?.createSession(readAsset(context, "xgboost_model.onnx"))
+            xgbSession = env?.createSession(readAsset(context, "xgb_model.onnx"))
         } catch (e: Throwable) {
             e.printStackTrace()
         }
@@ -178,6 +178,8 @@ object LocalClassifier {
         var hasIp = 0.0f
         var pathDepth = 0.0f
         var urlSpecialChars = 0.0f
+        var hasSuspiciousTld = 0.0f
+        var hasDeceptive = 0.0f
 
         if (urls.isNotEmpty()) {
             val url = urls[0].lowercase()
@@ -193,6 +195,15 @@ object LocalClassifier {
             val path = url.replace(domainMatch?.value ?: "", "")
             pathDepth = path.split("/").filter { it.isNotEmpty() }.size.toFloat()
             urlSpecialChars = url.count { it in "-_~%@" }.toFloat()
+
+            val suspiciousTlds = listOf(".cc", ".xyz", ".top", ".icu")
+            hasSuspiciousTld = if (suspiciousTlds.any { domain.endsWith(it) }) 1.0f else 0.0f
+
+            val domainParts = domain.split(".")
+            if (domainParts.size > 2) {
+                val subLevels = domainParts.dropLast(2)
+                hasDeceptive = if (subLevels.any { it == "gov" || it == "com" || it == "edu" }) 1.0f else 0.0f
+            }
         }
 
         val charCount = text.length.toFloat()
@@ -216,7 +227,7 @@ object LocalClassifier {
         val hasPhUrgency = if (PH_URGENCY.any { textLower.contains(it) }) 1.0f else 0.0f
 
         return floatArrayOf(
-            urlPresent, urlCount, hasShortener, hasHttps, domainLength, subdomainCount, hasIp, pathDepth, urlSpecialChars,
+            urlPresent, urlCount, hasShortener, hasHttps, domainLength, subdomainCount, hasIp, pathDepth, urlSpecialChars, hasSuspiciousTld, hasDeceptive,
             charCount, wordCount, punctCount, digitDensity, upperRatio,
             hasCta, ctaCount,
             hasPhBank, hasPhTelco, hasPhUrgency
@@ -254,7 +265,7 @@ object LocalClassifier {
             isScanning = false
         )
 
-        // 1. Scale numerical features (19 dimensions)
+        // 1. Scale numerical features (21 dimensions)
         val scalerInputTensor = OnnxTensor.createTensor(
             envLocal,
             FloatBuffer.wrap(rawNum),
@@ -300,12 +311,12 @@ object LocalClassifier {
             arr
         }
 
-        // 3. Concatenate (1500 text features + 19 numerical features = 1519)
+        // 3. Concatenate (1500 text features + 21 numerical features = 1521)
         val combinedInput = FloatArray(TOTAL_FEATURES_COUNT)
         System.arraycopy(textTfidf, 0, combinedInput, 0, TFIDF_FEATURES_COUNT)
         System.arraycopy(scaledNum, 0, combinedInput, TFIDF_FEATURES_COUNT, NUMERICAL_FEATURES_COUNT)
 
-        // 4. Run Classifier inference (1519 dimensions)
+        // 4. Run Classifier inference (1521 dimensions)
         val combinedInputTensor = OnnxTensor.createTensor(
             envLocal,
             FloatBuffer.wrap(combinedInput),
@@ -316,10 +327,8 @@ object LocalClassifier {
         var xgbProb = 0.0f
 
         combinedInputTensor.use { tensor ->
-            val inputs = mapOf("float_input" to tensor)
-            
-            // Random Forest
-            val rfResult = rfSession?.run(inputs)
+            // Random Forest expects input named "features"
+            val rfResult = rfSession?.run(mapOf("features" to tensor))
             if (rfResult != null) {
                 try {
                     val probValue = rfResult.get(1)
@@ -334,8 +343,8 @@ object LocalClassifier {
                 }
             }
 
-            // XGBoost
-            val xgbResult = xgbSession?.run(inputs)
+            // XGBoost expects input named "features"
+            val xgbResult = xgbSession?.run(mapOf("features" to tensor))
             if (xgbResult != null) {
                 try {
                     val probValue = xgbResult.get(1)
