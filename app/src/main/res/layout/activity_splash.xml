@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/splash_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <!-- Black Kuwago owl logo (145x64 aspect ratio, +15% size) -->
+    <ImageView
+        android:id="@+id/logo_black"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="276dp"
+        android:maxHeight="122dp"
+        android:adjustViewBounds="true"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:scaleType="fitCenter"
+        android:src="@drawable/kuwago_logo_black" />
+
+    <!-- Final Kuwago branding text with hat logo (1470x611 aspect ratio, +15% size) -->
+    <ImageView
+        android:id="@+id/logo_text_hat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="345dp"
+        android:maxHeight="144dp"
+        android:adjustViewBounds="true"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:scaleType="fitCenter"
+        android:src="@drawable/kuwago_text_hat" />
+
+</FrameLayout>
