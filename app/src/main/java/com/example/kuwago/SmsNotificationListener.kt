@@ -70,19 +70,22 @@ class SmsNotificationListener : NotificationListenerService() {
         val scanOtherApps = prefs.getBoolean(SettingsFragment.KEY_SCAN_OTHER_APPS, true)
         val scanInstantly = prefs.getBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false)
 
-        // --- App-filter logic (unchanged) ---
+        // --- Per-App Selection & Filter logic ---
+        val hasCustomSettings = prefs.contains(SettingsFragment.KEY_ENABLED_APP_PACKAGES)
+        val enabledApps = prefs.getStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, emptySet()) ?: emptySet()
+
         val isNativeSms = packageName.contains("message", ignoreCase = true) ||
                 packageName.contains("sms", ignoreCase = true) ||
                 packageName.contains("mms", ignoreCase = true) ||
                 packageName.contains("telephony", ignoreCase = true)
 
-        val isOtherMessagingApp = !isNativeSms && (
-                packageName.contains("chat", ignoreCase = true) ||
-                notification.category == Notification.CATEGORY_MESSAGE
-        )
+        val isAllowedApp = if (hasCustomSettings) {
+            enabledApps.contains(packageName) || (isNativeSms && enabledApps.isEmpty())
+        } else {
+            isNativeSms || SettingsAppSelectionFragment.DEFAULT_MESSAGING_PACKAGES.contains(packageName) || notification.category == Notification.CATEGORY_MESSAGE
+        }
 
-        if (!isNativeSms && !isOtherMessagingApp) return
-        if (!scanOtherApps && isOtherMessagingApp) return
+        if (!isAllowedApp) return
 
         // --- Extract sender + text (unchanged logic) ---
         var extractedSender = "Unknown"
