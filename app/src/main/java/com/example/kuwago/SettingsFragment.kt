@@ -13,6 +13,7 @@ class SettingsFragment : Fragment() {
     companion object {
         const val PREFS_NAME = "kuwago_settings"
         const val KEY_SCAN_OTHER_APPS  = "scan_other_messaging_apps"
+        const val KEY_ENABLED_APP_PACKAGES = "enabled_scanned_app_packages"
         const val KEY_SCAN_INSTANTLY   = "scan_incoming_instantly"
         const val KEY_VPN_SHIELD_ENABLED = "vpn_shield_enabled"
 
@@ -68,6 +69,7 @@ class SettingsFragment : Fragment() {
             openSubPage(SettingsAppVersionFragment())
         }
 
+<<<<<<< Updated upstream
         // Scan Other Messaging Apps toggle
         val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val switchScanOtherApps = view.findViewById<SwitchCompat>(R.id.switch_scan_other_apps)
@@ -97,6 +99,10 @@ class SettingsFragment : Fragment() {
             } else {
                 prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, true).apply()
             }
+=======
+        view.findViewById<View>(R.id.settings_row_scan_other_apps).setOnClickListener {
+            openSubPage(SettingsAppSelectionFragment())
+>>>>>>> Stashed changes
         }
     }
 

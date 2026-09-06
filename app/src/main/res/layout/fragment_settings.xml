@@ -139,17 +139,17 @@
                     android:background="@color/divider_gray"
                     android:layout_marginStart="64dp" />
 
-                <!-- Scan Other Messaging Apps (inline toggle) -->
+                <!-- Scan Other Messaging Apps (Sub-page link) -->
                 <LinearLayout
                     android:id="@+id/settings_row_scan_other_apps"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="14dp"
-                    android:paddingBottom="14dp">
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <ImageView
                         android:layout_width="36dp"
@@ -183,11 +183,12 @@
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switch_scan_other_apps"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp" />
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_chevron_right"
+                        android:alpha="0.5"
+                        android:contentDescription="open" />
                 </LinearLayout>
 
             </LinearLayout>

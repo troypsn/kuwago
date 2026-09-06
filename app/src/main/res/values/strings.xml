@@ -80,7 +80,18 @@
 
     <!-- Scan Other Messaging Apps -->
     <string name="settings_scan_other_apps_title">Scan Other Messaging Apps</string>
-    <string name="settings_scan_other_apps_desc">Also scan messages from WhatsApp, Telegram, and other messaging apps</string>
+    <string name="settings_scan_other_apps_desc">Choose specific apps (WhatsApp, Messenger, Gmail, etc.) to scan for threats</string>
+
+    <!-- App Selection Screen -->
+    <string name="settings_app_selection_title">App Notification Protection</string>
+    <string name="settings_app_selection_desc">Select individual apps to monitor and scan incoming notifications for smishing &amp; phishing threats.</string>
+    <string name="search_apps_hint">Search installed apps…</string>
+    <string name="select_all_apps">Select All</string>
+    <string name="deselect_all_apps">Deselect All</string>
+    <string name="show_other_apps">Show other apps</string>
+    <string name="hide_other_apps">Hide other apps</string>
+    <string name="no_apps_found">No matching applications found</string>
+    <string name="apps_scanned_count">%1$d of %2$d apps enabled</string>
 
     <!-- Auto-blacklist -->
     <string name="settings_auto_blacklist_title">Auto-blacklist</string>
