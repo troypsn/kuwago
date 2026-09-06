@@ -55,8 +55,6 @@ class MainActivity : AppCompatActivity() {
     private var currentTab = "home"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
