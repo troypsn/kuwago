@@ -373,15 +373,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    companion object {
+        private val TAB_ORDER = listOf("home", "history", "scan", "blacklist", "settings")
+    }
+
     private fun switchFragment(fragment: Fragment, tag: String) {
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                R.anim.fragment_enter,
-                R.anim.fragment_exit,
-                R.anim.fragment_pop_enter,
-                R.anim.fragment_pop_exit
-            )
-            .replace(R.id.fragment_container, fragment, tag)
+        val prevIndex = TAB_ORDER.indexOf(currentTab)
+        val newIndex = TAB_ORDER.indexOf(tag)
+
+        val transaction = supportFragmentManager.beginTransaction()
+
+        if (prevIndex != -1 && newIndex != -1 && prevIndex != newIndex) {
+            if (newIndex > prevIndex) {
+                // Navigating rightwards on bottom nav: slide screen to the left
+                transaction.setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left
+                )
+            } else {
+                // Navigating leftwards on bottom nav: slide screen to the right
+                transaction.setCustomAnimations(
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+            }
+        }
+
+        transaction.replace(R.id.fragment_container, fragment, tag)
             .commit()
     }
 

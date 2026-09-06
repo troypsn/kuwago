@@ -69,40 +69,8 @@ class SettingsFragment : Fragment() {
             openSubPage(SettingsAppVersionFragment())
         }
 
-<<<<<<< Updated upstream
-        // Scan Other Messaging Apps toggle
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val switchScanOtherApps = view.findViewById<SwitchCompat>(R.id.switch_scan_other_apps)
-        switchScanOtherApps.isChecked = prefs.getBoolean(KEY_SCAN_OTHER_APPS, true)
-        var isProgrammaticChange = false
-
-        switchScanOtherApps.setOnCheckedChangeListener { _, isChecked ->
-            if (isProgrammaticChange) return@setOnCheckedChangeListener
-            if (!isChecked) {
-                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"Scan Other Messaging Apps\"?")
-                    .setPositiveButton("Turn Off") { _, _ ->
-                        prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, false).apply()
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
-                        isProgrammaticChange = true
-                        switchScanOtherApps.isChecked = true
-                        isProgrammaticChange = false
-                        dialog.dismiss()
-                    }
-                    .setOnCancelListener {
-                        isProgrammaticChange = true
-                        switchScanOtherApps.isChecked = true
-                        isProgrammaticChange = false
-                    }
-                    .show()
-            } else {
-                prefs.edit().putBoolean(KEY_SCAN_OTHER_APPS, true).apply()
-            }
-=======
         view.findViewById<View>(R.id.settings_row_scan_other_apps).setOnClickListener {
             openSubPage(SettingsAppSelectionFragment())
->>>>>>> Stashed changes
         }
     }
 
