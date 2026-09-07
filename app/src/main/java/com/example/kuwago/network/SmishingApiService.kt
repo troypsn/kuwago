@@ -31,6 +31,8 @@ data class UrlAnalysis(
 
 data class SmsScanResponse(
     @SerializedName("message") val message: String = "",
+    @SerializedName("overall_verdict") val overallVerdict: String? = null,
+    @SerializedName("overall_explanation") val overallExplanation: String? = null,
     @SerializedName("cnn_analysis") val cnnAnalysis: CnnAnalysis? = null,
     @SerializedName("url_analysis") val urlAnalysis: UrlAnalysis? = null
 )

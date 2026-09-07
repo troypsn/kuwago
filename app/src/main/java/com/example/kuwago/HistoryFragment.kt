@@ -393,7 +393,7 @@ class SmsHistoryAdapter(
             holder.statusBadge.visibility = View.VISIBLE
 
             // Classification badge text + color
-            val classificationName = item.classification.name.lowercase().replaceFirstChar { it.uppercase() }
+            val classificationName = item.getClassificationLabel()
             holder.statusBadge.text = classificationName
             val (bgColor, textColor) = when (item.classification) {
                 Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_stroke)

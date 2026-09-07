@@ -133,10 +133,10 @@ object SmishingDetector {
                 val response = RetrofitClient.instance.scanSms(request)
                 Log.i("SmishingDetector", "API response received successfully")
                 
-                val cnn = response.cnnAnalysis ?: CnnAnalysis(0f, "benign")
+                val hasCnnData = response.cnnAnalysis != null
+                val cnnScore = response.cnnAnalysis?.score
+                val cnnVerdict = response.cnnAnalysis?.verdict
                 val url = response.urlAnalysis ?: UrlAnalysis(false, null, null, null, null, null, emptyList())
-
-                val cnnScore = cnn.score
                 val urlScore = url.score ?: 0f
                 val localScore = localResult.probability
                 val containsUrl = hasUrl || url.hasUrl
@@ -152,14 +152,26 @@ object SmishingDetector {
                     Log.i("SmishingDetector", "Updated URL cache: $normalizedHost → $freshReputation")
                 }
 
-                val (finalProb, formulaStr) = if (containsUrl) {
-                    val score = (0.50f * cnnScore) + (0.25f * urlScore) + (0.25f * localScore)
-                    val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
-                    Pair(score, formula)
+                val (finalProb, formulaStr) = if (hasCnnData && cnnScore != null) {
+                    if (containsUrl && url.score != null) {
+                        val score = (0.50f * cnnScore) + (0.25f * url.score!!) + (0.25f * localScore)
+                        val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
+                        Pair(score, formula)
+                    } else {
+                        val score = (2.0f / 3.0f * cnnScore) + (1.0f / 3.0f * localScore)
+                        val formula = if (containsUrl) "Weighted Ensemble: 66.7% CNN + 33.3% Local (URL scan pending)" else "Weighted Ensemble: 66.7% CNN + 33.3% Local"
+                        Pair(score, formula)
+                    }
                 } else {
-                    val score = (0.50f * cnnScore) + (0.50f * localScore)
-                    val formula = "Weighted Ensemble: 50% CNN + 50% Local"
-                    Pair(score, formula)
+                    if (containsUrl && url.score != null) {
+                        val score = (0.50f * url.score!!) + (0.50f * localScore)
+                        val formula = "Weighted Ensemble: 50% URL + 50% Local"
+                        Pair(score, formula)
+                    } else {
+                        val score = localScore
+                        val formula = if (containsUrl) "Local ML Model (75% RF + 25% XGB, URL scan pending)" else "Local ML Model (75% RF + 25% XGB)"
+                        Pair(score, formula)
+                    }
                 }
 
                 val classification = when {
@@ -170,6 +182,23 @@ object SmishingDetector {
 
                 Log.i("SmishingDetector", "Final classification complete: verdict=$classification, prob=$finalProb")
 
+                var explanationText = response.overallExplanation ?: when {
+                    url.verdict?.lowercase() == "malicious" || (url.score ?: 0f) >= 0.5f ->
+                        "This message contains a web link (${url.extractedUrl ?: extractedUrl ?: "unverified URL"}) that was flagged as malicious by security threat intelligence."
+                    url.score == null && containsUrl ->
+                        "This message contains a web link (${url.extractedUrl ?: extractedUrl ?: "web link"}), but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                    classification == Classification.SMISHING ->
+                        "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
+                    classification == Classification.SUSPICIOUS ->
+                        "This message exhibits characteristics of unsolicited or promotional SMS content. Exercise caution before opening links or replying."
+                    else ->
+                        "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
+                }
+
+                if (containsUrl && url.score == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
+                    explanationText += " Exercise caution: this message contains a web link (${url.extractedUrl ?: extractedUrl ?: "web link"}) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+                }
+
                 val finalResult = DetectionResult(
                     sender = sender,
                     message = message,
@@ -177,12 +206,13 @@ object SmishingDetector {
                     probability = finalProb,
                     isScanning = false,
                     cnnScore = cnnScore,
-                    cnnVerdict = cnn.verdict,
+                    cnnVerdict = cnnVerdict,
                     urlFound = containsUrl,
                     extractedUrl = url.extractedUrl ?: extractedUrl,
                     urlScore = url.score,
                     urlVerdict = url.verdict,
                     explanation = url.explanation,
+                    overallExplanation = explanationText,
                     urlTotalWeight = url.totalWeight,
                     urlContributions = url.contributions,
                     localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
@@ -208,9 +238,11 @@ object SmishingDetector {
         } catch (e: Exception) {
             Log.e("SmishingDetector", "CNN-BiGRU API request failed: ${e.javaClass.simpleName}")
             val localOnly = LocalClassifier.classify(context, message)
+            val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, localOnly.classification)
             localOnly.copy(
                 sender = sender,
                 message = message,
+                overallExplanation = fallbackExplanation,
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,

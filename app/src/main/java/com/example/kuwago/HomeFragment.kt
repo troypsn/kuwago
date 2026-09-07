@@ -86,7 +86,7 @@ class HomeFragment : Fragment() {
                 progressBar.visibility = View.GONE
                 itemView.isClickable = true
 
-                val classificationName = result.classification.name.lowercase().replaceFirstChar { it.uppercase() }
+                val classificationName = result.getClassificationLabel()
                 statusBadge.text = classificationName
 
                 val (bgColor, textColor) = when (result.classification) {

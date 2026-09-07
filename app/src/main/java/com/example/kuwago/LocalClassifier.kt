@@ -368,17 +368,75 @@ object LocalClassifier {
             else -> Classification.SAFE
         }
 
+        val explanation = generateHumanReadableExplanation(message, classification)
+
         return DetectionResult(
             sender = "Unknown",
             message = message,
             classification = classification,
             probability = localProb,
             isScanning = false,
+            overallExplanation = explanation,
             rfProb = rfProb,
             rfRawLogit = rfRawLogit,
             xgbProb = xgbProb,
             cnnProb = null
         )
+    }
+
+    fun generateHumanReadableExplanation(message: String, classification: Classification): String {
+        val textLower = message.lowercase()
+        val extractedUrl = extractUrl(message)
+        val hasCta = CTA_PHRASES.any { textLower.contains(it) }
+        val hasBank = PH_BANKS.any { textLower.contains(it) }
+        val hasTelco = PH_TELCOS.any { textLower.contains(it) }
+        val hasUrgency = PH_URGENCY.any { textLower.contains(it) }
+
+        val detectedTriggers = mutableListOf<String>()
+
+        if (!extractedUrl.isNullOrBlank()) {
+            detectedTriggers.add("an unverified web link ($extractedUrl)")
+        }
+        if (hasUrgency) {
+            detectedTriggers.add("high-pressure urgency phrasing or reward claims")
+        }
+        if (hasBank) {
+            detectedTriggers.add("references to financial institutions or e-wallet services")
+        }
+        if (hasTelco) {
+            detectedTriggers.add("telecom carrier promo/account references")
+        }
+        if (hasCta) {
+            detectedTriggers.add("action-oriented prompt keywords (e.g. click, verify, claim)")
+        }
+
+        val baseExplanation = when (classification) {
+            Classification.SMISHING -> {
+                if (detectedTriggers.isNotEmpty()) {
+                    "Local AI models flagged this message as Harmful because it contains " +
+                            detectedTriggers.joinToString(", ") + "."
+                } else {
+                    "Local AI models flagged this message as Harmful due to detected scam patterns in text structure and vocabulary."
+                }
+            }
+            Classification.SUSPICIOUS -> {
+                if (detectedTriggers.isNotEmpty()) {
+                    "Local AI models flagged this message as Suspicious because it contains " +
+                            detectedTriggers.joinToString(", ") + "."
+                } else {
+                    "Local AI models flagged this message as Suspicious due to promotional or unsolicited text characteristics."
+                }
+            }
+            Classification.SAFE -> {
+                "No suspicious patterns, urgency triggers, or malicious links were detected in this message by local AI models."
+            }
+        }
+
+        return if (!extractedUrl.isNullOrBlank()) {
+            "$baseExplanation Exercise caution: this message contains a web link ($extractedUrl) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+        } else {
+            baseExplanation
+        }
     }
 
     fun formatDetailsExplanation(result: DetectionResult): String {
@@ -396,7 +454,7 @@ object LocalClassifier {
         val urlScoreStr = if (result.urlScore != null) String.format(java.util.Locale.US, "%.1f%%", result.urlScore * 100) else "N/A"
         val urlVerdictStr = result.urlVerdict ?: "N/A"
 
-        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble (50% CNN + 25% URL + 25% Local)" else "Ensemble (50% CNN + 50% Local)"
+        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble (50% CNN + 25% URL + 25% Local)" else "Ensemble (66.7% CNN + 33.3% Local)"
 
         return if (hasUrl) {
             "Ensemble Calculation Breakdown:\n" +

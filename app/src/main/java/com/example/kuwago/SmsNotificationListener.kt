@@ -420,12 +420,12 @@ class SmsNotificationListener : NotificationListenerService() {
         val (title, body, icon) = when (classification) {
             Classification.SUSPICIOUS -> Triple(
                 getString(R.string.notif_result_suspicious_title),
-                getString(R.string.notif_result_suspicious_text, sender, confidencePct),
+                getString(R.string.notif_result_suspicious_text, sender),
                 R.drawable.ic_warning_triangle
             )
             Classification.SMISHING -> Triple(
                 getString(R.string.notif_result_smishing_title),
-                getString(R.string.notif_result_smishing_text, sender, confidencePct),
+                getString(R.string.notif_result_smishing_text, sender),
                 R.drawable.ic_block
             )
             else -> return

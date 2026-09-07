@@ -9,7 +9,7 @@
     <string name="suspicious_count">0</string>
     <string name="suspicious_label">Suspicious</string>
     <string name="smishing_count">0</string>
-    <string name="smishing_label">Smishing</string>
+    <string name="smishing_label">Harmful</string>
     <string name="scan_sms_label">Scan SMS</string>
     <string name="deep_analysis_label">Deep Analysis</string>
     <string name="blacklisted_label">Blacklisted</string>
@@ -189,9 +189,9 @@
     <string name="notif_result_safe_title">Message verified safe ✓</string>
     <string name="notif_result_safe_text">Message from %1$s passed Kuwago\'s scan.</string>
     <string name="notif_result_suspicious_title">⚠️ Suspicious message intercepted</string>
-    <string name="notif_result_suspicious_text">Message from %1$s — %2$s confidence it is a threat. We flagged this for your safety.</string>
-    <string name="notif_result_smishing_title">🛑 Smishing threat blocked</string>
-    <string name="notif_result_smishing_text">🛑 Message from %1$s has been blocked (%2$s confidence). We blocked this to protect you.</string>
+    <string name="notif_result_suspicious_text">⚠️ Message from %1$s was flagged as Suspicious. Exercise caution.</string>
+    <string name="notif_result_smishing_title">🛑 Harmful SMS Detected</string>
+    <string name="notif_result_smishing_text">🛑 Message from %1$s was flagged as Harmful. We blocked this to protect you.</string>
 
     <!-- Scan Instantly Setting -->
     <string name="settings_scan_instantly_title">Scan Incoming Messages Instantly</string>

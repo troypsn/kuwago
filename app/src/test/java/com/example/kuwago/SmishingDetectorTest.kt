@@ -167,6 +167,27 @@ class SmishingDetectorTest {
     }
 
     @Test
+    fun urlWithoutScanResultShouldIncludeCautionWarning() {
+        val testMessage = "Check out this website at http://example-unverified-site.com"
+        val result = LocalClassifier.classify(null, testMessage)
+        val explanation = result.overallExplanation ?: ""
+        
+        println("\n[URL Pending Scan Test] Explanation: \"$explanation\"")
+        assertTrue("Explanation should mention web link", explanation.contains("web link", ignoreCase = true))
+        assertTrue("Explanation should contain caution warning", explanation.contains("safety cannot be guaranteed", ignoreCase = true))
+    }
+
+    @Test
+    fun pendingUrlScanShouldNotDistortEnsembleDecision() {
+        val testMessage = "Please visit http://pending-scan-test.com to proceed"
+        val result = LocalClassifier.classify(null, testMessage)
+        
+        // Ensure local classifier probability equals local prob when urlScore is null
+        assertEquals(result.probability, result.probability, 0.0001f)
+        assertNull("urlScore should be null before online URL scan", result.urlScore)
+    }
+
+    @Test
     fun printFullSummary() {
         println("\n╔══════════════════════════════════════════╗")
         println("║     KUWAGO SMISHING DETECTOR TEST        ║")

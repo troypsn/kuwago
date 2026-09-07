@@ -75,11 +75,16 @@ object SmsLocalRepository {
         }
 
         // 2. Build AnalysisResultEntity
+        val mlScore = if (result.rfProb > 0f || result.xgbProb > 0f) {
+            0.75f * result.rfProb + 0.25f * result.xgbProb
+        } else {
+            result.probability
+        }
         val analysisEntity = AnalysisResultEntity(
             analysisId = UUID.randomUUID().toString(),
             smsId = result.id,
             mlPrediction = result.localVerdict ?: result.classification.name,
-            mlConfidence = result.rfProb,
+            mlConfidence = mlScore,
             dlPrediction = result.cnnVerdict,
             dlConfidence = result.cnnScore ?: result.cnnProb
         )
@@ -180,12 +185,14 @@ object SmsLocalRepository {
                     } ?: Classification.SAFE
 
                     val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
+                    val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
+                    val firstUrl = urls.firstOrNull()?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val hasDlRun = analysis?.dlConfidence != null
                     val isMalicious = urls.firstOrNull()?.isMalicious == 1
-                    val firstUrl = urls.firstOrNull()?.extractedUrl
-                    val urlScore = if (urls.isNotEmpty()) (if (isMalicious) 1.0f else 0.0f) else null
-                    val urlVerdict = if (urls.isNotEmpty()) (if (isMalicious) "malicious" else "clean") else null
+                    val urlScore = if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
+                    val urlVerdict = if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
 
-                    DetectionResult(
+                    val rawResult = DetectionResult(
                         id = sms.smsId,
                         sender = sms.senderNumber,
                         message = sms.messageContent,
@@ -195,14 +202,15 @@ object SmsLocalRepository {
                         timestamp = sms.receivedTimestamp,
                         cnnScore = analysis?.dlConfidence,
                         cnnVerdict = analysis?.dlPrediction,
-                        urlFound = urls.isNotEmpty(),
+                        urlFound = hasUrl,
                         extractedUrl = firstUrl,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
-                        explanation = if (isMalicious) "Flagged as malicious by local URL reputation database." else null,
                         localVerdict = analysis?.mlPrediction,
-                        rfProb = analysis?.mlConfidence ?: 0f
+                        rfProb = analysis?.mlConfidence ?: 0f,
+                        xgbProb = analysis?.mlConfidence ?: 0f
                     )
+                    rawResult.copy(probability = rawResult.calculateEnsembleScore())
                 }
                 withContext(Dispatchers.Main) {
                     resultMediator.value = detectionResults.filter { !it.id.startsWith("synced_") && it.sender != "Kuwago Database" }

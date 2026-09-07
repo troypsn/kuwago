@@ -20,6 +20,7 @@ data class DetectionResult(
     val urlScore: Float? = null,
     val urlVerdict: String? = null,
     val explanation: String? = null,
+    val overallExplanation: String? = null,
     val localVerdict: String? = null,
     val ensembleFormula: String? = null,
     val urlTotalWeight: Float? = null,
@@ -30,7 +31,37 @@ data class DetectionResult(
     val rfRawLogit: Float = 0f,
     val xgbProb: Float = 0f,
     val cnnProb: Float? = null
-) : Serializable
+) : Serializable {
+    fun getClassificationLabel(): String {
+        return when (classification) {
+            Classification.SMISHING -> "Harmful"
+            Classification.SUSPICIOUS -> "Suspicious"
+            Classification.SAFE -> "Safe"
+        }
+    }
+
+    fun getClassificationBadgeText(): String {
+        return when (classification) {
+            Classification.SMISHING -> "HARMFUL"
+            Classification.SUSPICIOUS -> "SUSPICIOUS"
+            Classification.SAFE -> "SAFE"
+        }
+    }
+
+    fun calculateEnsembleScore(): Float {
+        val mlScore = if (rfProb > 0f || xgbProb > 0f) 0.75f * rfProb + 0.25f * xgbProb else probability
+        val dlScore = cnnScore ?: cnnProb
+        val hasDl = dlScore != null
+        val hasUrl = urlFound && urlScore != null
+
+        return when {
+            hasDl && hasUrl -> (0.50f * dlScore!!) + (0.25f * urlScore!!) + (0.25f * mlScore)
+            hasDl -> (2.0f / 3.0f * dlScore!!) + (1.0f / 3.0f * mlScore)
+            hasUrl -> (0.50f * urlScore!!) + (0.50f * mlScore)
+            else -> mlScore
+        }
+    }
+}
 
 enum class Classification : Serializable {
     SAFE,

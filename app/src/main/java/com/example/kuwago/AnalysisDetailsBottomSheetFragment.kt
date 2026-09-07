@@ -159,13 +159,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvUrlSummaryVerdict = view.findViewById<TextView>(R.id.tv_url_summary_verdict)
         val tvScannedDate = view.findViewById<TextView>(R.id.tv_scanned_date)
 
+        val tvReasoningExplanation = view.findViewById<TextView>(R.id.tv_overall_reasoning_explanation)
+        val ivReasoningIcon = view.findViewById<ImageView>(R.id.iv_reasoning_icon)
+
         if (result.isScanning) {
             tvRiskBadge.text = "⏳ Scanning…"
             tvRiskBadge.setTextColor(Color.parseColor("#FFF07048"))
             tvClassificationTitle.text = "Scanning in Progress…"
-            tvTotalPercentage.text = "…"
-            tvTotalPercentage.setTextColor(Color.parseColor("#FFF07048"))
-            tvProbabilitySubtitle.text = "evaluating message threat"
+            tvReasoningExplanation?.text = "Evaluating message threat and verifying link reputations..."
+            ivReasoningIcon?.setColorFilter(Color.parseColor("#FFF07048"))
             tvMlSummaryVerdict.text = "Scanning…"
             tvMlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
             tvDlSummaryVerdict.text = "Scanning…"
@@ -173,30 +175,36 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlSummaryVerdict.text = "Scanning…"
             tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
         } else {
-            val percent = (result.probability * 100).toInt()
-            tvTotalPercentage.text = "$percent%"
+            var reasoningText = result.overallExplanation ?: result.explanation ?: when {
+                result.urlFound && result.urlScore == null ->
+                    "This message contains a web link (${result.extractedUrl ?: "web link"}), but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                result.classification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
+                result.classification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
+                result.classification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
+                else -> ""
+            }
+
+            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true) && !reasoningText.contains("unverified web link", ignoreCase = true)) {
+                reasoningText += " Exercise caution: this message contains a web link (${result.extractedUrl ?: "web link"}) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+            }
+
+            tvReasoningExplanation?.text = reasoningText
 
             when (result.classification) {
                 Classification.SMISHING -> {
-                    tvRiskBadge.text = "⚠️ High Risk"
-                    tvRiskBadge.setTextColor(Color.parseColor("#FF4D55"))
-                    tvClassificationTitle.text = "Smishing Detected"
-                    tvTotalPercentage.setTextColor(Color.parseColor("#FF4D55"))
-                    tvProbabilitySubtitle.text = "smishing probability"
+                    tvClassificationTitle.text = "Harmful"
+                    tvClassificationTitle.setTextColor(Color.parseColor("#FF4D55"))
+                    ivReasoningIcon?.setColorFilter(Color.parseColor("#FF4D55"))
                 }
                 Classification.SUSPICIOUS -> {
-                    tvRiskBadge.text = "⚠️ Medium Risk"
-                    tvRiskBadge.setTextColor(Color.parseColor("#FFF07048"))
-                    tvClassificationTitle.text = "Suspicious Message"
-                    tvTotalPercentage.setTextColor(Color.parseColor("#FFF07048"))
-                    tvProbabilitySubtitle.text = "suspicious probability"
+                    tvClassificationTitle.text = "Suspicious"
+                    tvClassificationTitle.setTextColor(Color.parseColor("#FFF07048"))
+                    ivReasoningIcon?.setColorFilter(Color.parseColor("#FFF07048"))
                 }
                 Classification.SAFE -> {
-                    tvRiskBadge.text = "✅ Low Risk"
-                    tvRiskBadge.setTextColor(Color.parseColor("#26CE6B"))
-                    tvClassificationTitle.text = "Safe Message"
-                    tvTotalPercentage.setTextColor(Color.parseColor("#26CE6B"))
-                    tvProbabilitySubtitle.text = "safe message score"
+                    tvClassificationTitle.text = "Safe"
+                    tvClassificationTitle.setTextColor(Color.parseColor("#26CE6B"))
+                    ivReasoningIcon?.setColorFilter(Color.parseColor("#26CE6B"))
                 }
             }
 
@@ -218,10 +226,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
             }
 
-            val urlProb = result.urlScore ?: 0f
             if (result.urlFound) {
-                tvUrlSummaryVerdict.text = if (urlProb >= 0.5f) "Malicious" else "Clean"
-                tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
+                if (result.urlScore != null) {
+                    val urlProb = result.urlScore!!
+                    tvUrlSummaryVerdict.text = if (urlProb >= 0.5f) "Malicious" else "Clean"
+                    tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
+                } else {
+                    tvUrlSummaryVerdict.text = "Pending"
+                    tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                }
             } else {
                 tvUrlSummaryVerdict.text = "No Link"
                 tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
@@ -235,16 +248,16 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun getVerdictText(prob: Float): String {
         return when {
-            prob >= 0.8f -> "Smishing"
-            prob >= 0.5f -> "Suspicious"
+            prob >= LocalClassifier.smishingThreshold -> "Harmful"
+            prob >= LocalClassifier.suspiciousThreshold -> "Suspicious"
             else -> "Safe"
         }
     }
 
     private fun getVerdictColor(prob: Float): Int {
         return when {
-            prob >= 0.8f -> Color.parseColor("#FF4D55")
-            prob >= 0.5f -> Color.parseColor("#FFF07048")
+            prob >= LocalClassifier.smishingThreshold -> Color.parseColor("#FF4D55")
+            prob >= LocalClassifier.suspiciousThreshold -> Color.parseColor("#FFF07048")
             else -> Color.parseColor("#26CE6B")
         }
     }
@@ -409,15 +422,20 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             // Links found
             addMetricRow(container, "Links found", "1 detected", true)
 
-            // Threat score from backend
-            val scoreStr = if (result.urlScore != null) String.format(Locale.US, "%.2f", result.urlScore) else "N/A"
-            val isThreatScore = (result.urlScore ?: 0f) >= 0.5f
-            addMetricRow(container, "Threat score", scoreStr, isThreatScore)
+            if (result.urlScore != null) {
+                // Threat score from backend
+                val scoreStr = String.format(Locale.US, "%.2f", result.urlScore)
+                val isThreatScore = result.urlScore >= 0.5f
+                addMetricRow(container, "Threat score", scoreStr, isThreatScore)
 
-            // Verdict from backend
-            val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: "Unknown"
-            val isMaliciousVerdict = result.urlVerdict?.lowercase()?.let { it == "malicious" || it == "spam" } ?: false
-            addMetricRow(container, "Verdict", verdictStr, isMaliciousVerdict)
+                // Verdict from backend
+                val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: "Clean"
+                val isMaliciousVerdict = result.urlVerdict?.lowercase()?.let { it == "malicious" || it == "spam" } ?: false
+                addMetricRow(container, "Verdict", verdictStr, isMaliciousVerdict)
+            } else {
+                addMetricRow(container, "Threat score", "Pending", false, isOrange = true)
+                addMetricRow(container, "Verdict", "Pending Scan", false, isOrange = true)
+            }
 
             // Total weight from backend
             if (result.urlTotalWeight != null) {
@@ -503,14 +521,36 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
         val hasDl = result.cnnScore != null || result.cnnProb != null
         val dlScore = result.cnnScore ?: result.cnnProb
-        val hasUrl = result.urlScore != null
         val urlScore = result.urlScore
+        val containsUrl = result.urlFound
+        if (containsUrl && urlScore != null) {
+            addBreakdownLine(llCombinedBreakdown, "ML Layer", "25% • " + String.format(Locale.US, "%.2f", mlScore))
+            addBreakdownLine(llCombinedBreakdown, "DL Layer", if (hasDl && dlScore != null) "50% • " + String.format(Locale.US, "%.2f", dlScore) else "50% • Pending Scan")
+            addBreakdownLine(llCombinedBreakdown, "URL Scan", "25% • " + String.format(Locale.US, "%.2f", urlScore))
+        } else if (containsUrl && urlScore == null) {
+            if (hasDl) {
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "33.3% • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "66.7% • " + String.format(Locale.US, "%.2f", dlScore) else "66.7% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • Pending Scan")
+            } else {
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "100% • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", "0% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • Pending Scan")
+            }
+        } else {
+            if (hasDl) {
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "33.3% • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "66.7% • " + String.format(Locale.US, "%.2f", dlScore) else "66.7% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • No Link")
+            } else {
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "100% • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", "0% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • No Link")
+            }
+        }
 
-        addBreakdownLine(llCombinedBreakdown, "ML Layer", "30% • " + String.format(Locale.US, "%.2f", mlScore))
-        addBreakdownLine(llCombinedBreakdown, "DL Layer", if (hasDl && dlScore != null) "40% • " + String.format(Locale.US, "%.2f", dlScore) else "40% • Pending Scan")
-        addBreakdownLine(llCombinedBreakdown, "URL Scan", if (hasUrl && urlScore != null) "30% • " + String.format(Locale.US, "%.2f", urlScore) else "30% • Pending Scan")
-
-        tvEnsembleScoreVal.text = String.format(Locale.US, "%.3f", result.probability)
+        val computedScore = result.calculateEnsembleScore()
+        tvEnsembleScoreVal.text = String.format(Locale.US, "%.3f", computedScore)
     }
 
     private fun addBreakdownLine(container: LinearLayout, label: String, textVal: String) {

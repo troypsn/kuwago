@@ -350,7 +350,7 @@ class KuwagoVpnService : VpnService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val riskTypeLabel = if (classification == Classification.SMISHING) "phishing" else "suspicious"
+        val riskTypeLabel = if (classification == Classification.SMISHING) "harmful" else "suspicious"
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_BLOCK)
             .setSmallIcon(R.drawable.ic_block)
