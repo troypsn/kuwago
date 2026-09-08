@@ -188,10 +188,19 @@ class SmishingDetectorTest {
     }
 
     @Test
+    fun concatenatedUrlExtractionTest() {
+        val message = "it extracted easily.https://s.justsmiletech.com/crWDvr"
+        val extracted = LocalClassifier.extractUrl(message)
+        println("\n[Concatenated URL Extraction Test] Extracted: $extracted")
+        assertEquals("https://s.justsmiletech.com/crWDvr", extracted)
+        assertTrue(LocalClassifier.hasUrl(message))
+    }
+
+    @Test
     fun printFullSummary() {
         println("\n╔══════════════════════════════════════════╗")
         println("║     KUWAGO SMISHING DETECTOR TEST        ║")
-        println("║     Thresholds: SAFE<70% | SMISH≥85%     ║")
+        println("║  Thresholds: SAFE<50%|SUSP 50-85%|HARM>85% ║")
         println("╚══════════════════════════════════════════╝")
 
         var safeCorrect = 0

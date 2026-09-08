@@ -3,7 +3,7 @@
   "xgb_weight": 0.25,
   "local_weight": 0.50,
   "cnn_weight": 0.50,
-  "suspicious_threshold": 0.70,
+  "suspicious_threshold": 0.50,
   "smishing_threshold": 0.85,
   "val_f1": 0.9179
 }

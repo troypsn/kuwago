@@ -32,8 +32,17 @@ data class DetectionResult(
     val xgbProb: Float = 0f,
     val cnnProb: Float? = null
 ) : Serializable {
+    fun getEffectiveClassification(): Classification {
+        val score = calculateEnsembleScore()
+        return when {
+            score >= LocalClassifier.smishingThreshold -> Classification.SMISHING
+            score >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+            else -> Classification.SAFE
+        }
+    }
+
     fun getClassificationLabel(): String {
-        return when (classification) {
+        return when (getEffectiveClassification()) {
             Classification.SMISHING -> "Harmful"
             Classification.SUSPICIOUS -> "Suspicious"
             Classification.SAFE -> "Safe"
@@ -41,7 +50,7 @@ data class DetectionResult(
     }
 
     fun getClassificationBadgeText(): String {
-        return when (classification) {
+        return when (getEffectiveClassification()) {
             Classification.SMISHING -> "HARMFUL"
             Classification.SUSPICIOUS -> "SUSPICIOUS"
             Classification.SAFE -> "SAFE"

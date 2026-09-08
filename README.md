@@ -11,8 +11,8 @@ SMS messages are classified into three human-readable risk levels based on the c
 | Classification Label | Final Score Range | Description & Status Badge |
 | :--- | :--- | :--- |
 | **Harmful** | $\ge 85\%$ (`0.85`) | 🚨 High risk SMS scam / credential phishing. |
-| **Suspicious** | $70\% \text{ to } 84\%$ (`0.70 - 0.84`) | ⚠️ Unsolicited, promotional, or high-urgency content. |
-| **Safe** | $< 70\%$ (`0.70`) | ✅ No threat or scam patterns detected. |
+| **Suspicious** | $50\% \text{ to } 85\%$ (`0.50 - 0.85`) | ⚠️ Unsolicited, promotional, or high-urgency content. |
+| **Safe** | $< 50\%$ (`0.50`) | ✅ No threat or scam patterns detected. |
 
 *Note: Percentage scores are de-emphasized to the technical details modal and removed from push notifications to reduce user confusion.*
 

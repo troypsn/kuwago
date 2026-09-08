@@ -25,7 +25,7 @@ object LocalClassifier {
     var xgbWeight = 0.25f
     var localWeight = 0.50f
     var cnnWeight = 0.50f
-    var suspiciousThreshold = 0.70f
+    var suspiciousThreshold = 0.50f
     var smishingThreshold = 0.85f
 
     val isInitialized: Boolean
@@ -157,18 +157,29 @@ object LocalClassifier {
         return count
     }
 
-    fun hasUrl(text: String): Boolean {
-        val urlRegex = Regex("https?://\\S+|www\\.\\S+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE)
-        return urlRegex.containsMatchIn(text)
+    fun extractUrl(text: String): String? {
+        // Priority 1: Explicit scheme match (http:// or https://)
+        val schemeMatch = Regex("https?://\\S+", RegexOption.IGNORE_CASE).find(text)?.value
+        if (schemeMatch != null) {
+            return schemeMatch.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
+        }
+        // Priority 2: www-prefixed match
+        val wwwMatch = Regex("www\\.\\S+", RegexOption.IGNORE_CASE).find(text)?.value
+        if (wwwMatch != null) {
+            return wwwMatch.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
+        }
+        // Priority 3: Fallback domain match (e.g. example.com/path)
+        val domainMatch = Regex("[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE).find(text)?.value
+        return domainMatch?.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
     }
 
-    fun extractUrl(text: String): String? {
-        val urlRegex = Regex("https?://\\S+|www\\.\\S+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE)
-        return urlRegex.find(text)?.value
+    fun hasUrl(text: String): Boolean {
+        return extractUrl(text) != null
     }
 
     fun extractNumericalFeatures(text: String): FloatArray {
-        val urls = Regex("https?://\\S+|www\\.\\S+").findAll(text).map { it.value }.toList()
+        val extractedUrl = extractUrl(text)
+        val urls = if (extractedUrl != null) listOf(extractedUrl) else emptyList()
         val urlPresent = if (urls.isNotEmpty()) 1.0f else 0.0f
         val urlCount = urls.size.toFloat()
         var hasShortener = 0.0f
@@ -187,7 +198,7 @@ object LocalClassifier {
             hasHttps = if (url.startsWith("https")) 1.0f else 0.0f
             
             val domainMatch = Regex("https?://([^/]+)").find(url)
-            val domain = domainMatch?.groupValues?.get(1) ?: ""
+            val domain = domainMatch?.groupValues?.get(1) ?: url.split("/")[0]
             domainLength = domain.length.toFloat()
             subdomainCount = domain.count { it == '.' }.minus(1).coerceAtLeast(0).toFloat()
             hasIp = if (Regex("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}").containsMatchIn(domain)) 1.0f else 0.0f
@@ -394,8 +405,10 @@ object LocalClassifier {
 
         val detectedTriggers = mutableListOf<String>()
 
-        if (!extractedUrl.isNullOrBlank()) {
-            detectedTriggers.add("an unverified web link ($extractedUrl)")
+        val hasUrl = !extractedUrl.isNullOrBlank()
+
+        if (hasUrl) {
+            detectedTriggers.add("an unverified web link")
         }
         if (hasUrgency) {
             detectedTriggers.add("high-pressure urgency phrasing or reward claims")
@@ -428,12 +441,16 @@ object LocalClassifier {
                 }
             }
             Classification.SAFE -> {
-                "No suspicious patterns, urgency triggers, or malicious links were detected in this message by local AI models."
+                if (hasUrl) {
+                    "No immediate suspicious text patterns were detected in this message by local AI models."
+                } else {
+                    "No suspicious patterns, urgency triggers, or malicious links were detected in this message by local AI models."
+                }
             }
         }
 
-        return if (!extractedUrl.isNullOrBlank()) {
-            "$baseExplanation Exercise caution: this message contains a web link ($extractedUrl) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+        return if (hasUrl && !baseExplanation.contains("web link", ignoreCase = true)) {
+            "$baseExplanation Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
         } else {
             baseExplanation
         }

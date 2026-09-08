@@ -175,22 +175,23 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlSummaryVerdict.text = "Scanning…"
             tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
         } else {
+            val effectiveClassification = result.getEffectiveClassification()
             var reasoningText = result.overallExplanation ?: result.explanation ?: when {
                 result.urlFound && result.urlScore == null ->
-                    "This message contains a web link (${result.extractedUrl ?: "web link"}), but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
-                result.classification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
-                result.classification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
-                result.classification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
+                    "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                effectiveClassification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
+                effectiveClassification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
+                effectiveClassification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
                 else -> ""
             }
 
-            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true) && !reasoningText.contains("unverified web link", ignoreCase = true)) {
-                reasoningText += " Exercise caution: this message contains a web link (${result.extractedUrl ?: "web link"}) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true) && !reasoningText.contains("web link", ignoreCase = true)) {
+                reasoningText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
             }
 
             tvReasoningExplanation?.text = reasoningText
 
-            when (result.classification) {
+            when (effectiveClassification) {
                 Classification.SMISHING -> {
                     tvClassificationTitle.text = "Harmful"
                     tvClassificationTitle.setTextColor(Color.parseColor("#FF4D55"))
@@ -229,7 +230,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             if (result.urlFound) {
                 if (result.urlScore != null) {
                     val urlProb = result.urlScore!!
-                    tvUrlSummaryVerdict.text = if (urlProb >= 0.5f) "Malicious" else "Clean"
+                    val verdictStr = result.urlVerdict?.lowercase()
+                    tvUrlSummaryVerdict.text = when {
+                        verdictStr == "malicious" || verdictStr == "smishing" || verdictStr == "spam" -> "Malicious"
+                        verdictStr == "suspicious" || (urlProb >= LocalClassifier.suspiciousThreshold && urlProb < LocalClassifier.smishingThreshold) -> "Suspicious"
+                        verdictStr == "clean" || verdictStr == "benign" || verdictStr == "safe" -> "Clean"
+                        urlProb >= LocalClassifier.smishingThreshold -> "Malicious"
+                        urlProb >= LocalClassifier.suspiciousThreshold -> "Suspicious"
+                        else -> "Clean"
+                    }
                     tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
                 } else {
                     tvUrlSummaryVerdict.text = "Pending"
@@ -365,7 +374,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlScoreBadge.text = String.format(Locale.US, "%.2f", urlScore)
             tvUrlConfidenceVal.text = String.format(Locale.US, "%.2f", urlScore)
             pbUrlConfidence.progress = (urlScore * 100).toInt()
-            tvUrlClassifiedBadge.text = if (urlScore >= 0.5f) "Classified as malicious link" else "No threats detected"
+            val vStr = result.urlVerdict?.lowercase()
+            tvUrlClassifiedBadge.text = when {
+                vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
+                vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
+                else -> "No threats detected"
+            }
         }
 
         populateUrlMetrics(llUrlMetricsContainer, result, result.urlScore ?: 0f)
@@ -425,13 +439,16 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             if (result.urlScore != null) {
                 // Threat score from backend
                 val scoreStr = String.format(Locale.US, "%.2f", result.urlScore)
-                val isThreatScore = result.urlScore >= 0.5f
-                addMetricRow(container, "Threat score", scoreStr, isThreatScore)
+                val isRedScore = result.urlScore >= LocalClassifier.smishingThreshold
+                val isOrangeScore = result.urlScore >= LocalClassifier.suspiciousThreshold && result.urlScore < LocalClassifier.smishingThreshold
+                addMetricRow(container, "Threat score", scoreStr, isAlert = isRedScore, isOrange = isOrangeScore)
 
                 // Verdict from backend
-                val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: "Clean"
-                val isMaliciousVerdict = result.urlVerdict?.lowercase()?.let { it == "malicious" || it == "spam" } ?: false
-                addMetricRow(container, "Verdict", verdictStr, isMaliciousVerdict)
+                val verdictRaw = result.urlVerdict?.lowercase()
+                val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(result.urlScore)
+                val isMaliciousVerdict = verdictRaw == "malicious" || verdictRaw == "smishing" || verdictRaw == "spam" || result.urlScore >= LocalClassifier.smishingThreshold
+                val isSuspiciousVerdict = verdictRaw == "suspicious" || (result.urlScore >= LocalClassifier.suspiciousThreshold && result.urlScore < LocalClassifier.smishingThreshold)
+                addMetricRow(container, "Verdict", verdictStr, isAlert = isMaliciousVerdict, isOrange = isSuspiciousVerdict)
             } else {
                 addMetricRow(container, "Threat score", "Pending", false, isOrange = true)
                 addMetricRow(container, "Verdict", "Pending Scan", false, isOrange = true)
@@ -632,7 +649,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                         val urlScore = finalResult.urlScore ?: 0f
                         pbUrlConfidence?.progress = (urlScore * 100).toInt()
                         tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
-                        tvUrlClassifiedBadge?.text = if (urlScore >= 0.5f) "Classified as malicious link" else "No threats detected"
+                        val vStr = finalResult.urlVerdict?.lowercase()
+                        tvUrlClassifiedBadge?.text = when {
+                            vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
+                            vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
+                            else -> "No threats detected"
+                        }
                     }
 
                     // Update the Combined Score card

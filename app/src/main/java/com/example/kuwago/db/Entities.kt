@@ -97,6 +97,12 @@ data class UrlAnalysisEntity(
     @ColumnInfo(name = "is_malicious", defaultValue = "0")
     val isMalicious: Int = 0,
 
+    @ColumnInfo(name = "url_score")
+    val urlScore: Float? = null,
+
+    @ColumnInfo(name = "url_verdict")
+    val urlVerdict: String? = null,
+
     /**
      * Canonical hostname extracted by [com.example.kuwago.UrlNormalizer].
      * Stored in lowercased, www-stripped form (e.g. "phishing-site.com").

@@ -95,10 +95,8 @@ object SmsLocalRepository {
         val extractedUrl = result.extractedUrl ?: LocalClassifier.extractUrl(result.message)
         if (hasUrl && !extractedUrl.isNullOrBlank()) {
             val isUrlMaliciousOrSuspicious =
-                (result.urlScore != null && result.urlScore > 0.3f) ||
-                (result.urlVerdict != null && !result.urlVerdict.equals("clean", ignoreCase = true) && !result.urlVerdict.equals("benign", ignoreCase = true)) ||
-                result.classification == Classification.SMISHING ||
-                result.classification == Classification.SUSPICIOUS
+                (result.urlScore != null && result.urlScore >= 0.5f) ||
+                (result.urlVerdict != null && (result.urlVerdict.equals("malicious", ignoreCase = true) || result.urlVerdict.equals("spam", ignoreCase = true)))
 
             val isMalicious = if (isUrlMaliciousOrSuspicious) 1 else 0
             // Normalize the hostname so the VPN can match it by host at enforcement time
@@ -109,6 +107,8 @@ object SmsLocalRepository {
                     smsId = result.id,
                     extractedUrl = extractedUrl.trim(),
                     isMalicious = isMalicious,
+                    urlScore = result.urlScore,
+                    urlVerdict = result.urlVerdict,
                     normalizedHost = normalizedHost
                 )
             )
@@ -158,7 +158,7 @@ object SmsLocalRepository {
         // If a SMISHING or SUSPICIOUS result with a URL host was saved, flag the suggestion dialog
         // so that MainActivity can offer to enable URL Shield on next open.
         val hasThreatUrl = (result.classification == Classification.SMISHING || result.classification == Classification.SUSPICIOUS) &&
-                urlEntities.any { it.normalizedHost != null }
+                urlEntities.any { it.normalizedHost != null && it.isMalicious == 1 }
         if (hasThreatUrl) {
             context.getSharedPreferences("kuwago_vpn_prefs", Context.MODE_PRIVATE)
                 .edit()
@@ -186,11 +186,12 @@ object SmsLocalRepository {
 
                     val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
                     val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
-                    val firstUrl = urls.firstOrNull()?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val firstUrlEntity = urls.firstOrNull()
+                    val firstUrl = firstUrlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
                     val hasDlRun = analysis?.dlConfidence != null
-                    val isMalicious = urls.firstOrNull()?.isMalicious == 1
-                    val urlScore = if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
-                    val urlVerdict = if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
+                    val isMalicious = firstUrlEntity?.isMalicious == 1
+                    val urlScore = firstUrlEntity?.urlScore ?: if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
+                    val urlVerdict = firstUrlEntity?.urlVerdict ?: if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
 
                     val rawResult = DetectionResult(
                         id = sms.smsId,
@@ -210,7 +211,10 @@ object SmsLocalRepository {
                         rfProb = analysis?.mlConfidence ?: 0f,
                         xgbProb = analysis?.mlConfidence ?: 0f
                     )
-                    rawResult.copy(probability = rawResult.calculateEnsembleScore())
+                    rawResult.copy(
+                        probability = rawResult.calculateEnsembleScore(),
+                        classification = rawResult.getEffectiveClassification()
+                    )
                 }
                 withContext(Dispatchers.Main) {
                     resultMediator.value = detectionResults.filter { !it.id.startsWith("synced_") && it.sender != "Kuwago Database" }

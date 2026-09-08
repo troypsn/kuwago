@@ -137,15 +137,26 @@ object SmishingDetector {
                 val cnnScore = response.cnnAnalysis?.score
                 val cnnVerdict = response.cnnAnalysis?.verdict
                 val url = response.urlAnalysis ?: UrlAnalysis(false, null, null, null, null, null, emptyList())
-                val urlScore = url.score ?: 0f
-                val localScore = localResult.probability
                 val containsUrl = hasUrl || url.hasUrl
 
+                // Derive effective URL score if score is null but verdict is returned (e.g. backend database cache hit)
+                val effectiveUrlScore: Float? = url.score ?: when (url.verdict?.lowercase()) {
+                    "malicious", "smishing", "spam" -> 1.0f
+                    "suspicious" -> 0.6f
+                    "clean", "benign", "safe" -> 0.0f
+                    else -> null
+                }
+                val effectiveUrlVerdict: String? = url.verdict ?: effectiveUrlScore?.let {
+                    if (it >= 0.5f) "malicious" else if (it >= 0.3f) "suspicious" else "clean"
+                }
+
+                val localScore = localResult.probability
+
                 // Update cache with fresh result from API
-                if (normalizedHost != null) {
+                if (normalizedHost != null && (effectiveUrlVerdict != null || effectiveUrlScore != null)) {
                     val freshReputation = when {
-                        url.verdict?.lowercase() == "malicious" || urlScore >= 0.5f -> Classification.SMISHING
-                        url.verdict?.lowercase() == "suspicious" || urlScore >= 0.3f -> Classification.SUSPICIOUS
+                        effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f -> Classification.SMISHING
+                        effectiveUrlVerdict?.lowercase() == "suspicious" || (effectiveUrlScore ?: 0f) >= 0.3f -> Classification.SUSPICIOUS
                         else -> Classification.SAFE
                     }
                     UrlReputationCache.put(normalizedHost, freshReputation)
@@ -153,8 +164,8 @@ object SmishingDetector {
                 }
 
                 val (finalProb, formulaStr) = if (hasCnnData && cnnScore != null) {
-                    if (containsUrl && url.score != null) {
-                        val score = (0.50f * cnnScore) + (0.25f * url.score!!) + (0.25f * localScore)
+                    if (containsUrl && effectiveUrlScore != null) {
+                        val score = (0.50f * cnnScore) + (0.25f * effectiveUrlScore) + (0.25f * localScore)
                         val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
                         Pair(score, formula)
                     } else {
@@ -163,8 +174,8 @@ object SmishingDetector {
                         Pair(score, formula)
                     }
                 } else {
-                    if (containsUrl && url.score != null) {
-                        val score = (0.50f * url.score!!) + (0.50f * localScore)
+                    if (containsUrl && effectiveUrlScore != null) {
+                        val score = (0.50f * effectiveUrlScore) + (0.50f * localScore)
                         val formula = "Weighted Ensemble: 50% URL + 50% Local"
                         Pair(score, formula)
                     } else {
@@ -183,10 +194,10 @@ object SmishingDetector {
                 Log.i("SmishingDetector", "Final classification complete: verdict=$classification, prob=$finalProb")
 
                 var explanationText = response.overallExplanation ?: when {
-                    url.verdict?.lowercase() == "malicious" || (url.score ?: 0f) >= 0.5f ->
-                        "This message contains a web link (${url.extractedUrl ?: extractedUrl ?: "unverified URL"}) that was flagged as malicious by security threat intelligence."
-                    url.score == null && containsUrl ->
-                        "This message contains a web link (${url.extractedUrl ?: extractedUrl ?: "web link"}), but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                    effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f ->
+                        "This message contains an unverified web link that was flagged as malicious by security threat intelligence."
+                    effectiveUrlScore == null && containsUrl ->
+                        "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
                     classification == Classification.SMISHING ->
                         "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
                     classification == Classification.SUSPICIOUS ->
@@ -195,8 +206,8 @@ object SmishingDetector {
                         "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
                 }
 
-                if (containsUrl && url.score == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
-                    explanationText += " Exercise caution: this message contains a web link (${url.extractedUrl ?: extractedUrl ?: "web link"}) that has not been verified by online threat intelligence yet, so its safety cannot be guaranteed."
+                if (containsUrl && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true) && !explanationText.contains("web link", ignoreCase = true)) {
+                    explanationText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
                 }
 
                 val finalResult = DetectionResult(
@@ -209,8 +220,8 @@ object SmishingDetector {
                     cnnVerdict = cnnVerdict,
                     urlFound = containsUrl,
                     extractedUrl = url.extractedUrl ?: extractedUrl,
-                    urlScore = url.score,
-                    urlVerdict = url.verdict,
+                    urlScore = effectiveUrlScore,
+                    urlVerdict = effectiveUrlVerdict,
                     explanation = url.explanation,
                     overallExplanation = explanationText,
                     urlTotalWeight = url.totalWeight,
