@@ -58,6 +58,25 @@ class SettingsAppSelectionFragment : Fragment() {
             "com.yahoo.mobile.client.android.mail", // Yahoo Mail
             "com.skype.raider"              // Skype
         )
+
+        @JvmStatic fun getSavedEnabledAppPackages(context: Context): Set<String> {
+            val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            if (!prefs.contains(SettingsFragment.KEY_ENABLED_APP_PACKAGES)) {
+                val defaults = DEFAULT_MESSAGING_PACKAGES.toMutableSet()
+                Telephony.Sms.getDefaultSmsPackage(context)?.takeIf { it.isNotBlank() }?.let(defaults::add)
+                prefs.edit().putStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, defaults).apply()
+                return defaults
+            }
+            return prefs.getStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, emptySet()) ?: emptySet()
+        }
+
+        @JvmStatic fun saveAppToggleState(context: Context, packageName: String, isEnabled: Boolean) {
+            val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            val currentSet = prefs.getStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, emptySet())?.toMutableSet()
+                ?: mutableSetOf()
+            if (isEnabled) currentSet.add(packageName) else currentSet.remove(packageName)
+            prefs.edit().putStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, currentSet).apply()
+        }
     }
 
     override fun onCreateView(
@@ -151,7 +170,7 @@ class SettingsAppSelectionFragment : Fragment() {
             val pm = context.packageManager
             val currentPkg = context.packageName
 
-            val savedEnabledApps = getSavedEnabledAppPackages(context)
+            val savedEnabledApps = Companion.getSavedEnabledAppPackages(context)
 
             val intent = Intent(Intent.ACTION_MAIN, null).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
@@ -213,40 +232,11 @@ class SettingsAppSelectionFragment : Fragment() {
         updateEmptyState()
     }
 
-    private fun getSavedEnabledAppPackages(context: Context): Set<String> {
-        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
-        if (!prefs.contains(SettingsFragment.KEY_ENABLED_APP_PACKAGES)) {
-            val defaults = mutableSetOf<String>()
-            defaults.addAll(DEFAULT_MESSAGING_PACKAGES)
-            val defaultSmsPkg = Telephony.Sms.getDefaultSmsPackage(context)
-            if (!defaultSmsPkg.isNull_or_blank()) {
-                defaults.add(defaultSmsPkg)
-            }
-            prefs.edit().putStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, defaults).apply()
-            return defaults
-        }
-        return prefs.getStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, emptySet()) ?: emptySet()
-    }
-
-    private fun String?.isNull_or_blank(): Boolean {
-        return this == null || this.trim().isEmpty()
-    }
-
     private fun saveAppToggleState(packageName: String, isEnabled: Boolean) {
-        val context = context ?: return
-        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
-        val currentSet = prefs.getStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, emptySet())?.toMutableSet()
-            ?: mutableSetOf()
-
-        if (isEnabled) {
-            currentSet.add(packageName)
-        } else {
-            currentSet.remove(packageName)
-        }
-
-        prefs.edit().putStringSet(SettingsFragment.KEY_ENABLED_APP_PACKAGES, currentSet).apply()
+            context?.let { Companion.saveAppToggleState(it, packageName, isEnabled) }
         updateToggleAllButtonText()
     }
+
 
     private fun updateStatusCount() {
         val visibleList = adapter.getFilteredList()

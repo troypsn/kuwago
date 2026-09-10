@@ -237,4 +237,37 @@
     <!-- VpnBlockedActivity detail text (placeholder %1$s = hostname) -->
     <string name="vpn_blocked_detail">This domain (%1$s) was previously identified as a phishing destination by Kuwago\'s scanner. The connection was blocked to protect your device and personal information.</string>
 
+    <!-- First-run onboarding -->
+    <string name="onboarding_page_indicator">Page %1$d of %2$d</string>
+    <string name="onboarding_get_started_title">Your messages, protected.</string>
+    <string name="onboarding_get_started_body">Kuwago helps detect suspicious messages and protect you from harmful links.</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_protection_title">Protection Setup</string>
+    <string name="onboarding_protection_body">Kuwago needs a few permissions to provide its core protection.</string>
+    <string name="onboarding_sms_title">SMS Protection</string>
+    <string name="onboarding_sms_body">Scan incoming text messages for suspicious content.</string>
+    <string name="onboarding_notifications_title">Notifications</string>
+    <string name="onboarding_notifications_body">Show timely alerts when Kuwago finds a risk.</string>
+    <string name="onboarding_listener_title">Message App Scanning</string>
+    <string name="onboarding_listener_body">Scan notifications from selected messaging apps.</string>
+    <string name="onboarding_enable">Enable</string>
+    <string name="onboarding_enabled">Enabled</string>
+    <string name="onboarding_open_settings">Open Settings</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_security_title">Stay Secure and Private</string>
+    <string name="onboarding_security_body">Smishing messages often impersonate trusted brands and create urgency to make you tap a link or share a code. Kuwago checks messages before you act, so you can pause and decide safely.</string>
+    <string name="onboarding_detection_title">Protection that works in layers</string>
+    <string name="onboarding_detection_body">Each layer contributes evidence, then Kuwago combines it into a clear decision.</string>
+    <string name="onboarding_layer_local">On-device ML\nRandom Forest + XGBoost via ONNX</string>
+    <string name="onboarding_layer_deep">Deep analysis\nCNN-BiGRU remote model</string>
+    <string name="onboarding_layer_url">URL reputation\nThreat intelligence and local cache</string>
+    <string name="onboarding_layer_final">Final decision\nWeighted ensemble: Safe, Suspicious, or Harmful</string>
+    <string name="onboarding_shield_title">Block Malicious Links</string>
+    <string name="onboarding_shield_body">URL Shield uses a local DNS proxy to block known malicious domains. It does not inspect your message text or HTTPS page content.</string>
+    <string name="onboarding_enable_shield">Enable URL Shield</string>
+    <string name="onboarding_maybe_later">Maybe later</string>
+    <string name="onboarding_apps_title">Select Applications</string>
+    <string name="onboarding_apps_body">Choose which installed apps Kuwago should monitor for suspicious messages.</string>
+    <string name="onboarding_finish">Finish</string>
 </resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_horizontal" android:padding="24dp">
+ <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
+ <ImageView android:layout_width="220dp" android:layout_height="90dp" android:src="@drawable/kuwago_text_hat" android:contentDescription="@string/app_name" android:adjustViewBounds="true"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="48dp" android:text="@string/onboarding_get_started_title" android:textColor="@color/text_primary" android:textSize="32sp" android:fontFamily="sans-serif-black"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/onboarding_get_started_body" android:textColor="@color/text_secondary" android:textSize="17sp" android:lineSpacingExtra="4dp"/>
+ <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
+ <Button android:id="@+id/btn_get_started" android:layout_width="match_parent" android:layout_height="56dp" android:text="@string/onboarding_get_started" android:textColor="@color/white" android:textAllCaps="false" android:textSize="16sp" android:background="@drawable/bg_onboarding_primary"/>
+</LinearLayout>

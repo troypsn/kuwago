@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/onboarding_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/background_primary">
+    <androidx.viewpager2.widget.ViewPager2 android:id="@+id/onboarding_pager" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:orientation="horizontal">
+        <ImageView android:id="@+id/dot_1" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_active" />
+        <ImageView android:id="@+id/dot_2" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_inactive" />
+        <ImageView android:id="@+id/dot_3" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_inactive" />
+        <ImageView android:id="@+id/dot_4" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_inactive" />
+        <ImageView android:id="@+id/dot_5" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_inactive" />
+        <ImageView android:id="@+id/dot_6" android:layout_width="16dp" android:layout_height="16dp" android:padding="4dp" android:src="@drawable/indicator_dot_inactive" />
+    </LinearLayout>
+</LinearLayout>

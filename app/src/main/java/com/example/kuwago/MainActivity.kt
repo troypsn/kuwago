@@ -283,18 +283,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun isNotificationServiceEnabled(): Boolean {
-        val pkgName = packageName
-        val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-        if (flat != null && flat.isNotEmpty()) {
-            val names = flat.split(":")
-            for (name in names) {
-                val cn = android.content.ComponentName.unflattenFromString(name)
-                if (cn != null && cn.packageName == pkgName) {
-                    return true
-                }
-            }
-        }
-        return false
+        return PermissionHelper.isNotificationServiceEnabled(this)
     }
 
     private fun checkNotificationPermission() {

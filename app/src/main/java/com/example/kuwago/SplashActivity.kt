@@ -140,7 +140,10 @@ class SplashActivity : AppCompatActivity() {
         if (hasNavigated) return
         hasNavigated = true
 
-        val mainIntent = Intent(this, MainActivity::class.java).apply {
+        val destination = if (getSharedPreferences("kuwago_settings", MODE_PRIVATE)
+                .getBoolean("hasCompletedOnboarding", false)) MainActivity::class.java
+            else OnboardingActivity::class.java
+        val mainIntent = Intent(this, destination).apply {
             intent?.extras?.let { putExtras(it) }
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
