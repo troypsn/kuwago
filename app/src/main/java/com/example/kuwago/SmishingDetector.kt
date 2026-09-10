@@ -206,7 +206,7 @@ object SmishingDetector {
                         "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
                 }
 
-                if (containsUrl && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true) && !explanationText.contains("web link", ignoreCase = true)) {
+                if (containsUrl && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
                     explanationText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
                 }
 

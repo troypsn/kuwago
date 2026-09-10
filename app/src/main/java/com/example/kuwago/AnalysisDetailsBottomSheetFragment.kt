@@ -185,7 +185,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 else -> ""
             }
 
-            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true) && !reasoningText.contains("web link", ignoreCase = true)) {
+            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true)) {
                 reasoningText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
             }
 

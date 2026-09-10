@@ -449,7 +449,7 @@ object LocalClassifier {
             }
         }
 
-        return if (hasUrl && !baseExplanation.contains("web link", ignoreCase = true)) {
+        return if (hasUrl && !baseExplanation.contains("cannot be guaranteed", ignoreCase = true) && !baseExplanation.contains("no online threat scan", ignoreCase = true)) {
             "$baseExplanation Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
         } else {
             baseExplanation
