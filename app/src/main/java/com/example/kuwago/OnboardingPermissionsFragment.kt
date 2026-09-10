@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 
 class OnboardingPermissionsFragment : Fragment() {
@@ -17,18 +16,25 @@ class OnboardingPermissionsFragment : Fragment() {
         sms.setOnClickListener { (activity as? OnboardingHost)?.requestSmsPermissions() }
         notifications.setOnClickListener { (activity as? OnboardingHost)?.requestNotificationPermission() }
         listener.setOnClickListener { PermissionHelper.openNotificationListenerSettings(requireContext()) }
-        v.findViewById<Button>(R.id.btn_open_app_settings).setOnClickListener { PermissionHelper.openAppSettings(requireContext()) }
+        v.findViewById<View>(R.id.btn_open_app_settings)?.setOnClickListener { PermissionHelper.openAppSettings(requireContext()) }
         continueButton.setOnClickListener { (activity as? OnboardingHost)?.navigateToNextPage() }
     }
     override fun onResume() { super.onResume(); if (!isAdded || !::sms.isInitialized) return; refresh() }
     private fun refresh() {
         val c = requireContext(); val smsOk = PermissionHelper.hasSmsPermissions(c); val notificationOk = PermissionHelper.hasNotificationPermission(c); val listenerOk = PermissionHelper.isNotificationServiceEnabled(c)
-        sms.text = getString(if (smsOk) R.string.onboarding_enabled else R.string.onboarding_enable)
-        notifications.text = getString(if (notificationOk) R.string.onboarding_enabled else R.string.onboarding_enable)
-        listener.text = getString(if (listenerOk) R.string.onboarding_enabled else R.string.onboarding_enable)
-        notifications.visibility = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) View.VISIBLE else View.GONE
-        view?.findViewById<View>(R.id.card_notifications)?.visibility = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) View.VISIBLE else View.GONE
+        updatePermissionButton(sms, smsOk)
+        updatePermissionButton(notifications, notificationOk)
+        updatePermissionButton(listener, listenerOk)
+        
+        val showNotifs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        view?.findViewById<View>(R.id.row_notifications)?.visibility = if (showNotifs) View.VISIBLE else View.GONE
+        
         continueButton.isEnabled = PermissionHelper.isAllRequiredProtectionGranted(c)
         view?.findViewById<View>(R.id.btn_open_app_settings)?.visibility = if (!smsOk) View.VISIBLE else View.GONE
+    }
+    private fun updatePermissionButton(button: Button, enabled: Boolean) {
+        button.text = getString(if (enabled) R.string.onboarding_enabled else R.string.onboarding_enable)
+        button.setTextColor(requireContext().getColor(if (enabled) R.color.text_secondary else R.color.black))
+        button.setBackgroundResource(if (enabled) R.drawable.bg_onboarding_enabled else R.drawable.bg_onboarding_primary)
     }
 }

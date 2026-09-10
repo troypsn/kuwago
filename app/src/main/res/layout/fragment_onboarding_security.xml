@@ -1,10 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="24dp">
- <Button android:id="@+id/btn_security_skip" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="end" android:text="@string/onboarding_skip" android:textAllCaps="false"/>
- <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
- <ImageView android:layout_width="72dp" android:layout_height="72dp" android:src="@drawable/ic_shield" android:tint="@color/primary" android:contentDescription=""/>
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:text="@string/onboarding_security_title" android:textColor="@color/text_primary" android:textSize="30sp" android:fontFamily="sans-serif-black"/>
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/onboarding_security_body" android:textColor="@color/text_secondary" android:textSize="17sp" android:lineSpacingExtra="5dp"/>
- <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
- <Button android:id="@+id/btn_security_continue" android:layout_width="match_parent" android:layout_height="56dp" android:text="@string/onboarding_continue" android:textColor="@color/white" android:textAllCaps="false" android:background="@drawable/bg_onboarding_primary"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="25dp">
+
+ <Space
+     android:layout_width="1dp"
+     android:layout_height="0dp"
+     android:layout_weight="1" />
+
+ <ImageView
+     android:layout_width="match_parent"
+     android:layout_height="137dp"
+     android:contentDescription=""
+     android:src="@drawable/message_security"
+     android:tint="#00FFFFFF" />
+
+ <TextView
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content"
+     android:layout_marginTop="28dp"
+     android:fontFamily="@font/sf_pro"
+     android:text="@string/onboarding_security_title"
+     android:textAlignment="center"
+     android:textColor="@color/text_primary"
+     android:textSize="30sp" />
+
+ <TextView
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:layout_marginTop="16dp"
+     android:fontFamily="@font/sf_pro"
+     android:lineSpacingExtra="5dp"
+     android:padding="15dp"
+     android:text="@string/onboarding_security_body"
+     android:textAlignment="center"
+     android:textColor="@color/text_secondary"
+     android:textSize="15sp" />
+
+ <Space
+     android:layout_width="1dp"
+     android:layout_height="0dp"
+     android:layout_weight="1" />
+
+ <Button
+     android:id="@+id/btn_security_continue"
+     android:layout_width="match_parent"
+     android:layout_height="56dp"
+     android:background="@drawable/bg_onboarding_primary"
+     android:fontFamily="@font/sf_pro"
+     android:text="@string/onboarding_continue"
+     android:textAllCaps="false"
+     android:textColor="@color/white" />
 </LinearLayout>

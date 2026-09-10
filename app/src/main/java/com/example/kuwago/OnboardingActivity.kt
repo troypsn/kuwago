@@ -8,7 +8,6 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.addCallback
@@ -20,7 +19,6 @@ import androidx.viewpager2.widget.ViewPager2
 
 class OnboardingActivity : AppCompatActivity(), OnboardingHost {
     private lateinit var pager: ViewPager2
-    private lateinit var dots: List<ImageView>
 
     private val smsPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -43,18 +41,9 @@ class OnboardingActivity : AppCompatActivity(), OnboardingHost {
         pager = findViewById(R.id.onboarding_pager)
         pager.adapter = OnboardingPagerAdapter(this)
         pager.isUserInputEnabled = false
-        dots = listOf(R.id.dot_1, R.id.dot_2, R.id.dot_3, R.id.dot_4, R.id.dot_5, R.id.dot_6)
-            .map { findViewById(it) }
-        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) = updateDots(position)
-        })
         onBackPressedDispatcher.addCallback(this) {
             if (pager.currentItem == 0) finish() else navigateToPreviousPage()
         }
-    }
-    private fun updateDots(page: Int) = dots.forEachIndexed { index, dot ->
-        dot.setImageResource(if (index == page) R.drawable.indicator_dot_active else R.drawable.indicator_dot_inactive)
-        dot.contentDescription = getString(R.string.onboarding_page_indicator, index + 1, dots.size)
     }
     override fun navigateToNextPage() { if (pager.currentItem < 5) pager.currentItem++ }
     override fun navigateToPreviousPage() { if (pager.currentItem > 0) pager.currentItem-- }
