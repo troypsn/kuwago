@@ -15,7 +15,6 @@ import com.example.kuwago.db.SmsLocalRepository
 class HomeFragment : Fragment() {
 
     private lateinit var detectionsContainer: LinearLayout
-    private lateinit var tvSmsReceivedCount: TextView
     private lateinit var tvSmsScannedCount: TextView
     private lateinit var tvSuspiciousCount: TextView
     private lateinit var tvSmishingCount: TextView
@@ -27,7 +26,6 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
         detectionsContainer = view.findViewById(R.id.detections_container)
-        tvSmsReceivedCount = view.findViewById(R.id.tv_sms_received_count)
         tvSmsScannedCount = view.findViewById(R.id.tv_sms_scanned_count)
         tvSuspiciousCount = view.findViewById(R.id.tv_suspicious_count)
         tvSmishingCount = view.findViewById(R.id.tv_smishing_count)
@@ -47,7 +45,6 @@ class HomeFragment : Fragment() {
         // Observe Home Page statistics directly from the encrypted local Room database
         SmsLocalRepository.getHomeStatsLiveData(requireContext()).observe(viewLifecycleOwner) { stats ->
             if (stats != null) {
-                tvSmsReceivedCount.text = stats.totalReceived.toString()
                 tvSmsScannedCount.text = stats.totalScanned.toString()
                 tvSuspiciousCount.text = stats.totalSuspicious.toString()
                 tvSmishingCount.text = stats.totalSmishing.toString()

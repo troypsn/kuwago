@@ -22,10 +22,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:fontFamily="sans-serif-black"
-        android:text="⚠️ UNHANDLED SMISHING ALERT"
+        android:gravity="center"
+        android:text="⚠️ UNHANDLED MESSAGE ALERT"
         android:textColor="@color/color_alert"
-        android:textSize="22sp"
-        android:gravity="center" />
+        android:textSize="22sp" />
 
     <!-- Description -->
     <TextView

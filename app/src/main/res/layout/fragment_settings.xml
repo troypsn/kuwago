@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
@@ -35,6 +36,7 @@
                 android:layout_height="16dp"
                 android:src="@drawable/ic_settings"
                 android:alpha="0.5"
+                android:tint="@color/white"
                 android:contentDescription="settings icon" />
 
             <TextView
@@ -98,6 +100,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_scan"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="real-time scan" />
 
@@ -130,6 +133,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -156,6 +160,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_ml"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="scan other messaging apps" />
 
@@ -188,6 +193,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -230,6 +236,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_shield"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="url shield" />
 
@@ -262,6 +269,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -289,6 +297,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_scan"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="ntc report" />
 
@@ -321,6 +330,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -361,6 +371,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_ml"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="deep analysis" />
 
@@ -393,6 +404,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -419,6 +431,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_link"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="url scan" />
 
@@ -451,6 +464,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -491,6 +505,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_help"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="get support" />
 
@@ -523,6 +538,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -563,6 +579,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_scan"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="help train ai" />
 
@@ -595,6 +612,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -635,6 +653,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_settings"
                         android:padding="6dp"
+                        android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="app version" />
 
@@ -667,6 +686,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
+                        android:tint="@color/white"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>

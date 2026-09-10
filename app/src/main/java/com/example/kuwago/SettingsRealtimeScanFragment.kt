@@ -28,7 +28,7 @@ class SettingsRealtimeScanFragment : Fragment() {
             if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (!isChecked) {
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"Real-time Scanning\"?")
+                    .setMessage("Are you sure you want to turn off \"Auto-Block\"?")
                     .setPositiveButton("Turn Off") { _, _ ->
                         prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false).apply()
                     }

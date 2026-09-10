@@ -5,7 +5,7 @@
     <string name="sms_received_count">0</string>
     <string name="sms_received_label">SMS Received</string>
     <string name="sms_scanned_count">0</string>
-    <string name="sms_scanned_label">SMS Scanned</string>
+    <string name="sms_scanned_label">Scanned</string>
     <string name="suspicious_count">0</string>
     <string name="suspicious_label">Suspicious</string>
     <string name="smishing_count">0</string>
@@ -73,8 +73,8 @@
     <string name="settings_group_security">Security</string>
     <string name="settings_group_about">About</string>
 
-    <!-- Real-time Scan -->
-    <string name="settings_realtime_scan_title">Blocks Malicious Notifications Automatically.</string>
+    <!-- Auto-Block -->
+    <string name="settings_realtime_scan_title">Auto-Block</string>
     <string name="settings_realtime_scan_desc">Blocks malicious SMS notifications automatically.</string>
     <string name="settings_realtime_scan_body">When turned on, the app automatically scans incoming text messages in the background to deliver near-instant alerts. You will receive an immediate push notification telling you whether the message is safe or a threat.\n\nThis active protection keeps you informed instantly, stopping phishing attempts before you even open the message!</string>
 

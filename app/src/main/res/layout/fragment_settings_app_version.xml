@@ -21,6 +21,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
+            android:tint="@color/white"
             android:contentDescription="back"
             android:clickable="true"
             android:focusable="true"
@@ -56,19 +57,11 @@
             android:paddingBottom="14dp">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="@string/settings_app_version_desc"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_app_version"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:layout_marginStart="12dp" />
         </LinearLayout>
 
         <TextView

@@ -1,6 +1,7 @@
 package com.example.kuwago
 
 import android.app.Dialog
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -286,10 +287,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             0.75f * result.rfProb + 0.25f * result.xgbProb
         } else result.probability
 
+        val mlColor = getVerdictColor(mlScore)
         tvMlScoreBadge.text = String.format(Locale.US, "%.2f", mlScore)
+        tvMlScoreBadge.setTextColor(mlColor)
         tvMlConfidenceVal.text = String.format(Locale.US, "%.2f", mlScore)
+        tvMlConfidenceVal.setTextColor(mlColor)
         pbMlConfidence.progress = (mlScore * 100).toInt()
+        pbMlConfidence.progressTintList = ColorStateList.valueOf(mlColor)
         tvMlClassifiedBadge.text = "Classified as ${getVerdictText(mlScore).lowercase()}"
+        tvMlClassifiedBadge.setTextColor(mlColor)
 
         populateMlMetrics(llMlMetricsContainer, result)
 
@@ -320,15 +326,21 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val dlScore = result.cnnScore ?: result.cnnProb ?: 0f
 
         if (hasDlData) {
+            val dlColor = getVerdictColor(dlScore)
             tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
+            tvDlScoreBadge.setTextColor(dlColor)
             tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
+            tvDlConfidenceVal.setTextColor(dlColor)
             pbDlConfidence.progress = (dlScore * 100).toInt()
+            pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
             tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+            tvDlClassifiedBadge.setTextColor(dlColor)
             llDlPendingState?.visibility = View.GONE
             llDlResultState?.visibility = View.VISIBLE
             populateDlMetrics(llDlMetricsContainer, result, dlScore)
         } else {
             tvDlScoreBadge.text = "–"
+            tvDlScoreBadge.setTextColor(Color.parseColor("#888888"))
             llDlPendingState?.visibility = View.VISIBLE
             llDlResultState?.visibility = View.GONE
         }
@@ -360,26 +372,37 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         if (!result.urlFound) {
             // No URL in message
             tvUrlScoreBadge.text = "–"
+            tvUrlScoreBadge.setTextColor(Color.parseColor("#888888"))
             tvUrlConfidenceVal.text = "N/A"
+            tvUrlConfidenceVal.setTextColor(Color.parseColor("#888888"))
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "No URLs found in this message"
+            tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
         } else if (result.urlScore == null) {
             // URL found but not yet scanned
             tvUrlScoreBadge.text = "–"
+            tvUrlScoreBadge.setTextColor(Color.parseColor("#888888"))
             tvUrlConfidenceVal.text = "Pending"
+            tvUrlConfidenceVal.setTextColor(Color.parseColor("#888888"))
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "URL scan pending"
+            tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
         } else {
             val urlScore = result.urlScore
+            val urlColor = getVerdictColor(urlScore)
             tvUrlScoreBadge.text = String.format(Locale.US, "%.2f", urlScore)
+            tvUrlScoreBadge.setTextColor(urlColor)
             tvUrlConfidenceVal.text = String.format(Locale.US, "%.2f", urlScore)
+            tvUrlConfidenceVal.setTextColor(urlColor)
             pbUrlConfidence.progress = (urlScore * 100).toInt()
+            pbUrlConfidence.progressTintList = ColorStateList.valueOf(urlColor)
             val vStr = result.urlVerdict?.lowercase()
             tvUrlClassifiedBadge.text = when {
                 vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
                 vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
                 else -> "No threats detected"
             }
+            tvUrlClassifiedBadge.setTextColor(urlColor)
         }
 
         populateUrlMetrics(llUrlMetricsContainer, result, result.urlScore ?: 0f)

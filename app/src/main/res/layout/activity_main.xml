@@ -123,7 +123,7 @@
                     android:cropToPadding="true"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_scan"
-                    app:tint="@color/nav_icon_unselected" />
+                    app:tint="@color/nav_icon_selected" />
             </androidx.cardview.widget.CardView>
 
         </LinearLayout>

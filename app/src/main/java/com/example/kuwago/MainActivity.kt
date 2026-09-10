@@ -413,7 +413,8 @@ class MainActivity : AppCompatActivity() {
         val unselected = ContextCompat.getColor(this, R.color.nav_icon_unselected)
         val selected = ContextCompat.getColor(this, R.color.nav_icon_selected)
 
-        // Reset all to unselected (gray)
+        // Reset other tabs to unselected (gray), keep scan icon white
+        scanIcon.setColorFilter(selected)
         listOf(homeIcon, historyIcon, blacklistIcon, settingsIcon)
             .forEach { it.setColorFilter(unselected) }
         listOf(homeText, historyText, blacklistText, settingsText)

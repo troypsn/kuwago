@@ -21,6 +21,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
+            android:tint="@color/white"
             android:contentDescription="back"
             android:clickable="true"
             android:focusable="true"
