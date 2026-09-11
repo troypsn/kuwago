@@ -11,7 +11,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:fontFamily="sans-serif-black"
+        android:fontFamily="@font/sf_pro"
+        android:textStyle="bold"
         android:text="@string/message_history_title"
         android:textColor="@color/text_primary"
         android:textSize="28sp" />
@@ -35,7 +36,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-bold"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="SMS Inbox Integration"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp" />
@@ -70,7 +72,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:fontFamily="sans-serif-black"
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold"
             android:text="@string/detections_history_title"
             android:textColor="@color/text_primary"
             android:textSize="14sp" />
@@ -123,7 +126,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:fontFamily="sans-serif-bold"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="SMS Access Required"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp" />

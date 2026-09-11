@@ -36,7 +36,8 @@
             android:text="@string/settings_vpn_shield_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
-            android:fontFamily="sans-serif-black" />
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Scrollable content -->
@@ -79,7 +80,7 @@
                         android:text="@string/settings_vpn_shield_toggle_label"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:fontFamily="@font/sf_pro" />
 
                     <TextView
                         android:id="@+id/tv_vpn_shield_status"

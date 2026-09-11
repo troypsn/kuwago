@@ -21,7 +21,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:fontFamily="sans-serif-black"
+        android:fontFamily="@font/sf_pro"
+        android:textStyle="bold"
         android:gravity="center"
         android:text="⚠️ UNHANDLED MESSAGE ALERT"
         android:textColor="@color/color_alert"
@@ -57,7 +58,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:fontFamily="sans-serif-bold"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="Sender: BDO"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp" />
@@ -73,7 +75,8 @@
                 android:text="96.5% Threat"
                 android:textColor="@color/white"
                 android:textSize="11sp"
-                android:fontFamily="sans-serif-black" />
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView
@@ -102,7 +105,8 @@
             android:layout_height="52dp"
             android:background="@drawable/bg_status_badge"
             android:backgroundTint="@color/color_alert"
-            android:fontFamily="sans-serif-bold"
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold"
             android:text="🔒 Blacklist &amp; Suppress Notifications"
             android:textColor="@color/white"
             android:textSize="14sp" />
@@ -117,7 +121,7 @@
             android:text="Ignore &amp; Proceed to SMS App"
             android:textColor="#A0A0A0"
             android:textSize="13sp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/sf_pro"
             android:clickable="true"
             android:focusable="true" />
     </LinearLayout>

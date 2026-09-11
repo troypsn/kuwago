@@ -20,13 +20,13 @@
         android:scaleType="fitCenter"
         android:src="@drawable/kuwago_logo_black" />
 
-    <!-- Final Kuwago branding text with hat logo (1470x611 aspect ratio, +15% size) -->
+    <!-- Final Kuwago branding text with hat logo (1470x611 aspect ratio) -->
     <ImageView
         android:id="@+id/logo_text_hat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:maxWidth="345dp"
-        android:maxHeight="144dp"
+        android:maxWidth="220dp"
+        android:maxHeight="92dp"
         android:adjustViewBounds="true"
         android:layout_gravity="center"
         android:alpha="0"

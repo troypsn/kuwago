@@ -36,7 +36,8 @@
             android:text="@string/settings_online_scan_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
-            android:fontFamily="sans-serif-black" />
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Scrollable content -->
@@ -71,7 +72,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/sf_pro"
                     android:text="@string/settings_data_saver_title"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
@@ -117,7 +118,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/sf_pro"
                     android:text="@string/settings_online_scan_mode_label"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />

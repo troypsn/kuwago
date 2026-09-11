@@ -8,6 +8,8 @@
         <item name="android:windowBackground">@color/background_primary</item>
         <item name="android:statusBarColor">@color/background_primary</item>
         <item name="android:navigationBarColor">@color/nav_bg</item>
+        <item name="fontFamily">@font/sf_pro</item>
+        <item name="android:fontFamily">@font/sf_pro</item>
     </style>
 
     <style name="Theme.Mykotlinapp" parent="Base.Theme.Mykotlinapp" />

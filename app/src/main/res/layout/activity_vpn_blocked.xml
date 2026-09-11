@@ -21,7 +21,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:fontFamily="sans-serif-black"
+        android:fontFamily="@font/sf_pro"
+        android:textStyle="bold"
         android:text="🛡️ CONNECTION BLOCKED"
         android:textColor="@color/color_alert"
         android:textSize="22sp"
@@ -52,7 +53,7 @@
             android:text="BLOCKED SITE"
             android:textColor="#FF5370"
             android:textSize="10sp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/sf_pro"
             android:letterSpacing="0.12" />
 
         <TextView
@@ -60,7 +61,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:fontFamily="sans-serif-bold"
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold"
             android:text="phishing-site.com"
             android:textColor="@color/text_primary"
             android:textSize="18sp" />
@@ -107,7 +109,7 @@
             android:text="Your device is protected. No data was sent to this site."
             android:textColor="#80E0A0"
             android:textSize="13sp"
-            android:fontFamily="sans-serif-medium" />
+            android:fontFamily="@font/sf_pro" />
 
     </LinearLayout>
 
@@ -125,7 +127,8 @@
             android:layout_height="52dp"
             android:background="@drawable/bg_status_badge"
             android:backgroundTint="@color/color_alert"
-            android:fontFamily="sans-serif-bold"
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold"
             android:text="✓ I'm Protected — Dismiss"
             android:textColor="@color/white"
             android:textSize="14sp" />
@@ -141,7 +144,7 @@
             android:text="View scan history"
             android:textColor="#7090B8"
             android:textSize="13sp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/sf_pro"
             android:clickable="true"
             android:focusable="true" />
 
@@ -156,7 +159,7 @@
             android:text="Disable URL Shield (not recommended)"
             android:textColor="#585858"
             android:textSize="12sp"
-            android:fontFamily="sans-serif"
+            android:fontFamily="@font/sf_pro"
             android:clickable="true"
             android:focusable="true" />
 

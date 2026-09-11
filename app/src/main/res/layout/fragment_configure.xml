@@ -10,7 +10,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:fontFamily="sans-serif-black"
+        android:fontFamily="@font/sf_pro"
+        android:textStyle="bold"
         android:text="@string/configure_title"
         android:textColor="@color/black"
         android:textSize="28sp" />
@@ -40,7 +41,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:fontFamily="sans-serif-black"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="@string/detection_section"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
@@ -75,7 +77,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/real_time_scanning"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
@@ -125,7 +127,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/auto_black_listing"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
@@ -153,7 +155,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:fontFamily="sans-serif-black"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="@string/analysis_section"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
@@ -188,7 +191,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/deep_analysis_scan"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
@@ -238,7 +241,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/url_scanning"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
@@ -266,7 +269,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:fontFamily="sans-serif-black"
+                android:fontFamily="@font/sf_pro"
+                android:textStyle="bold"
                 android:text="@string/data_privacy_section"
                 android:textColor="@color/black"
                 android:textSize="14sp" />
@@ -301,7 +305,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/sms_retraining"
                             android:textColor="@color/black"
                             android:textSize="16sp" />
@@ -351,7 +355,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
+                            android:fontFamily="@font/sf_pro"
                             android:text="@string/misclassified_sms"
                             android:textColor="@color/black"
                             android:textSize="16sp" />

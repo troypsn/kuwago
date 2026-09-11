@@ -34,7 +34,8 @@
             android:text="@string/settings_ntc_report_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
-            android:fontFamily="sans-serif-black" />
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <LinearLayout

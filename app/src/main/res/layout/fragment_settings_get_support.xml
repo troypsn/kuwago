@@ -34,7 +34,8 @@
             android:text="@string/help_support_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
-            android:fontFamily="sans-serif-black" />
+            android:fontFamily="@font/sf_pro"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Scrollable FAQ content -->
@@ -63,7 +64,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="@font/sf_pro" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -95,7 +96,7 @@
                             android:text="@string/help_q_block_sender"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_block_sender"
@@ -163,7 +164,7 @@
                             android:text="@string/help_q_how_blocking"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_how_blocking"
@@ -226,7 +227,7 @@
                             android:text="@string/help_q_blocks_visible"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_blocks_visible"
@@ -272,7 +273,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="@font/sf_pro" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -304,7 +305,7 @@
                             android:text="@string/help_q_unblock"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_unblock"
@@ -367,7 +368,7 @@
                             android:text="@string/help_q_blocked_kept"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_blocked_kept"
@@ -430,7 +431,7 @@
                             android:text="@string/help_q_manual_add"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_manual_add"
@@ -476,7 +477,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="@font/sf_pro" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -508,7 +509,7 @@
                             android:text="@string/help_q_still_alerts"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_still_alerts"
@@ -571,7 +572,7 @@
                             android:text="@string/help_q_app_stopped"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_app_stopped"
@@ -634,7 +635,7 @@
                             android:text="@string/help_q_bg_permissions"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="@font/sf_pro" />
 
                         <ImageView
                             android:id="@+id/faq_arrow_bg_permissions"
@@ -680,7 +681,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:letterSpacing="0.08"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="@font/sf_pro" />
 
             <LinearLayout
                 android:id="@+id/contact_developers_card"
@@ -715,7 +716,7 @@
                         android:text="@string/help_contact_title"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:fontFamily="@font/sf_pro" />
 
                     <TextView
                         android:layout_width="wrap_content"
