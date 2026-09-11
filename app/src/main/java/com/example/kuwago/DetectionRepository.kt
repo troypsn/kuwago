@@ -26,34 +26,54 @@ object DetectionRepository {
         }
         val ctx = appContext ?: context.applicationContext
         if (isLoaded) return
-
-        // Observe Room DB LiveData reactively
-        SmsLocalRepository.getAllDetectionsLiveData(ctx).observeForever { dbResults ->
-            val list = dbResults.take(MAX_DETECTIONS)
-            _detections.postValue(list)
-        }
         isLoaded = true
+
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            SmsLocalRepository.getAllDetectionsLiveData(ctx).observeForever { dbResults ->
+                val list = dbResults.take(MAX_DETECTIONS)
+                _detections.postValue(list)
+            }
+        }
+    }
+
+    private fun updateInMemoryDetection(result: DetectionResult) {
+        val current = _detections.value.orEmpty().toMutableList()
+        val index = current.indexOfFirst { it.id == result.id || (it.message == result.message && it.sender == result.sender) }
+        if (index != -1) {
+            current[index] = result
+        } else {
+            current.add(0, result)
+        }
+        _detections.postValue(current.take(MAX_DETECTIONS))
     }
 
     fun addDetection(context: Context? = null, result: DetectionResult) {
-        val ctx = context?.applicationContext ?: appContext ?: return
-        loadIfNeeded(ctx)
-        scope.launch {
-            if (result.isScanning) {
-                SmsLocalRepository.saveSmsReceived(
-                    context = ctx,
-                    smsId = result.id,
-                    sender = result.sender,
-                    messageContent = result.message,
-                    timestamp = result.timestamp
-                )
-            } else {
-                SmsLocalRepository.saveAnalysisComplete(
-                    context = ctx,
-                    result = result
-                )
+        val ctx = context?.applicationContext ?: appContext
+        if (ctx != null) {
+            if (appContext == null) {
+                appContext = ctx
             }
+            loadIfNeeded(ctx)
+            scope.launch {
+                if (result.isScanning) {
+                    SmsLocalRepository.saveSmsReceived(
+                        context = ctx,
+                        smsId = result.id,
+                        sender = result.sender,
+                        messageContent = result.message,
+                        timestamp = result.timestamp
+                    )
+                } else {
+                    SmsLocalRepository.saveAnalysisComplete(
+                        context = ctx,
+                        result = result
+                    )
+                }
+            }
+        } else {
+            android.util.Log.w("DetectionRepository", "addDetection called without available Context")
         }
+        updateInMemoryDetection(result)
     }
 
     fun addDetection(result: DetectionResult) {
@@ -61,25 +81,34 @@ object DetectionRepository {
     }
 
     fun addDetections(context: Context? = null, results: List<DetectionResult>) {
-        val ctx = context?.applicationContext ?: appContext ?: return
-        loadIfNeeded(ctx)
-        scope.launch {
-            for (res in results) {
-                if (res.isScanning) {
-                    SmsLocalRepository.saveSmsReceived(
-                        context = ctx,
-                        smsId = res.id,
-                        sender = res.sender,
-                        messageContent = res.message,
-                        timestamp = res.timestamp
-                    )
-                } else {
-                    SmsLocalRepository.saveAnalysisComplete(
-                        context = ctx,
-                        result = res
-                    )
+        if (results.isEmpty()) return
+        val ctx = context?.applicationContext ?: appContext
+        if (ctx != null) {
+            if (appContext == null) {
+                appContext = ctx
+            }
+            loadIfNeeded(ctx)
+            scope.launch {
+                for (res in results) {
+                    if (res.isScanning) {
+                        SmsLocalRepository.saveSmsReceived(
+                            context = ctx,
+                            smsId = res.id,
+                            sender = res.sender,
+                            messageContent = res.message,
+                            timestamp = res.timestamp
+                        )
+                    } else {
+                        SmsLocalRepository.saveAnalysisComplete(
+                            context = ctx,
+                            result = res
+                        )
+                    }
                 }
             }
+        }
+        for (res in results) {
+            updateInMemoryDetection(res)
         }
     }
 

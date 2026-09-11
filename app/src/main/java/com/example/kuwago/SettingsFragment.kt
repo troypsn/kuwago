@@ -24,6 +24,9 @@ class SettingsFragment : Fragment() {
         const val MODE_ON_APP          = "on_app"
         const val MODE_DISABLED        = "disabled"
 
+        // NTC Auto-report Setting
+        const val KEY_AUTO_REPORT_NTC  = "auto_report_ntc"
+
         // Legacy keys kept for backwards compatibility
         const val KEY_URL_SCAN         = "url_scan"
         const val KEY_DEEP_ANALYSIS    = "deep_analysis"

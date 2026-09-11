@@ -81,6 +81,7 @@ object SmishingDetector {
 
         val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val allowSave = prefs.getBoolean("help_train_ai", false)
+        val autoReport = prefs.getBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, false)
 
         val onlineScanMode = prefs.getString(
             SettingsFragment.KEY_ONLINE_SCAN_MODE,
@@ -113,7 +114,7 @@ object SmishingDetector {
         }
 
         val censoredSenderName = censorSender(sender)
-        Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave")
+        Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave, autoReport=$autoReport")
 
         val mlPrediction = when (localResult.classification) {
             Classification.SAFE -> "benign"
@@ -168,15 +169,16 @@ object SmishingDetector {
             }
 
             withTimeout(TIMEOUT_MS) {
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave, ml_pred=$mlPrediction)...")
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave, auto_report=$autoReport, ml_pred=$mlPrediction)...")
                 val request = SmsScanRequest(
                     message = message,
                     hasUrl = hasUrl,
                     extractedUrl = extractedUrl,
-                    allowSave = allowSave,
                     sender = censoredSenderName,
                     mlPrediction = mlPrediction,
-                    mlConfidence = mlConfidence
+                    mlConfidence = mlConfidence,
+                    allowSave = allowSave,
+                    autoReport = autoReport
                 )
                 val response = RetrofitClient.instance.scanSms(request)
                 Log.i("SmishingDetector", "API response received successfully")

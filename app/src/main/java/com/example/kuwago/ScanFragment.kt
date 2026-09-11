@@ -114,7 +114,7 @@ class ScanFragment : Fragment() {
 
             withContext(Dispatchers.Main) {
                 // Save local result immediately so History shows it right away
-                DetectionRepository.addDetection(localResult)
+                DetectionRepository.addDetection(ctx, localResult)
 
                 setLoadingState(false)
 
@@ -142,7 +142,7 @@ class ScanFragment : Fragment() {
                             .copy(id = localResult.id) // keep the same ID so updateDetection matches
                     }
                     withContext(Dispatchers.Main) {
-                        DetectionRepository.updateDetection(deepResult)
+                        DetectionRepository.updateDetection(ctx, deepResult)
                     }
                 } catch (_: Exception) {
                     // CNN failed — local result stays; user can retry from History if needed

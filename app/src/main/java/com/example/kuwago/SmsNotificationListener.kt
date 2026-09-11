@@ -44,6 +44,7 @@ class SmsNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         instance = this
+        DetectionRepository.loadIfNeeded(this)
         Log.i("SmsNotifListener", "=== NOTIFICATION LISTENER CONNECTED & ACTIVE ===")
     }
 
@@ -79,10 +80,13 @@ class SmsNotificationListener : NotificationListenerService() {
                 packageName.contains("mms", ignoreCase = true) ||
                 packageName.contains("telephony", ignoreCase = true)
 
+        val isMessagingNotification = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification) != null ||
+                notification.category == Notification.CATEGORY_MESSAGE
+
         val isAllowedApp = if (hasCustomSettings) {
-            enabledApps.contains(packageName) || (isNativeSms && enabledApps.isEmpty())
+            enabledApps.contains(packageName) || isNativeSms || (scanOtherApps && isMessagingNotification)
         } else {
-            isNativeSms || SettingsAppSelectionFragment.DEFAULT_MESSAGING_PACKAGES.contains(packageName) || notification.category == Notification.CATEGORY_MESSAGE
+            isNativeSms || SettingsAppSelectionFragment.DEFAULT_MESSAGING_PACKAGES.contains(packageName) || isMessagingNotification
         }
 
         if (!isAllowedApp) return
@@ -152,6 +156,15 @@ class SmsNotificationListener : NotificationListenerService() {
             for (delay in longArrayOf(200, 600, 1500, 3000)) {
                 handler.postDelayed({ killAllBlacklistedFromApp(packageName) }, delay)
             }
+            val blacklistedResult = DetectionResult(
+                sender = extractedSender,
+                message = extractedText,
+                classification = Classification.SMISHING,
+                probability = 1.0f,
+                isScanning = false,
+                overallExplanation = "Sender or message content is on your blacklist."
+            )
+            DetectionRepository.addDetection(this@SmsNotificationListener, blacklistedResult)
             return
         }
 
@@ -201,17 +214,17 @@ class SmsNotificationListener : NotificationListenerService() {
 
         // 3. Run the scan
         scope.launch {
+            val placeholder = DetectionResult(
+                sender = sender,
+                message = messageText,
+                isScanning = true
+            )
+            DetectionRepository.addDetection(this@SmsNotificationListener, placeholder)
+
             try {
-                val placeholder = DetectionResult(
-                    sender = sender,
-                    message = messageText,
-                    isScanning = true
-                )
-                DetectionRepository.addDetection(placeholder)
+                val finalResult = scanMessage(sender, messageText, placeholder.id, placeholder.timestamp)
 
-                val finalResult = scanMessage(sender, messageText, placeholder.id)
-
-                DetectionRepository.updateDetection(finalResult)
+                DetectionRepository.updateDetection(this@SmsNotificationListener, finalResult)
 
                 // 4. Cancel the scanning notification
                 cancelOwnNotification(scanNotifId)
@@ -244,6 +257,17 @@ class SmsNotificationListener : NotificationListenerService() {
             } catch (e: Exception) {
                 Log.e("SmsNotifListener", "[INSTANT] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
+                val fallback = DetectionResult(
+                    id = placeholder.id,
+                    sender = sender,
+                    message = messageText,
+                    classification = Classification.SAFE,
+                    probability = 0f,
+                    isScanning = false,
+                    timestamp = placeholder.timestamp,
+                    overallExplanation = "Scan failed to complete: ${e.message}"
+                )
+                DetectionRepository.updateDetection(this@SmsNotificationListener, fallback)
             }
         }
     }
@@ -265,17 +289,17 @@ class SmsNotificationListener : NotificationListenerService() {
         postScanningNotification(scanNotifId, sender)
 
         scope.launch {
+            val placeholder = DetectionResult(
+                sender = sender,
+                message = messageText,
+                isScanning = true
+            )
+            DetectionRepository.addDetection(this@SmsNotificationListener, placeholder)
+
             try {
-                val placeholder = DetectionResult(
-                    sender = sender,
-                    message = messageText,
-                    isScanning = true
-                )
-                DetectionRepository.addDetection(placeholder)
+                val finalResult = scanMessage(sender, messageText, placeholder.id, placeholder.timestamp)
 
-                val finalResult = scanMessage(sender, messageText, placeholder.id)
-
-                DetectionRepository.updateDetection(finalResult)
+                DetectionRepository.updateDetection(this@SmsNotificationListener, finalResult)
 
                 // Cancel the scanning notification
                 cancelOwnNotification(scanNotifId)
@@ -304,6 +328,17 @@ class SmsNotificationListener : NotificationListenerService() {
             } catch (e: Exception) {
                 Log.e("SmsNotifListener", "[PASSTHROUGH] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
+                val fallback = DetectionResult(
+                    id = placeholder.id,
+                    sender = sender,
+                    message = messageText,
+                    classification = Classification.SAFE,
+                    probability = 0f,
+                    isScanning = false,
+                    timestamp = placeholder.timestamp,
+                    overallExplanation = "Scan failed to complete: ${e.message}"
+                )
+                DetectionRepository.updateDetection(this@SmsNotificationListener, fallback)
             }
         }
     }
@@ -311,7 +346,8 @@ class SmsNotificationListener : NotificationListenerService() {
     private suspend fun scanMessage(
         sender: String,
         messageText: String,
-        placeholderId: String
+        placeholderId: String,
+        timestamp: Long = System.currentTimeMillis()
     ): DetectionResult {
         val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val onlineScanMode = prefs.getString(
@@ -330,6 +366,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 sender = sender,
                 message = messageText,
                 overallExplanation = explanation,
+                timestamp = timestamp,
                 isScanning = false,
                 urlFound = hasUrl,
                 extractedUrl = extractedUrl,
@@ -339,7 +376,7 @@ class SmsNotificationListener : NotificationListenerService() {
         } else {
             SmishingDetector.analyze(
                 this@SmsNotificationListener, messageText, sender, isManual = false
-            ).copy(id = placeholderId, sender = sender)
+            ).copy(id = placeholderId, sender = sender, timestamp = timestamp, isScanning = false)
         }
     }
 

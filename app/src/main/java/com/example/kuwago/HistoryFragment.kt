@@ -148,14 +148,7 @@ class HistoryFragment : Fragment() {
                     .setMessage("Are you sure you want to turn off \"SMS Inbox Integration\"?")
                     .setPositiveButton("Turn Off") { _, _ ->
                         tvPermissionDesc.text = "Grant permission to analyze device SMS history"
-                        val scans = DetectionRepository.detections.value.orEmpty()
-                        smsList.clear()
-                        smsList.addAll(scans)
-                        smsAdapter.notifyDataSetChanged()
-                        if (smsList.isEmpty()) {
-                            historyRecyclerView.visibility = View.GONE
-                            layoutEmptyState.visibility = View.VISIBLE
-                        }
+                        loadAndClassifySms()
                     }
                     .setNegativeButton("Cancel") { dialog, _ ->
                         isUserAction = false
@@ -232,22 +225,11 @@ class HistoryFragment : Fragment() {
         if (hasSmsPermission()) {
             switchSmsPermission.isChecked = true
             tvPermissionDesc.text = "SMS Inbox scan active"
-            loadAndClassifySms()
         } else {
             switchSmsPermission.isChecked = false
             tvPermissionDesc.text = "Grant permission to analyze device SMS history"
-            // Retain any scans currently in repository so they don't disappear
-            val scans = DetectionRepository.detections.value.orEmpty()
-            if (scans.isNotEmpty()) {
-                smsList.clear()
-                smsList.addAll(scans)
-                smsAdapter.notifyDataSetChanged()
-                historyRecyclerView.visibility = View.VISIBLE
-                layoutEmptyState.visibility = View.GONE
-            } else {
-                clearSmsList()
-            }
         }
+        loadAndClassifySms()
         isUserAction = true
     }
 
@@ -268,9 +250,55 @@ class HistoryFragment : Fragment() {
             val results = withContext(Dispatchers.IO) {
                 val list = mutableListOf<DetectionResult>()
 
-                // 1. First keep existing repository detections (from manual scans and live listener)
-                val repoDetections = DetectionRepository.detections.value.orEmpty()
-                list.addAll(repoDetections)
+                // 1. Fetch all scanned/intercepted detections directly from Room DB
+                val db = com.example.kuwago.db.SmsLocalRepository.getDatabase(ctx)
+                val dbSmsList = db.smsDao().getAllSmsList()
+                val dbDetections = dbSmsList.map { sms ->
+                    val analysis = db.analysisDao().getAnalysisResultBySmsId(sms.smsId)
+                    val urls = db.analysisDao().getUrlAnalysesBySmsId(sms.smsId)
+                    val decision = db.analysisDao().getFinalDecisionBySmsId(sms.smsId)
+
+                    val classification = decision?.riskLevel?.let {
+                        try { Classification.valueOf(it) } catch (_: Exception) { Classification.SAFE }
+                    } ?: Classification.SAFE
+
+                    val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
+                    val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
+                    val firstUrlEntity = urls.firstOrNull()
+                    val firstUrl = firstUrlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val hasDlRun = analysis?.dlConfidence != null
+                    val isMalicious = firstUrlEntity?.isMalicious == 1
+                    val urlScore = firstUrlEntity?.urlScore ?: if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
+                    val urlVerdict = firstUrlEntity?.urlVerdict ?: if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
+
+                    val rawResult = DetectionResult(
+                        id = sms.smsId,
+                        sender = sms.senderNumber,
+                        message = sms.messageContent,
+                        classification = classification,
+                        probability = prob,
+                        isScanning = sms.isProcessed == 0,
+                        timestamp = sms.receivedTimestamp,
+                        cnnScore = analysis?.dlConfidence,
+                        cnnVerdict = analysis?.dlPrediction,
+                        urlFound = hasUrl,
+                        extractedUrl = firstUrl,
+                        urlScore = urlScore,
+                        urlVerdict = urlVerdict,
+                        localVerdict = analysis?.mlPrediction,
+                        rfProb = analysis?.mlConfidence ?: 0f,
+                        xgbProb = analysis?.mlConfidence ?: 0f
+                    )
+                    rawResult.copy(
+                        probability = rawResult.calculateEnsembleScore(),
+                        classification = rawResult.getEffectiveClassification()
+                    )
+                }.filter { !it.id.startsWith("synced_") && it.sender != "Kuwago Database" }
+
+                // Merge with in-memory detections
+                val inMemoryDetections = DetectionRepository.detections.value.orEmpty()
+                val combinedRepo = (inMemoryDetections + dbDetections).distinctBy { it.id }
+                list.addAll(combinedRepo)
 
                 // 2. Load SMS inbox entries (only if permission granted)
                 if (hasSmsPermission()) {
@@ -305,7 +333,7 @@ class HistoryFragment : Fragment() {
                             newlyClassified.add(finalRes)
                         }
                         if (newlyClassified.isNotEmpty()) {
-                            DetectionRepository.addDetections(newlyClassified)
+                            DetectionRepository.addDetections(ctx, newlyClassified)
                         }
                     }
                 }
@@ -320,7 +348,11 @@ class HistoryFragment : Fragment() {
                 historyRecyclerView.visibility = View.GONE
                 layoutEmptyState.visibility = View.VISIBLE
                 tvEmptyTitle.text = "No Messages Found"
-                tvEmptyMessage.text = "There are no SMS messages in your device inbox."
+                tvEmptyMessage.text = if (hasSmsPermission()) {
+                    "There are no SMS messages in your device inbox."
+                } else {
+                    "No scanned messages found. Enable SMS Inbox Integration or receive messages to see history."
+                }
             } else {
                 layoutEmptyState.visibility = View.GONE
                 historyRecyclerView.visibility = View.VISIBLE

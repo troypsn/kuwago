@@ -685,7 +685,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
                     // Notify history list to update chip state
                     detectionResult = finalResult
-                    DetectionRepository.addDetection(finalResult)
+                    DetectionRepository.addDetection(ctx, finalResult)
                     onResultUpdatedListener?.invoke(finalResult)
 
                     Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()

@@ -203,6 +203,29 @@ class SmishingDetectorTest {
         assertEquals("automatic", SettingsFragment.MODE_AUTOMATIC)
         assertEquals("on_app", SettingsFragment.MODE_ON_APP)
         assertEquals("disabled", SettingsFragment.MODE_DISABLED)
+        assertEquals("auto_report_ntc", SettingsFragment.KEY_AUTO_REPORT_NTC)
+    }
+
+    @Test
+    fun autoReportSettingsAndRequestSerializationTest() {
+        val requestTrue = com.example.kuwago.network.SmsScanRequest(
+            message = "CONGRATS! You won a gift card. Claim at http://fake-claim.com/",
+            hasUrl = true,
+            extractedUrl = "http://fake-claim.com/",
+            sender = "+639123456789",
+            mlPrediction = "suspicious",
+            mlConfidence = 0.75f,
+            allowSave = false,
+            autoReport = true
+        )
+        val gson = com.google.gson.Gson()
+        val jsonTrue = gson.toJson(requestTrue)
+        assertTrue("Expected auto_report:true in JSON", jsonTrue.contains("\"auto_report\":true"))
+        assertTrue("Expected allow_save:false in JSON", jsonTrue.contains("\"allow_save\":false"))
+
+        val requestFalse = requestTrue.copy(autoReport = false)
+        val jsonFalse = gson.toJson(requestFalse)
+        assertTrue("Expected auto_report:false in JSON", jsonFalse.contains("\"auto_report\":false"))
     }
 
     @Test
