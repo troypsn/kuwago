@@ -17,6 +17,17 @@ class SettingsFragment : Fragment() {
         const val KEY_SCAN_INSTANTLY   = "scan_incoming_instantly"
         const val KEY_VPN_SHIELD_ENABLED = "vpn_shield_enabled"
 
+        // Online Scan Consolidated Settings
+        const val KEY_ONLINE_SCAN_MODE = "online_scan_mode"
+        const val KEY_DATA_SAVER       = "data_saver"
+        const val MODE_AUTOMATIC       = "automatic"
+        const val MODE_ON_APP          = "on_app"
+        const val MODE_DISABLED        = "disabled"
+
+        // Legacy keys kept for backwards compatibility
+        const val KEY_URL_SCAN         = "url_scan"
+        const val KEY_DEEP_ANALYSIS    = "deep_analysis"
+
         // Notification channel IDs
         const val CHANNEL_SCANNING    = "kuwago_scanning"
         const val CHANNEL_RESULT      = "kuwago_result_v2"
@@ -41,12 +52,8 @@ class SettingsFragment : Fragment() {
             openSubPage(SettingsRealtimeScanFragment())
         }
 
-        view.findViewById<View>(R.id.settings_row_deep_analysis).setOnClickListener {
-            openSubPage(SettingsDeepAnalysisFragment())
-        }
-
-        view.findViewById<View>(R.id.settings_row_url_scan).setOnClickListener {
-            openSubPage(SettingsUrlScanFragment())
+        view.findViewById<View>(R.id.settings_row_online_scan).setOnClickListener {
+            openSubPage(SettingsOnlineScanFragment())
         }
 
         view.findViewById<View>(R.id.settings_row_vpn_shield).setOnClickListener {

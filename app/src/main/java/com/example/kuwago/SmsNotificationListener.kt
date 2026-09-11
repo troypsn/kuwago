@@ -209,9 +209,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 )
                 DetectionRepository.addDetection(placeholder)
 
-                val finalResult = SmishingDetector.analyze(
-                    this@SmsNotificationListener, messageText, sender
-                ).copy(id = placeholder.id, sender = sender)
+                val finalResult = scanMessage(sender, messageText, placeholder.id)
 
                 DetectionRepository.updateDetection(finalResult)
 
@@ -275,9 +273,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 )
                 DetectionRepository.addDetection(placeholder)
 
-                val finalResult = SmishingDetector.analyze(
-                    this@SmsNotificationListener, messageText, sender
-                ).copy(id = placeholder.id, sender = sender)
+                val finalResult = scanMessage(sender, messageText, placeholder.id)
 
                 DetectionRepository.updateDetection(finalResult)
 
@@ -309,6 +305,41 @@ class SmsNotificationListener : NotificationListenerService() {
                 Log.e("SmsNotifListener", "[PASSTHROUGH] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
             }
+        }
+    }
+
+    private suspend fun scanMessage(
+        sender: String,
+        messageText: String,
+        placeholderId: String
+    ): DetectionResult {
+        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val onlineScanMode = prefs.getString(
+            SettingsFragment.KEY_ONLINE_SCAN_MODE,
+            SettingsFragment.MODE_AUTOMATIC
+        ) ?: SettingsFragment.MODE_AUTOMATIC
+
+        return if (onlineScanMode == SettingsFragment.MODE_ON_APP || onlineScanMode == SettingsFragment.MODE_DISABLED) {
+            Log.i("SmsNotifListener", "Running local-only classification (onlineScanMode=$onlineScanMode)")
+            val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
+            val hasUrl = LocalClassifier.hasUrl(messageText)
+            val extractedUrl = LocalClassifier.extractUrl(messageText)
+            val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
+            localResult.copy(
+                id = placeholderId,
+                sender = sender,
+                message = messageText,
+                overallExplanation = explanation,
+                isScanning = false,
+                urlFound = hasUrl,
+                extractedUrl = extractedUrl,
+                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+            )
+        } else {
+            SmishingDetector.analyze(
+                this@SmsNotificationListener, messageText, sender, isManual = false
+            ).copy(id = placeholderId, sender = sender)
         }
     }
 

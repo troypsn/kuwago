@@ -197,6 +197,15 @@ class SmishingDetectorTest {
     }
 
     @Test
+    fun onlineScanSettingsConstantsTest() {
+        assertEquals("online_scan_mode", SettingsFragment.KEY_ONLINE_SCAN_MODE)
+        assertEquals("data_saver", SettingsFragment.KEY_DATA_SAVER)
+        assertEquals("automatic", SettingsFragment.MODE_AUTOMATIC)
+        assertEquals("on_app", SettingsFragment.MODE_ON_APP)
+        assertEquals("disabled", SettingsFragment.MODE_DISABLED)
+    }
+
+    @Test
     fun printFullSummary() {
         println("\n╔══════════════════════════════════════════╗")
         println("║     KUWAGO SMISHING DETECTOR TEST        ║")

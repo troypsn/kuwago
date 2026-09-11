@@ -63,11 +63,36 @@ class SmsReceiver : BroadcastReceiver() {
                             continue
                         }
                         
-                        val finalResult = SmishingDetector.analyze(context, fullBody, sender).copy(
-                            id = smsId,
-                            sender = sender,
-                            timestamp = firstTimestamp
-                        )
+                        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+                        val onlineScanMode = prefs.getString(
+                            SettingsFragment.KEY_ONLINE_SCAN_MODE,
+                            SettingsFragment.MODE_AUTOMATIC
+                        ) ?: SettingsFragment.MODE_AUTOMATIC
+
+                        val finalResult = if (onlineScanMode == SettingsFragment.MODE_ON_APP || onlineScanMode == SettingsFragment.MODE_DISABLED) {
+                            val localResult = LocalClassifier.classify(context, fullBody)
+                            val hasUrl = LocalClassifier.hasUrl(fullBody)
+                            val extractedUrl = LocalClassifier.extractUrl(fullBody)
+                            val explanation = LocalClassifier.generateHumanReadableExplanation(fullBody, localResult.classification)
+                            localResult.copy(
+                                id = smsId,
+                                sender = sender,
+                                message = fullBody,
+                                overallExplanation = explanation,
+                                timestamp = firstTimestamp,
+                                isScanning = false,
+                                urlFound = hasUrl,
+                                extractedUrl = extractedUrl,
+                                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                            )
+                        } else {
+                            SmishingDetector.analyze(context, fullBody, sender, isManual = false).copy(
+                                id = smsId,
+                                sender = sender,
+                                timestamp = firstTimestamp
+                            )
+                        }
                         
                         DetectionRepository.updateDetection(context, finalResult)
                         Log.d("SmsReceiver", "Analysis completed for id=$smsId")

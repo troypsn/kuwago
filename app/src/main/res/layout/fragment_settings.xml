@@ -354,9 +354,9 @@
                 android:background="@drawable/bg_action_card"
                 android:orientation="vertical">
 
-                <!-- Deep Analysis -->
+                <!-- Online Scan -->
                 <LinearLayout
-                    android:id="@+id/settings_row_deep_analysis"
+                    android:id="@+id/settings_row_online_scan"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -369,11 +369,11 @@
                     <ImageView
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:src="@drawable/ic_ml"
+                        android:src="@drawable/ic_dl"
                         android:padding="6dp"
                         android:tint="@color/white"
                         android:background="@drawable/bg_action_card"
-                        android:contentDescription="deep analysis" />
+                        android:contentDescription="online scan" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -385,7 +385,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/settings_deep_analysis_title"
+                            android:text="@string/settings_online_scan_title"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
                             android:fontFamily="sans-serif-medium" />
@@ -393,67 +393,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/settings_deep_analysis_desc"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:src="@drawable/ic_chevron_right"
-                        android:alpha="0.5"
-                        android:tint="@color/white"
-                        android:contentDescription="open" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider_gray"
-                    android:layout_marginStart="64dp" />
-
-                <!-- URL Scan -->
-                <LinearLayout
-                    android:id="@+id/settings_row_url_scan"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:src="@drawable/ic_link"
-                        android:padding="6dp"
-                        android:tint="@color/white"
-                        android:background="@drawable/bg_action_card"
-                        android:contentDescription="url scan" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/settings_url_scan_title"
-                            android:textColor="@color/text_primary"
-                            android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/settings_url_scan_desc"
+                            android:text="@string/settings_online_scan_desc"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:layout_marginTop="2dp" />

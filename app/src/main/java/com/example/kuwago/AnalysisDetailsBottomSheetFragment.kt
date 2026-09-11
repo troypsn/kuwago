@@ -638,7 +638,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         scope.launch {
             try {
                 val finalResult = withContext(Dispatchers.IO) {
-                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender)
+                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender, isManual = true)
                     scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
                 }
 

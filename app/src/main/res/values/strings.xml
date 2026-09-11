@@ -270,4 +270,17 @@
     <string name="onboarding_apps_title">Select Applications</string>
     <string name="onboarding_apps_body">Choose which installed apps Kuwago should monitor for suspicious messages.</string>
     <string name="onboarding_finish">Finish</string>
+
+    <!-- Online Scan Consolidated Settings -->
+    <string name="settings_online_scan_title">Online Scan</string>
+    <string name="settings_online_scan_desc">Configure remote CNN model and URL threat checks</string>
+    <string name="settings_online_scan_mode_label">Scan Mode</string>
+    <string name="settings_online_scan_mode_auto">Automatic</string>
+    <string name="settings_online_scan_mode_auto_desc">Full CNN text analysis and URL threat intelligence are performed for all incoming messages, both in background and in-app.</string>
+    <string name="settings_online_scan_mode_on_app">When On App</string>
+    <string name="settings_online_scan_mode_on_app_desc">Online CNN analysis and URL scans run only while using Kuwago. Background checks use local on-device ML only.</string>
+    <string name="settings_online_scan_mode_disabled">Disabled</string>
+    <string name="settings_online_scan_mode_disabled_desc">Online scanning is turned off for automatic detection. Messages are checked using local on-device ML. Manual scans will still use full online analysis.</string>
+    <string name="settings_data_saver_title">Data Saver</string>
+    <string name="settings_data_saver_desc">When enabled and connected to mobile data, Kuwago skips online CNN analysis and URL reputation scans to conserve cellular bandwidth. Full online scanning resumes automatically on Wi-Fi.</string>
 </resources>

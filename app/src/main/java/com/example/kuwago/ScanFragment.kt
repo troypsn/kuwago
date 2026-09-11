@@ -138,7 +138,7 @@ class ScanFragment : Fragment() {
             scope.launch {
                 try {
                     val deepResult = withContext(Dispatchers.IO) {
-                        SmishingDetector.analyze(ctx, messageText, sender)
+                        SmishingDetector.analyze(ctx, messageText, sender, isManual = true)
                             .copy(id = localResult.id) // keep the same ID so updateDetection matches
                     }
                     withContext(Dispatchers.Main) {

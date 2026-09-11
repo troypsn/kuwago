@@ -1,6 +1,8 @@
 package com.example.kuwago
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.example.kuwago.network.RetrofitClient
 import com.example.kuwago.network.SmsScanRequest
 import com.example.kuwago.network.CnnAnalysis
@@ -11,6 +13,17 @@ import kotlinx.coroutines.withTimeout
 object SmishingDetector {
 
     private const val TIMEOUT_MS = 60000L // 60 seconds for backend CNN + VirusTotal URL scan
+
+    fun isConnectedToMobileData(context: Context): Boolean {
+        return try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     fun censorSender(sender: String): String {
         if (sender.isBlank() || sender.equals("Unknown", ignoreCase = true)) {
@@ -41,8 +54,13 @@ object SmishingDetector {
         return start + "*".repeat(len - 2) + end
     }
 
-    suspend fun analyze(context: Context, message: String, sender: String): DetectionResult {
-        Log.i("SmishingDetector", "Starting ensemble scan...")
+    suspend fun analyze(
+        context: Context,
+        message: String,
+        sender: String,
+        isManual: Boolean = false
+    ): DetectionResult {
+        Log.i("SmishingDetector", "Starting ensemble scan (isManual=$isManual)...")
         
         val localResult = try {
             LocalClassifier.classify(context, message)
@@ -61,8 +79,38 @@ object SmishingDetector {
         val extractedUrl = LocalClassifier.extractUrl(message)
         Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl")
 
-        val prefs = context.getSharedPreferences("kuwago_settings", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val allowSave = prefs.getBoolean("help_train_ai", false)
+
+        val onlineScanMode = prefs.getString(
+            SettingsFragment.KEY_ONLINE_SCAN_MODE,
+            SettingsFragment.MODE_AUTOMATIC
+        ) ?: SettingsFragment.MODE_AUTOMATIC
+        val dataSaver = prefs.getBoolean(SettingsFragment.KEY_DATA_SAVER, false)
+        val isMobileData = isConnectedToMobileData(context)
+        val skipDueToDataSaver = dataSaver && isMobileData
+        val isOnlineDisabled = onlineScanMode == SettingsFragment.MODE_DISABLED && !isManual
+
+        if (isOnlineDisabled || skipDueToDataSaver) {
+            val skipReason = if (skipDueToDataSaver) "Skipped (Data Saver active on mobile data)" else "Online scan disabled"
+            Log.i("SmishingDetector", "Skipping online scan: $skipReason (isManual=$isManual)")
+            val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, localResult.classification)
+            return localResult.copy(
+                sender = sender,
+                message = message,
+                overallExplanation = fallbackExplanation,
+                isScanning = false,
+                cnnProb = null,
+                cnnScore = null,
+                cnnVerdict = skipReason,
+                urlFound = hasUrl,
+                extractedUrl = extractedUrl,
+                urlScore = null,
+                urlVerdict = null,
+                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+            )
+        }
 
         val censoredSenderName = censorSender(sender)
         Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave")
