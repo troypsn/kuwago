@@ -56,10 +56,22 @@ class OnboardingActivity : AppCompatActivity(), OnboardingHost {
     override fun requestSmsPermissions() = smsPermissionLauncher.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS))
     override fun requestNotificationPermission() { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
     override fun requestVpnPermission() {
-        VpnService.prepare(this)?.let(vpnPrepareLauncher::launch) ?: run {
-            startVpnService()
+        try {
+            VpnService.prepare(this)?.let(vpnPrepareLauncher::launch) ?: run {
+                startVpnService()
+                navigateToNextPage()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("OnboardingActivity", "Failed to prepare VPN", e)
             navigateToNextPage()
         }
     }
-    private fun startVpnService() = ContextCompat.startForegroundService(this, Intent(this, KuwagoVpnService::class.java).setAction(KuwagoVpnService.ACTION_START))
+    private fun startVpnService() {
+        try {
+            NotificationHelper.createAllNotificationChannels(this)
+            ContextCompat.startForegroundService(this, Intent(this, KuwagoVpnService::class.java).setAction(KuwagoVpnService.ACTION_START))
+        } catch (e: Exception) {
+            android.util.Log.e("OnboardingActivity", "Failed to start VPN service", e)
+        }
+    }
 }

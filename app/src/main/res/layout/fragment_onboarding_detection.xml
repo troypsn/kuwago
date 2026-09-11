@@ -4,103 +4,108 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="25dp">
+    android:padding="30dp">
 
- <ImageView
-     android:id="@+id/imageView"
-     android:layout_width="match_parent"
-     android:layout_height="130dp"
-     android:layout_marginTop="50dp"
-     app:srcCompat="@drawable/message_find" />
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="130dp"
+        android:layout_marginTop="30dp"
+        app:srcCompat="@drawable/message_find" />
 
- <TextView
-     android:layout_width="match_parent"
-     android:layout_height="wrap_content"
-     android:layout_marginTop="12dp"
-     android:fontFamily="@font/sf_pro"
-     android:text="@string/onboarding_detection_title"
-     android:textAlignment="center"
-     android:textColor="@color/text_primary"
-     android:textSize="28sp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/sf_pro"
+        android:text="@string/onboarding_detection_title"
+        android:textAlignment="center"
+        android:textColor="@color/text_primary"
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
- <TextView
-     android:layout_width="match_parent"
-     android:layout_height="wrap_content"
-     android:layout_marginTop="8dp"
-     android:fontFamily="@font/sf_pro"
-     android:text="@string/onboarding_detection_body"
-     android:textAlignment="center"
-     android:textColor="@color/text_secondary"
-     android:textSize="15sp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/sf_pro"
+        android:lineSpacingExtra="4dp"
+        android:text="@string/onboarding_detection_body"
+        android:textAlignment="center"
+        android:textColor="@color/text_secondary"
+        android:textSize="15sp" />
 
- <ScrollView
-     android:layout_width="match_parent"
-     android:layout_height="0dp"
-     android:layout_marginTop="20dp"
-     android:layout_weight="1">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:layout_weight="1">
 
-  <LinearLayout
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-   <TextView
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:background="@drawable/bg_action_card"
-       android:fontFamily="@font/sf_pro"
-       android:padding="16dp"
-       android:text="@string/onboarding_layer_local"
-       android:textAlignment="center"
-       android:textColor="@color/text_primary"
-       android:textSize="15sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_action_card"
+                android:fontFamily="@font/sf_pro"
+                android:padding="16dp"
+                android:text="@string/onboarding_layer_local"
+                android:textAlignment="center"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
 
-   <TextView
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:layout_marginTop="10dp"
-       android:background="@drawable/bg_action_card"
-       android:fontFamily="@font/sf_pro"
-       android:padding="16dp"
-       android:text="@string/onboarding_layer_deep"
-       android:textAlignment="center"
-       android:textColor="@color/text_primary"
-       android:textSize="15sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_action_card"
+                android:fontFamily="@font/sf_pro"
+                android:padding="16dp"
+                android:text="@string/onboarding_layer_deep"
+                android:textAlignment="center"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
 
-   <TextView
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:layout_marginTop="10dp"
-       android:background="@drawable/bg_action_card"
-       android:fontFamily="@font/sf_pro"
-       android:padding="16dp"
-       android:text="@string/onboarding_layer_url"
-       android:textAlignment="center"
-       android:textColor="@color/text_primary"
-       android:textSize="15sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_action_card"
+                android:fontFamily="@font/sf_pro"
+                android:padding="16dp"
+                android:text="@string/onboarding_layer_url"
+                android:textAlignment="center"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
 
-   <TextView
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:layout_marginTop="10dp"
-       android:background="@drawable/bg_action_card"
-       android:fontFamily="@font/sf_pro"
-       android:padding="16dp"
-       android:text="@string/onboarding_layer_final"
-       android:textAlignment="center"
-       android:textColor="@color/text_primary"
-       android:textSize="15sp" />
-  </LinearLayout>
- </ScrollView>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_action_card"
+                android:fontFamily="@font/sf_pro"
+                android:padding="16dp"
+                android:text="@string/onboarding_layer_final"
+                android:textAlignment="center"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </ScrollView>
 
- <Button
-     android:id="@+id/btn_detection_continue"
-     android:layout_width="match_parent"
-     android:layout_height="56dp"
-     android:layout_marginTop="16dp"
-     android:background="@drawable/bg_onboarding_primary"
-     android:text="@string/onboarding_continue"
-     android:textAllCaps="false"
-     android:textColor="@color/white" />
+    <Button
+        android:id="@+id/btn_detection_continue"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_onboarding_primary"
+        android:fontFamily="@font/sf_pro"
+        android:text="@string/onboarding_continue"
+        android:textAllCaps="false"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
 </LinearLayout>

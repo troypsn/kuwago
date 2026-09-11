@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -90,6 +91,11 @@ class KuwagoVpnService : VpnService() {
     // Service lifecycle
     // ─────────────────────────────────────────────────────────────────────────
 
+    override fun onCreate() {
+        super.onCreate()
+        NotificationHelper.createAllNotificationChannels(this)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return when (intent?.action) {
             ACTION_STOP -> { stopVpn(); START_NOT_STICKY }
@@ -112,9 +118,36 @@ class KuwagoVpnService : VpnService() {
     // VPN setup / teardown
     // ─────────────────────────────────────────────────────────────────────────
 
+    private fun safeStartForeground() {
+        try {
+            val notif = buildOngoingNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIF_ID_ONGOING, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIF_ID_ONGOING, notif)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start foreground service", e)
+        }
+    }
+
+    private fun stopForegroundSafely() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun startVpn() {
         if (running) return
         Log.i(TAG, "Starting Kuwago VPN (URL Shield)")
+
+        // Satisfy Android FGS requirement immediately
+        safeStartForeground()
 
         try {
             val builder = Builder()
@@ -133,14 +166,13 @@ class KuwagoVpnService : VpnService() {
             tunFd = builder.establish()
             if (tunFd == null) {
                 Log.e(TAG, "VPN establish() returned null — permission may be missing")
+                stopForegroundSafely()
+                stopSelf()
                 return
             }
 
             running = true
             updateActiveState(true)
-
-            // Show the mandatory ongoing foreground notification
-            startForeground(NOTIF_ID_ONGOING, buildOngoingNotification())
 
             // Start the DNS proxy loop on a background thread
             serviceScope.launch { runDnsProxy() }
@@ -148,6 +180,8 @@ class KuwagoVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
             running = false
+            stopForegroundSafely()
+            stopSelf()
         }
     }
 
@@ -162,12 +196,7 @@ class KuwagoVpnService : VpnService() {
         UrlReputationCache.invalidate()
         updateActiveState(false)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
-        }
+        stopForegroundSafely()
         stopSelf()
     }
 

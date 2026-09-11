@@ -3,15 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_centerVertical="false"
-    android:background="@color/black"
+    android:background="@color/background_primary"
     android:orientation="vertical"
-    android:padding="32dp">
+    android:padding="30dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="247dp"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="40dp"
         android:orientation="vertical">
 
         <ImageView
@@ -26,14 +25,16 @@
             android:fontFamily="@font/sf_pro"
             android:text="@string/onboarding_protection_title"
             android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="32sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="28sp"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/sf_pro"
+            android:lineSpacingExtra="4dp"
             android:text="@string/onboarding_protection_body"
             android:textAlignment="center"
             android:textColor="@color/text_secondary"
@@ -43,7 +44,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="36dp"
         android:orientation="vertical">
 
         <!-- SMS -->
@@ -52,7 +53,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingVertical="20dp">
+            android:paddingVertical="18dp">
 
             <TextView
                 android:layout_width="0dp"
@@ -60,9 +61,8 @@
                 android:layout_weight="5"
                 android:fontFamily="@font/sf_pro"
                 android:text="@string/onboarding_sms_title"
-                android:textColor="@color/white"
-                android:textSize="17sp"
-                android:textStyle="normal" />
+                android:textColor="@color/text_primary"
+                android:textSize="17sp" />
 
             <Button
                 android:id="@+id/btn_enable_sms"
@@ -78,8 +78,8 @@
                 android:text="@string/onboarding_enable"
                 android:textAllCaps="false"
                 android:textColor="@color/black"
-                android:textColorLink="#F8F8F8"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <View
@@ -94,7 +94,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingVertical="20dp">
+            android:paddingVertical="18dp">
 
             <TextView
                 android:layout_width="0dp"
@@ -102,7 +102,7 @@
                 android:layout_weight="5"
                 android:fontFamily="@font/sf_pro"
                 android:text="@string/onboarding_notifications_title"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="17sp" />
 
             <Button
@@ -119,7 +119,8 @@
                 android:text="@string/onboarding_enable"
                 android:textAllCaps="false"
                 android:textColor="@color/black"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <View
@@ -134,7 +135,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingVertical="20dp">
+            android:paddingVertical="18dp">
 
             <TextView
                 android:layout_width="0dp"
@@ -142,7 +143,7 @@
                 android:layout_weight="5"
                 android:fontFamily="@font/sf_pro"
                 android:text="@string/onboarding_listener_title"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="17sp" />
 
             <Button
@@ -159,7 +160,8 @@
                 android:text="@string/onboarding_enable"
                 android:textAllCaps="false"
                 android:textColor="@color/black"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <View
@@ -174,7 +176,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="20dp"
+        android:fontFamily="@font/sf_pro"
         android:padding="8dp"
         android:text="@string/onboarding_open_settings"
         android:textColor="@color/text_secondary"
@@ -191,14 +194,15 @@
             android:id="@+id/btn_permissions_continue"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_onboarding_primary"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_onboarding_disabled"
             android:enabled="false"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/sf_pro"
             android:text="@string/onboarding_continue"
             android:textAllCaps="false"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
 </LinearLayout>

@@ -29,12 +29,15 @@ class OnboardingPermissionsFragment : Fragment() {
         val showNotifs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         view?.findViewById<View>(R.id.row_notifications)?.visibility = if (showNotifs) View.VISIBLE else View.GONE
         
-        continueButton.isEnabled = PermissionHelper.isAllRequiredProtectionGranted(c)
+        val allGranted = PermissionHelper.isAllRequiredProtectionGranted(c)
+        continueButton.isEnabled = allGranted
+        continueButton.setBackgroundResource(if (allGranted) R.drawable.bg_onboarding_primary else R.drawable.bg_onboarding_disabled)
+        continueButton.setTextColor(c.getColor(if (allGranted) R.color.black else R.color.text_secondary))
         view?.findViewById<View>(R.id.btn_open_app_settings)?.visibility = if (!smsOk) View.VISIBLE else View.GONE
     }
     private fun updatePermissionButton(button: Button, enabled: Boolean) {
         button.text = getString(if (enabled) R.string.onboarding_enabled else R.string.onboarding_enable)
-        button.setTextColor(requireContext().getColor(if (enabled) R.color.text_secondary else R.color.black))
+        button.setTextColor(requireContext().getColor(if (enabled) R.color.white else R.color.black))
         button.setBackgroundResource(if (enabled) R.drawable.bg_onboarding_enabled else R.drawable.bg_onboarding_primary)
     }
 }

@@ -174,56 +174,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val nm = getSystemService(NotificationManager::class.java)
-
-            // Channel 1 – ongoing scanning progress (low importance = no sound/heads-up)
-            val scanningChannel = NotificationChannel(
-                SettingsFragment.CHANNEL_SCANNING,
-                getString(R.string.notif_channel_scanning_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = getString(R.string.notif_channel_scanning_desc)
-                setShowBadge(false)
-            }
-
-            // Channel 2 – scan result alerts (high importance = sound + heads-up popup)
-            val resultChannel = NotificationChannel(
-                SettingsFragment.CHANNEL_RESULT,
-                getString(R.string.notif_channel_result_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = getString(R.string.notif_channel_result_desc)
-                setShowBadge(true)
-            }
-
-            nm.deleteNotificationChannel("kuwago_result") // Clean up old channel
-            nm.createNotificationChannel(scanningChannel)
-            nm.createNotificationChannel(resultChannel)
-
-            // Channel 3 – VPN block alert (high importance — fires when a site is blocked)
-            val vpnBlockChannel = NotificationChannel(
-                SettingsFragment.CHANNEL_VPN_BLOCK,
-                "URL Shield — Blocked Sites",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Alerts when Kuwago URL Shield blocks a phishing site."
-                setShowBadge(true)
-            }
-
-            // Channel 4 – VPN ongoing status (low importance — persistent key icon)
-            val vpnOngoingChannel = NotificationChannel(
-                SettingsFragment.CHANNEL_VPN_ONGOING,
-                "URL Shield — Active Status",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Shows while Kuwago URL Shield is active."
-                setShowBadge(false)
-            }
-
-            nm.createNotificationChannel(vpnBlockChannel)
-            nm.createNotificationChannel(vpnOngoingChannel)
-        }
+        NotificationHelper.createAllNotificationChannels(this)
     }
 
     /**
