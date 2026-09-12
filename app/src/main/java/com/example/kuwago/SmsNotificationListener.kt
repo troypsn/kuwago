@@ -395,7 +395,7 @@ class SmsNotificationListener : NotificationListenerService() {
         )
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_SCANNING)
-            .setSmallIcon(R.drawable.ic_scan)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.notif_scanning_title))
             .setContentText(getString(R.string.notif_scanning_text))
             .setSubText(sender)
@@ -427,7 +427,7 @@ class SmsNotificationListener : NotificationListenerService() {
         )
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
-            .setSmallIcon(R.drawable.ic_shield)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.notif_result_safe_title))
             .setContentText(getString(R.string.notif_result_safe_text, sender))
             .setContentIntent(pi)
@@ -460,7 +460,7 @@ class SmsNotificationListener : NotificationListenerService() {
         )
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
-            .setSmallIcon(R.drawable.ic_shield)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("✓ ${captured.title}")          // Kuwago-branded safe badge
             .setContentText(captured.text)
             .setSubText(getString(R.string.notif_result_safe_title))
@@ -489,12 +489,12 @@ class SmsNotificationListener : NotificationListenerService() {
             Classification.SUSPICIOUS -> Triple(
                 getString(R.string.notif_result_suspicious_title),
                 getString(R.string.notif_result_suspicious_text, sender),
-                R.drawable.ic_warning_triangle
+                R.drawable.ic_notification
             )
             Classification.SMISHING -> Triple(
                 getString(R.string.notif_result_smishing_title),
                 getString(R.string.notif_result_smishing_text, sender),
-                R.drawable.ic_block
+                R.drawable.ic_notification
             )
             else -> return
         }

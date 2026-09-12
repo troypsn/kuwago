@@ -99,9 +99,9 @@
                     <ImageView
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:src="@drawable/ic_scan"
-                        android:padding="6dp"
-                        android:tint="@color/white"
+                        android:src="@drawable/prohibit_icon"
+                        android:padding="4dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="real-time scan" />
 
@@ -159,9 +159,9 @@
                     <ImageView
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:src="@drawable/ic_ml"
-                        android:padding="6dp"
-                        android:tint="@color/white"
+                        android:src="@drawable/scan_icon"
+                        android:padding="4dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="scan other messaging apps" />
 
@@ -205,7 +205,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginStart="4dp"
                 android:text="@string/settings_group_security"
@@ -340,7 +340,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginStart="4dp"
                 android:text="@string/settings_group_online"
@@ -414,7 +414,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginStart="4dp"
                 android:text="@string/settings_group_help"
@@ -444,9 +444,9 @@
                     <ImageView
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:src="@drawable/ic_help"
-                        android:padding="6dp"
-                        android:tint="@color/white"
+                        android:src="@drawable/paper_plane_icon"
+                        android:padding="4dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="get support" />
 
@@ -488,7 +488,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginStart="4dp"
                 android:text="@string/settings_group_data"
@@ -562,7 +562,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginStart="4dp"
                 android:text="@string/settings_group_about"

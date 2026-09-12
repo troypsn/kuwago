@@ -382,7 +382,7 @@ class KuwagoVpnService : VpnService() {
         val riskTypeLabel = if (classification == Classification.SMISHING) "harmful" else "suspicious"
 
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_BLOCK)
-            .setSmallIcon(R.drawable.ic_block)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("🛑 Connection Blocked")
             .setContentText("Kuwago blocked $hostname — previously identified as $riskTypeLabel")
             .setStyle(
@@ -420,7 +420,7 @@ class KuwagoVpnService : VpnService() {
         )
 
         return NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_ONGOING)
-            .setSmallIcon(R.drawable.ic_shield)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Kuwago URL Shield Active")
             .setContentText("Monitoring DNS to block phishing sites")
             .setContentIntent(pi)
