@@ -300,6 +300,16 @@ object SmishingDetector {
             Log.e("SmishingDetector", "CNN-BiGRU API request failed: ${e.javaClass.simpleName}")
             val localOnly = LocalClassifier.classify(context, message)
             val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, localOnly.classification)
+            val isTimeout = e is kotlinx.coroutines.TimeoutCancellationException ||
+                            e is java.net.SocketTimeoutException ||
+                            (e.localizedMessage?.contains("timeout", ignoreCase = true) == true)
+            val isConnect = e is java.net.ConnectException ||
+                            (e.localizedMessage?.contains("failed to connect", ignoreCase = true) == true)
+            val errorVerdict = when {
+                isTimeout -> "Server wake-up timed out. Free cloud instances take ~40s to wake up. Tap to retry."
+                isConnect -> "Server waking up or unreachable. Please tap to retry in a moment."
+                else -> "API Error: ${e.localizedMessage ?: "Failed to connect"}"
+            }
             localOnly.copy(
                 sender = sender,
                 message = message,
@@ -307,9 +317,9 @@ object SmishingDetector {
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,
-                cnnVerdict = "API Error: ${e.localizedMessage ?: "Failed to connect"}",
+                cnnVerdict = errorVerdict,
                 localVerdict = localOnly.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local Only (50% RF, 50% XGB)"
+                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
             )
         }
     }

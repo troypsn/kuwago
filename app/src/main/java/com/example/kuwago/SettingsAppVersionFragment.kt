@@ -1,4 +1,4 @@
-﻿package com.example.kuwago
+package com.example.kuwago
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,6 +12,9 @@ class SettingsAppVersionFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_settings_app_version, container, false)
         view.findViewById<ImageView>(R.id.btn_back).setOnClickListener {
             parentFragmentManager.popBackStack()
+        }
+        view.findViewById<View>(R.id.tv_view_terms)?.setOnClickListener {
+            TermsBottomSheetFragment().show(parentFragmentManager, "TermsBottomSheet")
         }
         return view
     }

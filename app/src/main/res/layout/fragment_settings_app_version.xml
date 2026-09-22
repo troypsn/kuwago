@@ -76,6 +76,21 @@
             android:textSize="14sp"
             android:lineSpacingMultiplier="1.5" />
 
+        <TextView
+            android:id="@+id/tv_view_terms"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="View Terms &amp; Conditions"
+            android:textColor="@color/teal_300"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground" />
+
     </LinearLayout>
 
 </LinearLayout>

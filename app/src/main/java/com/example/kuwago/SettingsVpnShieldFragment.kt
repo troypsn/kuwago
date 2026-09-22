@@ -3,6 +3,7 @@ package com.example.kuwago
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
@@ -12,8 +13,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -41,15 +43,26 @@ class SettingsVpnShieldFragment : Fragment() {
 
     private val TAG = "VpnShieldSettings"
     private var isProgrammaticChange = false
+    private var isWaitingForPermission = false
+
+    private val vpnPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        if (key == KuwagoVpnService.KEY_VPN_ACTIVE && isAdded) {
+            val active = prefs.getBoolean(key, false)
+            setSwitchCheckedProgrammatically(active)
+            updateStatusText(active)
+        }
+    }
 
     // ActivityResultLauncher for the Android VPN permission dialog
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        isWaitingForPermission = false
         if (result.resultCode == Activity.RESULT_OK) {
             Log.i(TAG, "VPN permission granted by user")
             startVpnService()
             setSwitchCheckedProgrammatically(true)
+            updateStatusText(true)
         } else {
             Log.i(TAG, "VPN permission denied by user")
             setSwitchCheckedProgrammatically(false)
@@ -82,6 +95,7 @@ class SettingsVpnShieldFragment : Fragment() {
         val autoEnable = arguments?.getBoolean("auto_enable", false) == true
         if (autoEnable && !isActive) {
             arguments?.remove("auto_enable")
+            setSwitchCheckedProgrammatically(true)
             requestVpnPermission()
         }
 
@@ -110,13 +124,26 @@ class SettingsVpnShieldFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Re-sync switch state in case the VPN was killed externally
-        val active = isVpnCurrentlyActive()
-        setSwitchCheckedProgrammatically(active)
-        updateStatusText(active)
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+        prefs.registerOnSharedPreferenceChangeListener(vpnPrefsListener)
+
+        // Only re-sync switch state if we're not in the middle of a system permission prompt
+        if (!isWaitingForPermission) {
+            val active = isVpnCurrentlyActive()
+            setSwitchCheckedProgrammatically(active)
+            updateStatusText(active)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        context?.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+            ?.unregisterOnSharedPreferenceChangeListener(vpnPrefsListener)
     }
 
     private fun setSwitchCheckedProgrammatically(checked: Boolean) {
+        if (!::switchVpnShield.isInitialized) return
         isProgrammaticChange = true
         switchVpnShield.isChecked = checked
         isProgrammaticChange = false
@@ -125,45 +152,71 @@ class SettingsVpnShieldFragment : Fragment() {
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun requestVpnPermission() {
-        val permissionIntent = VpnService.prepare(requireContext())
+        val ctx = context ?: return
+        val permissionIntent = VpnService.prepare(ctx)
         if (permissionIntent != null) {
             // System needs to show a consent dialog first
+            isWaitingForPermission = true
             vpnPermissionLauncher.launch(permissionIntent)
         } else {
             // Permission already granted; start the service immediately
+            isWaitingForPermission = false
             startVpnService()
+            setSwitchCheckedProgrammatically(true)
+            updateStatusText(true)
         }
     }
 
     private fun startVpnService() {
-        val ctx = requireContext().applicationContext
+        val ctx = context?.applicationContext ?: return
+        // Set shared pref immediately so onResume or external checks see it active
+        ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, true)
+            .apply()
+
         val intent = Intent(ctx, KuwagoVpnService::class.java).apply {
             action = KuwagoVpnService.ACTION_START
         }
-        ctx.startService(intent)
+        try {
+            ContextCompat.startForegroundService(ctx, intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start VPN foreground service", e)
+        }
         updateStatusText(true)
 
         // Asynchronously sync URL analysis database from the last 3 months
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(ctx)
         }
     }
 
     private fun stopVpnService() {
-        val ctx = requireContext()
+        val ctx = context ?: return
+        ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
+            .apply()
+
         val intent = Intent(ctx, KuwagoVpnService::class.java).apply {
             action = KuwagoVpnService.ACTION_STOP
         }
-        ctx.startService(intent)
+        try {
+            ctx.startService(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop VPN service", e)
+        }
+        updateStatusText(false)
     }
 
     private fun isVpnCurrentlyActive(): Boolean {
-        return requireContext()
-            .getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+        val ctx = context ?: return false
+        return ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
             .getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
     }
 
     private fun updateStatusText(active: Boolean) {
+        if (!::tvStatus.isInitialized || !isAdded) return
         tvStatus.text = if (active) {
             getString(R.string.vpn_shield_status_active)
         } else {

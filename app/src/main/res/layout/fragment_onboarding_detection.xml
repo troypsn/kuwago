@@ -4,102 +4,247 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="30dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="24dp">
 
+    <!-- Top Illustration -->
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="match_parent"
-        android:layout_height="130dp"
-        android:layout_marginTop="30dp"
+        android:layout_height="72dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@null"
         app:srcCompat="@drawable/message_find" />
 
+    <!-- Title & Subtitle -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_detection_title"
         android:textAlignment="center"
         android:textColor="@color/text_primary"
-        android:textSize="28sp"
+        android:textSize="22sp"
         android:textStyle="bold" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:fontFamily="@font/sf_pro"
-        android:lineSpacingExtra="4dp"
+        android:lineSpacingExtra="2dp"
         android:text="@string/onboarding_detection_body"
         android:textAlignment="center"
         android:textColor="@color/text_secondary"
-        android:textSize="15sp" />
+        android:textSize="13sp" />
 
-    <ScrollView
+    <!-- Showcase Container (fills vertical space without scrolling) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="20dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical">
 
+        <!-- Layer 1: On-Device ML -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_action_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_action_card"
-                android:fontFamily="@font/sf_pro"
-                android:padding="16dp"
-                android:text="@string/onboarding_layer_local"
-                android:textAlignment="center"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_onboarding_card"
+                android:padding="8dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_ml"
+                app:tint="@color/teal_300" />
 
-            <TextView
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_action_card"
-                android:fontFamily="@font/sf_pro"
-                android:padding="16dp"
-                android:text="@string/onboarding_layer_deep"
-                android:textAlignment="center"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_action_card"
-                android:fontFamily="@font/sf_pro"
-                android:padding="16dp"
-                android:text="@string/onboarding_layer_url"
-                android:textAlignment="center"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_1_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_action_card"
-                android:fontFamily="@font/sf_pro"
-                android:padding="16dp"
-                android:text="@string/onboarding_layer_final"
-                android:textAlignment="center"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_1_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
-    </ScrollView>
 
+        <!-- Layer 2: Deep Analysis -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_action_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_onboarding_card"
+                android:padding="8dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_brain"
+                app:tint="@color/teal_300" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_2_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_2_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Layer 3: URL Threat Reputation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_action_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_onboarding_card"
+                android:padding="8dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_link"
+                app:tint="@color/teal_300" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_3_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_3_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Layer 4: Final Decision / Ensemble -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_action_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_onboarding_card"
+                android:padding="8dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_combined_score"
+                app:tint="@color/teal_300" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_4_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/onboarding_layer_4_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Continue Button -->
     <Button
         android:id="@+id/btn_detection_continue"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="16dp"
+        android:layout_height="52dp"
         android:background="@drawable/bg_onboarding_primary"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_continue"

@@ -44,6 +44,14 @@
             android:src="@drawable/ic_dl"
             android:tint="#FFFFFFFF"
             android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/pb_deep_scan_loading"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/teal_300"
+            android:visibility="gone" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView

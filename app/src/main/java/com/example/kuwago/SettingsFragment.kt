@@ -82,6 +82,10 @@ class SettingsFragment : Fragment() {
         view.findViewById<View>(R.id.settings_row_scan_other_apps).setOnClickListener {
             openSubPage(SettingsAppSelectionFragment())
         }
+
+        view.findViewById<View>(R.id.settings_row_terms).setOnClickListener {
+            TermsBottomSheetFragment().show(parentFragmentManager, "TermsBottomSheet")
+        }
     }
 
     private fun openSubPage(fragment: Fragment) {

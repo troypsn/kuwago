@@ -58,6 +58,26 @@ object LocalClassifier {
         "update now", "confirm now", "validate now", "redeem now"
     )
 
+    fun findMatchedBanks(text: String): List<String> {
+        val lower = text.lowercase()
+        return PH_BANKS.filter { lower.contains(it) }
+    }
+
+    fun findMatchedTelcos(text: String): List<String> {
+        val lower = text.lowercase()
+        return PH_TELCOS.filter { lower.contains(it) }
+    }
+
+    fun findMatchedUrgency(text: String): List<String> {
+        val lower = text.lowercase()
+        return PH_URGENCY.filter { lower.contains(it) }
+    }
+
+    fun findMatchedCta(text: String): List<String> {
+        val lower = text.lowercase()
+        return CTA_PHRASES.filter { lower.contains(it) }
+    }
+
     private fun readAsset(context: Context?, filename: String): ByteArray {
         if (context != null) {
             return context.assets.open(filename).use { it.readBytes() }

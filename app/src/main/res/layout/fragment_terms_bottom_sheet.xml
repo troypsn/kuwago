@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    android:orientation="vertical">
+
+    <!-- Header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp">
+
+        <ImageView
+            android:id="@+id/btn_close_terms"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Close"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_close"
+            app:tint="@color/white" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="@string/terms_title"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="@string/terms_last_updated"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider_gray" />
+
+    <!-- Scrollable content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Section 1 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="1. Acceptance of Terms"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="By installing, accessing, or using Kuwago, you agree to be bound by these Terms and Conditions. If you disagree with any part of these terms, please discontinue using the application."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Section 2 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="2. Purpose &amp; Security Services"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="Kuwago is an SMS smishing and scam detection tool. It provides automated security analysis via on-device machine learning (Random Forest and XGBoost), server-assisted deep learning (CNN-BiGRU), and real-time URL threat intelligence to help identify potentially fraudulent or malicious text messages."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Section 3 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="3. Privacy, Permissions &amp; Data Handling"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="Your privacy is of the utmost importance. Kuwago requires SMS and Notification Listener permissions strictly to detect unsolicited or harmful text messages.\n\n• On-Device Processing: Machine learning analysis runs locally on your device using ONNX Runtime without transmitting message contents to third parties.\n• Online Scanning: When Online Scan is enabled, message text and embedded links are sent via secure HTTPS to our backend exclusively for deep model evaluation. Sender phone numbers are automatically masked/anonymized before submission.\n• Data Monetization: Kuwago does NOT sell, rent, or trade your personal data, messages, or contacts."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Section 4 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="4. Security Disclaimer &amp; Liability"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="While Kuwago uses state-of-the-art machine learning models and up-to-date threat intelligence databases, no automated security system can guarantee 100% detection accuracy. Classification results (Safe, Suspicious, Harmful) are heuristic assessments provided for guidance. Users must exercise independent judgment and remain cautious when interacting with unknown senders or financial requests."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Section 5 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="5. Acceptable Use &amp; Regulatory Compliance"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="You agree to use Kuwago only for lawful, personal security purposes in compliance with all applicable Philippine laws, including the Cybercrime Prevention Act and National Telecommunications Commission (NTC) regulations. You may not attempt to reverse engineer, disrupt, or exploit the service or its underlying infrastructure."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Section 6 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro"
+                android:text="6. Updates to Terms"
+                android:textColor="@color/teal_300"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="24dp"
+                android:fontFamily="@font/sf_pro"
+                android:lineSpacingExtra="3dp"
+                android:text="We reserve the right to modify these terms periodically to reflect new features, regulations, or security improvements. Continued use of Kuwago after updates constitutes acceptance of the modified terms."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="@color/background_primary">
+
+        <Button
+            android:id="@+id/btn_agree_terms"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_onboarding_primary"
+            android:fontFamily="@font/sf_pro"
+            android:text="@string/terms_agree_button"
+            android:textAllCaps="false"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

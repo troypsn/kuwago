@@ -35,6 +35,7 @@
         <activity
             android:name=".SplashActivity"
             android:theme="@style/Theme.App.SplashScreen"
+            android:noHistory="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -45,6 +46,7 @@
         <activity
             android:name=".MainActivity"
             android:theme="@style/Theme.Mykotlinapp"
+            android:launchMode="singleTask"
             android:exported="true" />
 
         <activity

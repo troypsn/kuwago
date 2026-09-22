@@ -31,6 +31,11 @@ class SplashActivity : AppCompatActivity() {
     private var hasNavigated = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (!isTaskRoot) {
+            super.onCreate(savedInstanceState)
+            finish()
+            return
+        }
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

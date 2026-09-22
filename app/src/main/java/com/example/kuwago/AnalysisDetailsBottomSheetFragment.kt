@@ -82,15 +82,20 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         btnBack.setOnClickListener { dismiss() }
 
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
-        if (btnDeepScan != null) {
-            val hasDlData = result.cnnScore != null || result.cnnProb != null
-            if (hasDlData || result.isScanning) {
-                btnDeepScan.visibility = View.GONE
-            } else {
-                btnDeepScan.visibility = View.VISIBLE
-                btnDeepScan.setOnClickListener {
-                    runDeepAnalysis(view, result)
-                }
+        val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
+        val hasDlData = result.cnnScore != null || result.cnnProb != null
+        if (hasDlData) {
+            btnDeepScan?.visibility = View.GONE
+            pbDeepScanLoading?.visibility = View.GONE
+        } else if (result.isScanning) {
+            btnDeepScan?.visibility = View.GONE
+            pbDeepScanLoading?.visibility = View.VISIBLE
+        } else {
+            pbDeepScanLoading?.visibility = View.GONE
+            btnDeepScan?.visibility = View.VISIBLE
+            btnDeepScan?.isEnabled = true
+            btnDeepScan?.setOnClickListener {
+                runDeepAnalysis(view, result)
             }
         }
 
@@ -114,10 +119,18 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 setupSecurityActions(view, updated)
 
                 val btnDeep = view.findViewById<ImageView>(R.id.btn_deep_scan)
-                if (updated.cnnScore != null || updated.cnnProb != null || updated.isScanning) {
+                val pbDeep = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
+                val updatedHasDl = updated.cnnScore != null || updated.cnnProb != null
+                if (updatedHasDl) {
                     btnDeep?.visibility = View.GONE
+                    pbDeep?.visibility = View.GONE
+                } else if (updated.isScanning) {
+                    btnDeep?.visibility = View.GONE
+                    pbDeep?.visibility = View.VISIBLE
                 } else {
+                    pbDeep?.visibility = View.GONE
                     btnDeep?.visibility = View.VISIBLE
+                    btnDeep?.isEnabled = true
                     btnDeep?.setOnClickListener { runDeepAnalysis(view, updated) }
                 }
             }
@@ -420,25 +433,117 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun populateMlMetrics(container: LinearLayout, result: DetectionResult) {
         container.removeAllViews()
-        val isThreat = result.classification != Classification.SAFE
 
-        addMetricRow(container, "Urgency language", if (isThreat) "Detected" else "Not detected", isThreat)
-        addMetricRow(container, "Suspicious keywords", if (isThreat) "8 found" else "0 found", isThreat)
-        addMetricRow(container, "Reward/financial lure", if (isThreat) "2 found" else "0 found", isThreat)
-        addMetricRow(container, "Call-to-action type", if (isThreat) "Credential phishing" else "None", isThreat)
-        addMetricRow(container, "Message length", "Normal", false)
-        addMetricRow(container, "Contains URL/link", if (result.urlFound) "Present" else "None", result.urlFound)
-        addMetricRow(container, "Sender pattern", "Unknown", false, isOrange = true)
+        val msg = result.message
+        val matchedBanks = LocalClassifier.findMatchedBanks(msg)
+        val matchedTelcos = LocalClassifier.findMatchedTelcos(msg)
+        val matchedUrgency = LocalClassifier.findMatchedUrgency(msg)
+        val matchedCtas = LocalClassifier.findMatchedCta(msg)
+
+        val words = msg.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+        val charCount = msg.length
+
+        // Real Model sub-scores (Random Forest & XGBoost without weight percentages)
+        val isRfAlert = result.rfProb >= LocalClassifier.smishingThreshold
+        val isRfOrange = result.rfProb >= LocalClassifier.suspiciousThreshold && !isRfAlert
+        val isXgbAlert = result.xgbProb >= LocalClassifier.smishingThreshold
+        val isXgbOrange = result.xgbProb >= LocalClassifier.suspiciousThreshold && !isXgbAlert
+
+        addMetricRow(
+            container,
+            "Random Forest ONNX",
+            String.format(Locale.US, "%.2f", result.rfProb),
+            isAlert = isRfAlert,
+            isOrange = isRfOrange
+        )
+        addMetricRow(
+            container,
+            "XGBoost ONNX",
+            String.format(Locale.US, "%.2f", result.xgbProb),
+            isAlert = isXgbAlert,
+            isOrange = isXgbOrange
+        )
+
+        // Real Urgency triggers
+        val hasUrgency = matchedUrgency.isNotEmpty()
+        addMetricRow(
+            container,
+            "Urgency indicators",
+            if (hasUrgency) "${matchedUrgency.size} detected (${matchedUrgency.take(2).joinToString(", ")})" else "None detected",
+            isAlert = false,
+            isOrange = hasUrgency
+        )
+
+        // Real Financial / E-wallet
+        val hasBanks = matchedBanks.isNotEmpty()
+        addMetricRow(
+            container,
+            "Financial / E-wallet",
+            if (hasBanks) matchedBanks.joinToString(", ").uppercase() else "None detected",
+            isAlert = hasBanks,
+            isOrange = false
+        )
+
+        // Real Telecom Keywords
+        val hasTelcos = matchedTelcos.isNotEmpty()
+        addMetricRow(
+            container,
+            "Telecom brand names",
+            if (hasTelcos) matchedTelcos.joinToString(", ").replaceFirstChar { it.uppercase() } else "None detected",
+            isAlert = false,
+            isOrange = hasTelcos
+        )
+
+        // Real Call-to-action
+        val hasCta = matchedCtas.isNotEmpty()
+        addMetricRow(
+            container,
+            "Action prompts (CTA)",
+            if (hasCta) "${matchedCtas.size} found (${matchedCtas.first()})" else "None detected",
+            isAlert = hasCta,
+            isOrange = false
+        )
+
+        // Real Message length
+        addMetricRow(
+            container,
+            "Message length",
+            "$charCount chars ($words words)",
+            isAlert = false
+        )
+
+        // Real Link in message
+        if (result.urlFound) {
+            val urlDisplay = result.extractedUrl ?: "Present"
+            addMetricRow(container, "Contains link", urlDisplay, isAlert = true)
+        } else {
+            addMetricRow(container, "Contains link", "No links found", isAlert = false)
+        }
     }
 
     private fun populateDlMetrics(container: LinearLayout, result: DetectionResult, score: Float) {
         container.removeAllViews()
-        val isThreat = score >= 0.5f
 
-        addMetricRow(container, "Semantic threat pattern", if (isThreat) "High similarity" else "Low similarity", isThreat)
-        addMetricRow(container, "Contextual embedding", if (isThreat) "Phishing intent" else "Normal intent", isThreat)
-        addMetricRow(container, "Sequence anomaly", if (isThreat) "Detected" else "None", isThreat)
-        addMetricRow(container, "Token attention score", String.format(Locale.US, "%.2f", if (isThreat) 0.94f else 0.12f), isThreat)
+        val isAlert = score >= LocalClassifier.smishingThreshold
+        val isOrange = score >= LocalClassifier.suspiciousThreshold && !isAlert
+
+        addMetricRow(
+            container,
+            "Model confidence",
+            String.format(Locale.US, "%.2f (%.1f%%)", score, score * 100),
+            isAlert = isAlert,
+            isOrange = isOrange
+        )
+
+        val verdictText = result.cnnVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(score)
+        addMetricRow(container, "Model verdict", verdictText, isAlert = isAlert, isOrange = isOrange)
+
+        val semanticAnalysis = when {
+            score >= LocalClassifier.smishingThreshold -> "Harmful language & syntax patterns"
+            score >= LocalClassifier.suspiciousThreshold -> "Promotional / high-urgency syntax"
+            else -> "Benign / safe conversational syntax"
+        }
+        addMetricRow(container, "Semantic analysis", semanticAnalysis, isAlert = isAlert, isOrange = isOrange)
     }
 
     private fun populateUrlMetrics(container: LinearLayout, result: DetectionResult, score: Float) {
@@ -630,10 +735,22 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge) ?: return
         val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container) ?: return
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
+        val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
 
         btnRunDeepAnalysis.isEnabled = false
         btnRunDeepAnalysis.text = "Scanning…"
         btnDeepScan?.isEnabled = false
+        btnDeepScan?.visibility = View.GONE
+        pbDeepScanLoading?.visibility = View.VISIBLE
+
+        val tickerJob = scope.launch {
+            kotlinx.coroutines.delay(6000L)
+            btnRunDeepAnalysis.text = "Waking up server (~40s)…"
+            kotlinx.coroutines.delay(16000L)
+            btnRunDeepAnalysis.text = "Server spinning up… almost ready"
+            kotlinx.coroutines.delay(16000L)
+            btnRunDeepAnalysis.text = "Finalizing scan…"
+        }
 
         scope.launch {
             try {
@@ -645,10 +762,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 val hasDlData = finalResult.cnnScore != null || finalResult.cnnProb != null
                 if (hasDlData) {
                     val dlScore = finalResult.cnnScore ?: finalResult.cnnProb ?: 0f
+                    val dlColor = getVerdictColor(dlScore)
                     tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
+                    tvDlScoreBadge.setTextColor(dlColor)
                     tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
+                    tvDlConfidenceVal.setTextColor(dlColor)
                     pbDlConfidence.progress = (dlScore * 100).toInt()
+                    pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
                     tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+                    tvDlClassifiedBadge.setTextColor(dlColor)
                     populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
                     llDlPendingState.visibility = View.GONE
                     llDlResultState.visibility = View.VISIBLE
@@ -662,22 +784,26 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     if (llUrlMetricsContainer != null) {
                         populateUrlMetrics(llUrlMetricsContainer, finalResult, finalResult.urlScore ?: 0f)
                     }
-                    view.findViewById<TextView>(R.id.tv_url_score_badge)?.let {
-                        it.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", finalResult.urlScore) else "–"
-                    }
+                    val tvUrlScoreBadge = view.findViewById<TextView>(R.id.tv_url_score_badge)
                     val pbUrlConfidence = view.findViewById<ProgressBar>(R.id.pb_url_confidence)
                     val tvUrlConfidenceVal = view.findViewById<TextView>(R.id.tv_url_confidence_val)
                     val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
                     if (finalResult.urlFound) {
                         val urlScore = finalResult.urlScore ?: 0f
+                        val urlColor = getVerdictColor(urlScore)
+                        tvUrlScoreBadge?.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", urlScore) else "–"
+                        tvUrlScoreBadge?.setTextColor(urlColor)
                         pbUrlConfidence?.progress = (urlScore * 100).toInt()
+                        pbUrlConfidence?.progressTintList = ColorStateList.valueOf(urlColor)
                         tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
+                        tvUrlConfidenceVal?.setTextColor(urlColor)
                         val vStr = finalResult.urlVerdict?.lowercase()
                         tvUrlClassifiedBadge?.text = when {
                             vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
                             vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
                             else -> "No threats detected"
                         }
+                        tvUrlClassifiedBadge?.setTextColor(urlColor)
                     }
 
                     // Update the Combined Score card
@@ -691,18 +817,39 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()
                 } else {
                     val errMsg = finalResult.cnnVerdict ?: "API connection failed"
-                    Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
+                    val isColdStart = errMsg.contains("wake", ignoreCase = true) ||
+                                      errMsg.contains("timeout", ignoreCase = true) ||
+                                      errMsg.contains("connect", ignoreCase = true) ||
+                                      errMsg.contains("instances take", ignoreCase = true)
+                    if (isColdStart) {
+                        Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
+                        btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
+                    } else {
+                        Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
+                        btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                    }
                     btnRunDeepAnalysis.isEnabled = true
-                    btnRunDeepAnalysis.text = "Retry Deep Analysis"
                     btnDeepScan?.isEnabled = true
                     btnDeepScan?.visibility = View.VISIBLE
                 }
             } catch (e: Exception) {
-                Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                val err = e.localizedMessage ?: "Unknown error"
+                val isColdStart = err.contains("wake", ignoreCase = true) ||
+                                  err.contains("timeout", ignoreCase = true) ||
+                                  err.contains("connect", ignoreCase = true)
+                if (isColdStart) {
+                    Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry.", Toast.LENGTH_LONG).show()
+                    btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
+                } else {
+                    Toast.makeText(ctx, "Error: $err", Toast.LENGTH_LONG).show()
+                    btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                }
                 btnRunDeepAnalysis.isEnabled = true
-                btnRunDeepAnalysis.text = "Retry Deep Analysis"
                 btnDeepScan?.isEnabled = true
                 btnDeepScan?.visibility = View.VISIBLE
+            } finally {
+                tickerJob.cancel()
+                pbDeepScanLoading?.visibility = View.GONE
             }
         }
     }

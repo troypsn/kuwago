@@ -161,11 +161,16 @@ class KuwagoVpnService : VpnService() {
                 .addRoute(DNS_PROXY_IP, DNS_PROXY_PREFIX)
                 // Exclude Kuwago's own traffic to prevent a routing loop where
                 // backend scan requests re-enter the VPN indefinitely.
-                .addDisallowedApplication(packageName)
+                try {
+                    builder.addDisallowedApplication(packageName)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not disallow app package", e)
+                }
 
             tunFd = builder.establish()
             if (tunFd == null) {
                 Log.e(TAG, "VPN establish() returned null — permission may be missing")
+                updateActiveState(false)
                 stopForegroundSafely()
                 stopSelf()
                 return
@@ -180,6 +185,7 @@ class KuwagoVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
             running = false
+            updateActiveState(false)
             stopForegroundSafely()
             stopSelf()
         }

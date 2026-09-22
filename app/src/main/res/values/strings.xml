@@ -117,40 +117,40 @@
     <string name="help_support_title">Help and Support</string>
 
     <!-- Section Headers -->
-    <string name="help_section_app_setup">App Setup and Basics</string>
-    <string name="help_section_blocked_list">Blocked List</string>
-    <string name="help_section_troubleshooting">Troubleshooting</string>
+    <string name="help_section_app_setup">Detection &amp; Protection</string>
+    <string name="help_section_blocked_list">Blacklist &amp; Threat Muting</string>
+    <string name="help_section_troubleshooting">Troubleshooting &amp; Support</string>
     <string name="help_section_contact">Contact Developers</string>
 
     <!-- App Setup and Basics — Questions -->
-    <string name="help_q_block_sender">How do I block a sender?</string>
-    <string name="help_q_how_blocking">How does blocking work?</string>
-    <string name="help_q_blocks_visible">Are blocks visible to senders?</string>
+    <string name="help_q_block_sender">How does Kuwago detect smishing and scam messages?</string>
+    <string name="help_q_how_blocking">What are Online Scan modes and Data Saver?</string>
+    <string name="help_q_blocks_visible">What is URL Shield and how does it protect me?</string>
 
     <!-- App Setup and Basics — Answers -->
-    <string name="help_a_block_sender">To block someone, open their message and tap the block button at the top of the screen. Please note that this action instantly stops all new texts and alerts from that specific number.\n\nThis quick block stops annoying spam messages from showing up in your main inbox!</string>
-    <string name="help_a_how_blocking">When you block a sender, Kuwago silently filters out all future messages from that number. You will no longer receive notifications or alerts from them.\n\nBlocked messages are still stored in the Blacklist tab so you can review them at any time.</string>
-    <string name="help_a_blocks_visible">No. Blocking is completely invisible to the sender. They will not be notified that their messages are being filtered.\n\nFrom their perspective, messages are sent normally — Kuwago simply prevents them from reaching your inbox.</string>
+    <string name="help_a_block_sender">Kuwago uses a multi-layered defense to analyze incoming messages:\n\n• Layer 1: On-Device Machine Learning — An ensemble of Random Forest and XGBoost evaluates message structure, vocabulary, and phishing patterns directly on your device without sending private data to the cloud.\n• Layer 2: Online Deep Learning — A character-level Convolutional Neural Network (CNN) provides advanced cloud analysis for emerging and zero-day threats.\n• Layer 3: URL Shield — Web links inside messages are inspected for deceptive domains, redirects, and known malicious hosts.</string>
+    <string name="help_a_how_blocking">You can control how Deep Learning scans run under Settings:\n\n• Automatic: Scans incoming messages online immediately when connected to the internet.\n• When On App: Performs online deep scans only while you are actively viewing or scanning messages inside Kuwago.\n• Disabled: Keeps all analysis 100% on-device using local machine learning.\n\n• Data Saver: When enabled, online scans are paused on cellular data and only run over Wi-Fi to preserve mobile bandwidth.</string>
+    <string name="help_a_blocks_visible">URL Shield creates a lightweight, local on-device VPN service that inspects web traffic at the DNS level. If a message link or browser attempts to load a known scam or phishing domain, URL Shield blocks the connection immediately before the page can load.\n\nAll inspection occurs locally on your phone — no web traffic or browsing activity is tracked or sent to external servers.</string>
 
     <!-- Blocked List — Questions -->
-    <string name="help_q_unblock">How to unblock a number?</string>
-    <string name="help_q_blocked_kept">Where are blocked messages kept?</string>
-    <string name="help_q_manual_add">Can I manually add numbers?</string>
+    <string name="help_q_unblock">How does blacklisting and muting work?</string>
+    <string name="help_q_blocked_kept">How does Auto-Blacklist work?</string>
+    <string name="help_q_manual_add">How do I view or remove senders from my Blacklist?</string>
 
     <!-- Blocked List — Answers -->
-    <string name="help_a_unblock">1. Go to the Blacklist tab from the bottom navigation bar.\n2. Find the sender you want to unblock.\n3. Swipe left on their entry or tap the remove icon.\n4. Confirm the unblock action when prompted.\n\nOnce unblocked, future messages from that sender will appear normally again.</string>
-    <string name="help_a_blocked_kept">Blocked messages are stored in the Blacklist tab. You can access it anytime from the bottom navigation bar to review all senders that have been blocked.\n\nThis allows you to keep track of who has been filtered without losing any history.</string>
-    <string name="help_a_manual_add">Yes! You can manually add a phone number or sender name to the blacklist.\n\n1. Go to the Blacklist tab.\n2. Tap the add button.\n3. Enter the phone number or sender name.\n4. Confirm to add it to your blocked list.\n\nThis is useful for preemptively blocking known spam numbers.</string>
+    <string name="help_a_unblock">When a sender is added to your Blacklist, Kuwago automatically intercepts and silences all incoming notifications from that number or sender ID.\n\nBecause Android reserves SMS inbox deletion for your default SMS app, Kuwago prevents intrusive popups, banners, and alert sounds from disturbing you, while safely logging the threat in your History tab.</string>
+    <string name="help_a_blocked_kept">When Auto-Blacklist is turned on in Settings, any sender whose message is classified as high-risk smishing is automatically added to your Blacklist without requiring manual action.\n\nFuture notifications from that sender will be muted instantly to keep your phone quiet and secure.</string>
+    <string name="help_a_manual_add">1. Open the Blacklist tab from the bottom navigation bar.\n2. Filter or search by sender name, risk level, or date.\n3. Tap on any entry to remove them from your Blacklist and restore their notifications.\n\nYou can also blacklist or unblacklist any sender directly from their message details in the Full Analysis modal.</string>
 
     <!-- Troubleshooting — Questions -->
-    <string name="help_q_still_alerts">Why am I still getting alerts?</string>
-    <string name="help_q_app_stopped">Why did the app stop running?</string>
-    <string name="help_q_bg_permissions">How to fix background permissions?</string>
+    <string name="help_q_still_alerts">Why am I still getting notifications from a sender?</string>
+    <string name="help_q_app_stopped">Why does Kuwago stop scanning in the background?</string>
+    <string name="help_q_bg_permissions">How do I report false alarms or missed scams?</string>
 
     <!-- Troubleshooting — Answers -->
-    <string name="help_a_still_alerts">If you are still receiving alerts from a blocked sender, it may be because:\n\n• The sender is using a different number.\n• The block was applied to a sender name that has changed.\n• The Notification Listener permission has been revoked.\n\nTry re-checking your Blacklist entries and ensure Notification Access is enabled in Settings.</string>
-    <string name="help_a_app_stopped">Android may stop Kuwago from running in the background to save battery. This is common on devices with aggressive battery optimization.\n\nTo fix this:\n1. Go to your phone\'s Settings → Apps → Kuwago.\n2. Tap Battery and select "Unrestricted" or "No restrictions."\n3. Also ensure Notification Access remains enabled.\n\nThis allows Kuwago to continuously monitor incoming messages.</string>
-    <string name="help_a_bg_permissions">To ensure Kuwago can run properly in the background:\n\n1. Open your phone\'s Settings.\n2. Go to Apps → Kuwago → Battery.\n3. Select "Unrestricted" or disable battery optimization.\n4. Go back and check Notifications → ensure all are enabled.\n5. Verify Notification Listener access is turned on under Special App Access.\n\nThese steps help prevent the system from killing the app while it protects you.</string>
+    <string name="help_a_still_alerts">If you are still receiving alerts from a blocked or suspicious sender, check the following:\n\n• The sender may have switched to a different number or spoofed alphanumeric ID.\n• Android may have disabled Kuwago\'s Notification Access permission.\n• Check your phone\'s Settings → Special App Access → Notification Access and ensure Kuwago is turned ON.</string>
+    <string name="help_a_app_stopped">Android frequently terminates background tasks to save battery, which can stop Kuwago from monitoring incoming notifications.\n\nTo ensure 24/7 background protection:\n1. Open your phone\'s Settings → Apps → Kuwago.\n2. Tap Battery and choose \"Unrestricted\" (or disable battery optimization).\n3. Ensure notification permissions are allowed so Kuwago can alert you of incoming threats.</string>
+    <string name="help_a_bg_permissions">If Kuwago flagged a legitimate message or failed to detect a new scam:\n\n1. Go to the Settings tab.\n2. Toggle \"Help Train the AI\" to contribute anonymized threat telemetry, or contact us directly.\n3. You can also send feedback via the \"Still Need Help?\" email button below.\n\nYour feedback directly helps retrain our machine learning models for improved accuracy.</string>
 
     <!-- Contact Developers -->
     <string name="help_contact_title">Still Need Help?</string>
@@ -283,4 +283,23 @@
     <string name="settings_online_scan_mode_disabled_desc">Online scanning is turned off for automatic detection. Messages are checked using local on-device ML. Manual scans will still use full online analysis.</string>
     <string name="settings_data_saver_title">Data Saver</string>
     <string name="settings_data_saver_desc">When enabled and connected to mobile data, Kuwago skips online CNN analysis and URL reputation scans to conserve cellular bandwidth. Full online scanning resumes automatically on Wi-Fi.</string>
+
+    <!-- Onboarding Layers Showcase -->
+    <string name="onboarding_layer_1_title">Layer 1 • On-Device ML</string>
+    <string name="onboarding_layer_1_desc">Random Forest + XGBoost via ONNX (Instant &amp; offline)</string>
+    <string name="onboarding_layer_2_title">Layer 2 • Deep Analysis</string>
+    <string name="onboarding_layer_2_desc">CNN-BiGRU remote neural network for advanced language cues</string>
+    <string name="onboarding_layer_3_title">Layer 3 • URL Threat Check</string>
+    <string name="onboarding_layer_3_desc">Real-time threat intelligence &amp; reputation cache</string>
+    <string name="onboarding_layer_4_title">Final Decision • Ensemble</string>
+    <string name="onboarding_layer_4_desc">Dynamic weighted combination: Safe, Suspicious, or Harmful</string>
+
+    <!-- Terms and Conditions -->
+    <string name="onboarding_terms_notice">By continuing, you agree to Kuwago\'s &lt;u&gt;&lt;font color=\"#4ECCA3\"&gt;Terms &amp;amp; Conditions&lt;/font&gt;&lt;/u&gt;</string>
+    <string name="settings_terms_title">Terms &amp; Conditions</string>
+    <string name="settings_terms_desc">Review Kuwago\'s usage terms, privacy policy, and security disclaimer</string>
+    <string name="terms_title">Terms &amp; Conditions</string>
+    <string name="terms_last_updated">Last updated: September 2026</string>
+    <string name="terms_agree_button">I Understand &amp; Agree</string>
+    <string name="terms_close_button">Close</string>
 </resources>

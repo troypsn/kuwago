@@ -25,6 +25,8 @@
     <!-- Primary (blue) -->
     <color name="primary">#FF4B5FE4</color>
     <color name="primary_light">#FFAAB2F0</color>
+    <color name="teal_300">#FF4ECCA3</color>
+    <color name="accent_teal">#FF4ECCA3</color>
 
     <!-- Alert / red -->
     <color name="color_alert">#FFD93B55</color>
