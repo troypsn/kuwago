@@ -744,6 +744,9 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         btnDeepScan?.visibility = View.GONE
         pbDeepScanLoading?.visibility = View.VISIBLE
 
+        // Purge any stale/idle sockets so the attempt starts with a clean connection
+        com.example.kuwago.network.RetrofitClient.resetConnectionPool()
+
         val tickerJob = scope.launch {
             kotlinx.coroutines.delay(6000L)
             btnRunDeepAnalysis.text = "Waking up server (~40s)…"
@@ -822,7 +825,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     val isColdStart = errMsg.contains("wake", ignoreCase = true) ||
                                       errMsg.contains("timeout", ignoreCase = true) ||
                                       errMsg.contains("connect", ignoreCase = true) ||
-                                      errMsg.contains("instances take", ignoreCase = true)
+                                      errMsg.contains("instances take", ignoreCase = true) ||
+                                      errMsg.contains("502") || errMsg.contains("503") || errMsg.contains("504")
                     if (isColdStart) {
                         Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
                         btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
@@ -831,14 +835,17 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                         btnRunDeepAnalysis.text = "Retry Deep Analysis"
                     }
                     btnRunDeepAnalysis.isEnabled = true
+                    btnRunDeepAnalysis.setOnClickListener { runDeepAnalysis(view, result) }
                     btnDeepScan?.isEnabled = true
                     btnDeepScan?.visibility = View.VISIBLE
+                    btnDeepScan?.setOnClickListener { runDeepAnalysis(view, result) }
                 }
             } catch (e: Exception) {
                 val err = e.localizedMessage ?: "Unknown error"
                 val isColdStart = err.contains("wake", ignoreCase = true) ||
                                   err.contains("timeout", ignoreCase = true) ||
-                                  err.contains("connect", ignoreCase = true)
+                                  err.contains("connect", ignoreCase = true) ||
+                                  err.contains("502") || err.contains("503") || err.contains("504")
                 if (isColdStart) {
                     Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry.", Toast.LENGTH_LONG).show()
                     btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
@@ -847,8 +854,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     btnRunDeepAnalysis.text = "Retry Deep Analysis"
                 }
                 btnRunDeepAnalysis.isEnabled = true
+                btnRunDeepAnalysis.setOnClickListener { runDeepAnalysis(view, result) }
                 btnDeepScan?.isEnabled = true
                 btnDeepScan?.visibility = View.VISIBLE
+                btnDeepScan?.setOnClickListener { runDeepAnalysis(view, result) }
             } finally {
                 tickerJob.cancel()
                 pbDeepScanLoading?.visibility = View.GONE

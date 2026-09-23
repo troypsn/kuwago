@@ -29,7 +29,135 @@ object LocalClassifier {
     var smishingThreshold = 0.85f
 
     val isInitialized: Boolean
-        get() = (env != null && tfidfSession != null && scalerSession != null && rfSession != null && xgbSession != null)
+        get() = (env != null && (rfSession != null || xgbSession != null) && tfidfSession != null && scalerSession != null)
+
+    private fun readAsset(context: Context?, filename: String): ByteArray {
+        if (context != null) {
+            return context.assets.open(filename).use { it.readBytes() }
+        }
+        val userDir = System.getProperty("user.dir") ?: "."
+        val paths = listOf(
+            java.io.File(userDir, "src/main/assets/$filename"),
+            java.io.File(userDir, "app/src/main/assets/$filename"),
+            java.io.File(userDir, "kuwago/app/src/main/assets/$filename")
+        )
+        for (f in paths) {
+            if (f.exists()) {
+                return f.readBytes()
+            }
+        }
+        throw java.io.FileNotFoundException("Could not find asset $filename in paths: $paths")
+    }
+
+    private fun getModelFilePath(context: Context?, filename: String): String {
+        if (context == null) {
+            val userDir = System.getProperty("user.dir") ?: "."
+            val paths = listOf(
+                java.io.File(userDir, "src/main/assets/$filename"),
+                java.io.File(userDir, "app/src/main/assets/$filename"),
+                java.io.File(userDir, "kuwago/app/src/main/assets/$filename")
+            )
+            for (f in paths) {
+                if (f.exists()) return f.absolutePath
+            }
+            throw java.io.FileNotFoundException("Could not find asset $filename in paths: $paths")
+        }
+
+        val modelsDir = java.io.File(context.filesDir, "onnx_models")
+        if (!modelsDir.exists()) {
+            modelsDir.mkdirs()
+        }
+        val targetFile = java.io.File(modelsDir, filename)
+
+        val assetFd = try {
+            context.assets.openFd(filename)
+        } catch (e: Exception) {
+            null
+        }
+
+        val assetLength = assetFd?.length ?: -1L
+        assetFd?.close()
+
+        val needsCopy = !targetFile.exists() || (assetLength > 0 && targetFile.length() != assetLength)
+
+        if (needsCopy) {
+            context.assets.open(filename).use { input ->
+                java.io.FileOutputStream(targetFile).use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    var bytesRead: Int
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        output.write(buffer, 0, bytesRead)
+                    }
+                    output.flush()
+                }
+            }
+        }
+
+        return targetFile.absolutePath
+    }
+
+    @Synchronized
+    fun initialize(context: Context?) {
+        if (isInitialized) return
+        try {
+            if (env == null) {
+                env = OrtEnvironment.getEnvironment()
+            }
+            
+            // Try loading weights from config JSON
+            try {
+                val jsonStr = String(readAsset(context, "ml_layer_weights.json"), Charsets.UTF_8)
+                val json = JSONObject(jsonStr)
+                rfWeight = json.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
+                xgbWeight = json.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
+                localWeight = json.optDouble("local_weight", localWeight.toDouble()).toFloat()
+                cnnWeight = json.optDouble("cnn_weight", cnnWeight.toDouble()).toFloat()
+                suspiciousThreshold = json.optDouble("suspicious_threshold", suspiciousThreshold.toDouble()).toFloat()
+                if (json.has("threshold") && !json.has("suspicious_threshold")) {
+                    suspiciousThreshold = json.optDouble("threshold", suspiciousThreshold.toDouble()).toFloat()
+                }
+                smishingThreshold = json.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
+            } catch (e: Exception) {
+                // Ignore and use defaults
+            }
+
+            if (tfidfSession == null) {
+                try {
+                    tfidfSession = env?.createSession(getModelFilePath(context, "tfidf.onnx"))
+                } catch (t: Throwable) {
+                    android.util.Log.e("LocalClassifier", "Error loading tfidf.onnx", t)
+                }
+            }
+
+            if (scalerSession == null) {
+                try {
+                    scalerSession = env?.createSession(getModelFilePath(context, "scaler.onnx"))
+                } catch (t: Throwable) {
+                    android.util.Log.e("LocalClassifier", "Error loading scaler.onnx", t)
+                }
+            }
+
+            if (rfSession == null) {
+                try {
+                    rfSession = env?.createSession(getModelFilePath(context, "rf_model.onnx"))
+                } catch (t: Throwable) {
+                    android.util.Log.w("LocalClassifier", "Could not load rf_model.onnx (possibly low memory/32-bit device), will rely on XGBoost/heuristics", t)
+                    rfSession = null
+                }
+            }
+
+            if (xgbSession == null) {
+                try {
+                    xgbSession = env?.createSession(getModelFilePath(context, "xgb_model.onnx"))
+                } catch (t: Throwable) {
+                    android.util.Log.w("LocalClassifier", "Could not load xgb_model.onnx", t)
+                    xgbSession = null
+                }
+            }
+        } catch (e: Throwable) {
+            android.util.Log.e("LocalClassifier", "Fatal error during LocalClassifier initialization", e)
+        }
+    }
 
     private val STOPWORDS = setOf(
         "kung", "any", "shouldn't", "naman", "para", "sila", "by", "did", "they're", "under", "mo", "it'd", "alin", "isn", "because", "pa", "d", "couldn", "to", "your", "it's", "himself", "was", "her", "nang", "some", "siya", "kasi", "own", "has", "sino", "he'll", "are", "being", "you", "for", "between", "itself", "it'll", "ourselves", "mga", "ma", "not", "again", "now", "shan", "nila", "at", "out", "she'll", "have", "m", "more", "pala", "you'll", "above", "on", "shouldn", "their", "mightn", "dito", "din", "yours", "should", "you'd", "is", "into", "ll", "through", "them", "ko", "were", "no", "having", "our", "be", "myself", "re", "pero", "and", "nor", "yourself", "will", "she", "wouldn", "all", "ka", "iyon", "he", "theirs", "aren't", "once", "same", "weren't", "me", "how", "we've", "hadn't", "ang", "wala", "needn", "had", "during", "haven", "am", "couldn't", "why", "themselves", "lang", "i'm", "we're", "just", "that'll", "a", "saan", "na", "yung", "up", "they've", "ain", "natin", "rin", "yourselves", "ours", "namin", "who", "off", "kami", "opo", "hindi", "where", "as", "o", "such", "didn't", "against", "t", "s", "few", "herself", "he's", "before", "wasn", "niya", "when", "so", "doesn't", "you're", "may", "if", "haven't", "mustn", "or", "shan't", "then", "they'll", "raw", "aren", "bakit", "mightn't", "i'd", "hasn't", "we", "do", "i'll", "my", "daw", "can", "from", "doesn", "ba", "you've", "po", "weren", "tayo", "but", "other", "hasn", "below", "won", "most", "after", "each", "does", "the", "she'd", "he'd", "don't", "wasn't", "don", "didn", "ng", "that", "doing", "we'd", "i've", "whom", "won't", "i", "wouldn't", "him", "than", "its", "there", "both", "in", "what", "talaga", "until", "we'll", "ano", "here", "down", "about", "y", "too", "they'd", "should've", "of", "doon", "hadn", "been", "ay", "hers", "very", "mustn't", "with", "they", "nga", "an", "this", "ho", "ve", "she's", "further", "his", "these", "sa", "those", "isn't", "needn't", "ito", "while", "only", "which", "it"
@@ -78,54 +206,84 @@ object LocalClassifier {
         return CTA_PHRASES.filter { lower.contains(it) }
     }
 
-    private fun readAsset(context: Context?, filename: String): ByteArray {
-        if (context != null) {
-            return context.assets.open(filename).use { it.readBytes() }
+    fun classifyWithHeuristics(message: String): DetectionResult {
+        val extractedUrl = extractUrl(message)
+        val hasUrl = !extractedUrl.isNullOrBlank()
+
+        val matchedBanks = findMatchedBanks(message)
+        val matchedTelcos = findMatchedTelcos(message)
+        val matchedUrgency = findMatchedUrgency(message)
+        val matchedCtas = findMatchedCta(message)
+
+        var score = 0.05f // baseline safe score
+
+        if (hasUrl) {
+            score += 0.25f
+            val urlLower = extractedUrl?.lowercase() ?: ""
+            if (URL_SHORTENERS.any { urlLower.contains(it) }) score += 0.20f
+            if (Regex("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}").containsMatchIn(urlLower)) score += 0.30f
+            if (listOf(".cc", ".xyz", ".top", ".icu", ".click", ".tk").any { urlLower.contains(it) }) score += 0.25f
+
+            if (matchedBanks.isNotEmpty()) {
+                score += 0.40f // Bank reference + link = critical smishing indicator
+            }
+            if (matchedUrgency.isNotEmpty()) {
+                score += 0.25f
+            }
+            if (matchedCtas.isNotEmpty()) {
+                score += 0.20f
+            }
+        } else {
+            // No URL in message
+            if (matchedBanks.isNotEmpty() && (matchedUrgency.isNotEmpty() || matchedCtas.isNotEmpty())) {
+                score += 0.45f
+            } else if (matchedUrgency.isNotEmpty()) {
+                score += 0.25f
+            }
+            if (matchedCtas.isNotEmpty()) {
+                score += 0.20f
+            }
+            if (matchedTelcos.isNotEmpty()) {
+                score += 0.10f
+            }
         }
-        val userDir = System.getProperty("user.dir") ?: "."
-        val paths = listOf(
-            java.io.File(userDir, "src/main/assets/$filename"),
-            java.io.File(userDir, "app/src/main/assets/$filename"),
-            java.io.File(userDir, "kuwago/app/src/main/assets/$filename")
+
+        val upperRatio = if (message.isNotEmpty()) message.count { it.isUpperCase() }.toFloat() / message.length else 0f
+        if (upperRatio > 0.35f) score += 0.10f
+
+        val finalProb = score.coerceIn(0.02f, 0.98f)
+
+        val classification = when {
+            finalProb >= smishingThreshold -> Classification.SMISHING
+            finalProb >= suspiciousThreshold -> Classification.SUSPICIOUS
+            else -> Classification.SAFE
+        }
+
+        val triggers = mutableListOf<String>()
+        if (hasUrl) triggers.add("unverified link")
+        if (matchedBanks.isNotEmpty()) triggers.add("financial institution reference (${matchedBanks.joinToString()})")
+        if (matchedUrgency.isNotEmpty()) triggers.add("high-pressure urgency phrasing")
+        if (matchedCtas.isNotEmpty()) triggers.add("action prompts")
+
+        val triggerStr = if (triggers.isNotEmpty()) triggers.joinToString(", ") else "benign text pattern"
+        val explanation = when (classification) {
+            Classification.SMISHING -> "Flagged as Harmful by local security heuristics due to $triggerStr."
+            Classification.SUSPICIOUS -> "Flagged as Suspicious by local security heuristics due to $triggerStr."
+            Classification.SAFE -> "No suspicious patterns detected in message text by local security heuristics."
+        }
+
+        return DetectionResult(
+            sender = "Unknown",
+            message = message,
+            classification = classification,
+            probability = finalProb,
+            isScanning = false,
+            overallExplanation = explanation,
+            rfProb = finalProb,
+            rfRawLogit = 0f,
+            xgbProb = finalProb,
+            cnnProb = null
         )
-        for (f in paths) {
-            if (f.exists()) {
-                return f.readBytes()
-            }
-        }
-        throw java.io.FileNotFoundException("Could not find asset $filename in paths: $paths")
-    }
-
-    @Synchronized
-    fun initialize(context: Context?) {
-        if (isInitialized) return
-        try {
-            env = OrtEnvironment.getEnvironment()
-            
-            // Try loading weights from config JSON
-            try {
-                val jsonStr = String(readAsset(context, "ml_layer_weights.json"), Charsets.UTF_8)
-                val json = JSONObject(jsonStr)
-                rfWeight = json.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
-                xgbWeight = json.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
-                localWeight = json.optDouble("local_weight", localWeight.toDouble()).toFloat()
-                cnnWeight = json.optDouble("cnn_weight", cnnWeight.toDouble()).toFloat()
-                suspiciousThreshold = json.optDouble("suspicious_threshold", suspiciousThreshold.toDouble()).toFloat()
-                if (json.has("threshold") && !json.has("suspicious_threshold")) {
-                    suspiciousThreshold = json.optDouble("threshold", suspiciousThreshold.toDouble()).toFloat()
-                }
-                smishingThreshold = json.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
-            } catch (e: Exception) {
-                // Ignore and use defaults
-            }
-
-            tfidfSession = env?.createSession(readAsset(context, "tfidf.onnx"))
-            scalerSession = env?.createSession(readAsset(context, "scaler.onnx"))
-            rfSession = env?.createSession(readAsset(context, "rf_model.onnx"))
-            xgbSession = env?.createSession(readAsset(context, "xgb_model.onnx"))
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
     }
 
     fun cleanText(text: String): String {
@@ -274,145 +432,170 @@ object LocalClassifier {
             initialize(context)
         }
 
-        if (tfidfSession == null || scalerSession == null || rfSession == null || xgbSession == null) {
-            return DetectionResult(
+        // If models completely failed to initialize, use rule-based heuristic classifier
+        if (env == null || (rfSession == null && xgbSession == null) || tfidfSession == null || scalerSession == null) {
+            return classifyWithHeuristics(message)
+        }
+
+        return try {
+            val cleaned = cleanText(message)
+            val prep = preprocessText(cleaned)
+            val rawNum = extractNumericalFeatures(message)
+
+            val envLocal = env ?: return classifyWithHeuristics(message)
+
+            // 1. Scale numerical features (21 dimensions)
+            val scalerInputTensor = OnnxTensor.createTensor(
+                envLocal,
+                FloatBuffer.wrap(rawNum),
+                longArrayOf(1L, NUMERICAL_FEATURES_COUNT.toLong())
+            )
+            val scaledNum = scalerInputTensor.use { tensor ->
+                val inputs = mapOf("num_input" to tensor)
+                val result = scalerSession?.run(inputs)
+                val arr = FloatArray(NUMERICAL_FEATURES_COUNT)
+                if (result != null) {
+                    try {
+                        val outTensor = result.get(0) as OnnxTensor
+                        val floatBuf = outTensor.floatBuffer
+                        floatBuf.rewind()
+                        floatBuf.get(arr)
+                    } finally {
+                        result.close()
+                    }
+                }
+                arr
+            }
+
+            // 2. Vectorize text with TFIDF (1500 dimensions)
+            val textInputTensor = OnnxTensor.createTensor(
+                envLocal,
+                arrayOf(prep),
+                longArrayOf(1L, 1L)
+            )
+            val textTfidf = textInputTensor.use { tensor ->
+                val inputs = mapOf("text_input" to tensor)
+                val result = tfidfSession?.run(inputs)
+                val arr = FloatArray(TFIDF_FEATURES_COUNT)
+                if (result != null) {
+                    try {
+                        val outTensor = result.get(0) as OnnxTensor
+                        val floatBuf = outTensor.floatBuffer
+                        floatBuf.rewind()
+                        floatBuf.get(arr)
+                    } finally {
+                        result.close()
+                    }
+                }
+                arr
+            }
+
+            // 3. Concatenate (1500 text features + 21 numerical features = 1521)
+            val combinedInput = FloatArray(TOTAL_FEATURES_COUNT)
+            System.arraycopy(textTfidf, 0, combinedInput, 0, TFIDF_FEATURES_COUNT)
+            System.arraycopy(scaledNum, 0, combinedInput, TFIDF_FEATURES_COUNT, NUMERICAL_FEATURES_COUNT)
+
+            // 4. Run Classifier inference (1521 dimensions)
+            val combinedInputTensor = OnnxTensor.createTensor(
+                envLocal,
+                FloatBuffer.wrap(combinedInput),
+                longArrayOf(1L, TOTAL_FEATURES_COUNT.toLong())
+            )
+            var rfProb = 0.0f
+            var rfRawLogit = 0.0f
+            var xgbProb = 0.0f
+
+            combinedInputTensor.use { tensor ->
+                // Random Forest expects input named "features"
+                if (rfSession != null) {
+                    try {
+                        val rfResult = rfSession?.run(mapOf("features" to tensor))
+                        if (rfResult != null) {
+                            try {
+                                val probValue = rfResult.get(1)
+                                if (probValue is OnnxTensor) {
+                                    val floatBuf = probValue.floatBuffer
+                                    floatBuf.rewind()
+                                    rfRawLogit = floatBuf.get(1)
+                                    rfProb = sigmoid(rfRawLogit)
+                                }
+                            } finally {
+                                rfResult.close()
+                            }
+                        }
+                    } catch (t: Throwable) {
+                        android.util.Log.w("LocalClassifier", "RF inference failed", t)
+                    }
+                }
+
+                // XGBoost expects input named "features"
+                if (xgbSession != null) {
+                    try {
+                        val xgbResult = xgbSession?.run(mapOf("features" to tensor))
+                        if (xgbResult != null) {
+                            try {
+                                val probValue = xgbResult.get(1)
+                                if (probValue is OnnxTensor) {
+                                    val floatBuf = probValue.floatBuffer
+                                    floatBuf.rewind()
+                                    xgbProb = floatBuf.get(1)
+                                }
+                            } finally {
+                                xgbResult.close()
+                            }
+                        }
+                    } catch (t: Throwable) {
+                        android.util.Log.w("LocalClassifier", "XGB inference failed", t)
+                    }
+                }
+            }
+
+            // If one model failed or wasn't loaded, adapt weights gracefully
+            val localProb = when {
+                rfSession != null && xgbSession != null && (rfProb > 0f || xgbProb > 0f) -> {
+                    rfWeight * rfProb + xgbWeight * xgbProb
+                }
+                xgbSession != null && xgbProb > 0f -> {
+                    rfProb = xgbProb // Mirror for UI display
+                    xgbProb
+                }
+                rfSession != null && rfProb > 0f -> {
+                    xgbProb = rfProb // Mirror for UI display
+                    rfProb
+                }
+                else -> {
+                    // Both models returned 0.0 or failed during inference
+                    val heuristicRes = classifyWithHeuristics(message)
+                    rfProb = heuristicRes.rfProb
+                    xgbProb = heuristicRes.xgbProb
+                    heuristicRes.probability
+                }
+            }
+
+            val classification = when {
+                localProb >= smishingThreshold -> Classification.SMISHING
+                localProb >= suspiciousThreshold -> Classification.SUSPICIOUS
+                else -> Classification.SAFE
+            }
+
+            val explanation = generateHumanReadableExplanation(message, classification)
+
+            DetectionResult(
                 sender = "Unknown",
                 message = message,
-                classification = Classification.SAFE,
-                probability = 0.0f,
-                isScanning = false
+                classification = classification,
+                probability = localProb,
+                isScanning = false,
+                overallExplanation = explanation,
+                rfProb = rfProb,
+                rfRawLogit = rfRawLogit,
+                xgbProb = xgbProb,
+                cnnProb = null
             )
+        } catch (t: Throwable) {
+            android.util.Log.e("LocalClassifier", "Error during inference, falling back to heuristics", t)
+            classifyWithHeuristics(message)
         }
-
-        val cleaned = cleanText(message)
-        val prep = preprocessText(cleaned)
-        val rawNum = extractNumericalFeatures(message)
-
-        val envLocal = env ?: return DetectionResult(
-            sender = "Unknown",
-            message = message,
-            classification = Classification.SAFE,
-            probability = 0.0f,
-            isScanning = false
-        )
-
-        // 1. Scale numerical features (21 dimensions)
-        val scalerInputTensor = OnnxTensor.createTensor(
-            envLocal,
-            FloatBuffer.wrap(rawNum),
-            longArrayOf(1L, NUMERICAL_FEATURES_COUNT.toLong())
-        )
-        val scaledNum = scalerInputTensor.use { tensor ->
-            val inputs = mapOf("num_input" to tensor)
-            val result = scalerSession?.run(inputs)
-            val arr = FloatArray(NUMERICAL_FEATURES_COUNT)
-            if (result != null) {
-                try {
-                    val outTensor = result.get(0) as OnnxTensor
-                    val floatBuf = outTensor.floatBuffer
-                    floatBuf.rewind()
-                    floatBuf.get(arr)
-                } finally {
-                    result.close()
-                }
-            }
-            arr
-        }
-
-        // 2. Vectorize text with TFIDF (1500 dimensions)
-        val textInputTensor = OnnxTensor.createTensor(
-            envLocal,
-            arrayOf(prep),
-            longArrayOf(1L, 1L)
-        )
-        val textTfidf = textInputTensor.use { tensor ->
-            val inputs = mapOf("text_input" to tensor)
-            val result = tfidfSession?.run(inputs)
-            val arr = FloatArray(TFIDF_FEATURES_COUNT)
-            if (result != null) {
-                try {
-                    val outTensor = result.get(0) as OnnxTensor
-                    val floatBuf = outTensor.floatBuffer
-                    floatBuf.rewind()
-                    floatBuf.get(arr)
-                } finally {
-                    result.close()
-                }
-            }
-            arr
-        }
-
-        // 3. Concatenate (1500 text features + 21 numerical features = 1521)
-        val combinedInput = FloatArray(TOTAL_FEATURES_COUNT)
-        System.arraycopy(textTfidf, 0, combinedInput, 0, TFIDF_FEATURES_COUNT)
-        System.arraycopy(scaledNum, 0, combinedInput, TFIDF_FEATURES_COUNT, NUMERICAL_FEATURES_COUNT)
-
-        // 4. Run Classifier inference (1521 dimensions)
-        val combinedInputTensor = OnnxTensor.createTensor(
-            envLocal,
-            FloatBuffer.wrap(combinedInput),
-            longArrayOf(1L, TOTAL_FEATURES_COUNT.toLong())
-        )
-        var rfProb = 0.0f
-        var rfRawLogit = 0.0f
-        var xgbProb = 0.0f
-
-        combinedInputTensor.use { tensor ->
-            // Random Forest expects input named "features"
-            val rfResult = rfSession?.run(mapOf("features" to tensor))
-            if (rfResult != null) {
-                try {
-                    val probValue = rfResult.get(1)
-                    if (probValue is OnnxTensor) {
-                        val floatBuf = probValue.floatBuffer
-                        floatBuf.rewind()
-                        rfRawLogit = floatBuf.get(1)
-                        rfProb = sigmoid(rfRawLogit)
-                    }
-                } finally {
-                    rfResult.close()
-                }
-            }
-
-            // XGBoost expects input named "features"
-            val xgbResult = xgbSession?.run(mapOf("features" to tensor))
-            if (xgbResult != null) {
-                try {
-                    val probValue = xgbResult.get(1)
-                    if (probValue is OnnxTensor) {
-                        val floatBuf = probValue.floatBuffer
-                        floatBuf.rewind()
-                        xgbProb = floatBuf.get(1)
-                    }
-                } finally {
-                    xgbResult.close()
-                }
-            }
-        }
-
-        // Compute ensembled local score (75% Random Forest, 25% XGBoost)
-        val localProb = rfWeight * rfProb + xgbWeight * xgbProb
-
-        val classification = when {
-            localProb >= smishingThreshold -> Classification.SMISHING
-            localProb >= suspiciousThreshold -> Classification.SUSPICIOUS
-            else -> Classification.SAFE
-        }
-
-        val explanation = generateHumanReadableExplanation(message, classification)
-
-        return DetectionResult(
-            sender = "Unknown",
-            message = message,
-            classification = classification,
-            probability = localProb,
-            isScanning = false,
-            overallExplanation = explanation,
-            rfProb = rfProb,
-            rfRawLogit = rfRawLogit,
-            xgbProb = xgbProb,
-            cnnProb = null
-        )
     }
 
     fun generateHumanReadableExplanation(message: String, classification: Classification): String {

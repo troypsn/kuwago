@@ -12,7 +12,7 @@ import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val TIMEOUT_MS = 60000L // 60 seconds for backend CNN + VirusTotal URL scan
+    private const val TIMEOUT_MS = 75000L // 75 seconds for backend CNN + VirusTotal URL scan
 
     fun isConnectedToMobileData(context: Context): Boolean {
         return try {
@@ -64,14 +64,11 @@ object SmishingDetector {
         
         val localResult = try {
             LocalClassifier.classify(context, message)
-        } catch (e: Exception) {
-            Log.e("SmishingDetector", "Local Classifier error: ${e.javaClass.simpleName}")
-            DetectionResult(
+        } catch (e: Throwable) {
+            Log.e("SmishingDetector", "Local Classifier error: ${e.javaClass.simpleName}, using heuristics")
+            LocalClassifier.classifyWithHeuristics(message).copy(
                 sender = sender,
-                message = message,
-                classification = Classification.SAFE,
-                probability = 0f,
-                isScanning = false
+                message = message
             )
         }
 
@@ -124,14 +121,14 @@ object SmishingDetector {
         val mlConfidence = localResult.probability
 
         return try {
-            // --- Local URL reputation cache check (avoids API round-trip for known hosts) ---
+            // --- Local URL reputation cache check (avoids API round-trip for known hosts, but never bypasses explicit manual DL scan) ---
             val normalizedHost = if (hasUrl && extractedUrl != null) UrlNormalizer.normalizeHost(extractedUrl) else null
             val cachedReputation = if (normalizedHost != null) UrlReputationCache.get(normalizedHost) else null
             val isVpnActive = context.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
                 .getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
 
-            // Use cached URL reputation if available AND VPN is not active (no need to refresh blocklist)
-            if (cachedReputation != null && !isVpnActive) {
+            // Use cached URL reputation if available AND VPN is not active AND user didn't explicitly request Deep Scan
+            if (!isManual && cachedReputation != null && !isVpnActive) {
                 Log.i("SmishingDetector", "URL cache hit for host=$normalizedHost → $cachedReputation. Skipping backend URL scan.")
                 val cachedUrlScore = if (cachedReputation == Classification.SMISHING) 1.0f
                                      else if (cachedReputation == Classification.SUSPICIOUS) 0.6f
@@ -298,14 +295,29 @@ object SmishingDetector {
             }
         } catch (e: Exception) {
             Log.e("SmishingDetector", "CNN-BiGRU API request failed: ${e.javaClass.simpleName}")
-            val localOnly = LocalClassifier.classify(context, message)
+            // Evict stale/broken sockets from OkHttp connection pool so subsequent retries connect cleanly
+            RetrofitClient.resetConnectionPool()
+
+            val localOnly = try {
+                LocalClassifier.classify(context, message)
+            } catch (t: Throwable) {
+                LocalClassifier.classifyWithHeuristics(message)
+            }
             val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, localOnly.classification)
+
+            val httpCode = (e as? retrofit2.HttpException)?.code() ?: 0
+            val is5xxWakeup = httpCode in 502..504 ||
+                    (e.localizedMessage?.contains("502") == true) ||
+                    (e.localizedMessage?.contains("503") == true) ||
+                    (e.localizedMessage?.contains("504") == true)
             val isTimeout = e is kotlinx.coroutines.TimeoutCancellationException ||
                             e is java.net.SocketTimeoutException ||
                             (e.localizedMessage?.contains("timeout", ignoreCase = true) == true)
             val isConnect = e is java.net.ConnectException ||
-                            (e.localizedMessage?.contains("failed to connect", ignoreCase = true) == true)
+                            (e.localizedMessage?.contains("failed to connect", ignoreCase = true) == true) ||
+                            (e.localizedMessage?.contains("connection reset", ignoreCase = true) == true)
             val errorVerdict = when {
+                is5xxWakeup -> "Server waking up (~40s on free cloud). Please tap to retry in a moment."
                 isTimeout -> "Server wake-up timed out. Free cloud instances take ~40s to wake up. Tap to retry."
                 isConnect -> "Server waking up or unreachable. Please tap to retry in a moment."
                 else -> "API Error: ${e.localizedMessage ?: "Failed to connect"}"

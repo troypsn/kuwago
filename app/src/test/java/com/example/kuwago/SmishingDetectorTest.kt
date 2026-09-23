@@ -264,4 +264,29 @@ class SmishingDetectorTest {
         println("║  Missed Phishing:            ${phishingMessages.size - phishCorrect}".padEnd(44) + "║")
         println("╚══════════════════════════════════════════╝")
     }
+
+    @Test
+    fun testHeuristicFallback_phishingMessageFlagged() {
+        val phishingMsg = "BDO Alert: Your account has been locked. Verify immediately at http://bdo-security-login.xyz to avoid suspension. Deadline agad."
+        val result = LocalClassifier.classifyWithHeuristics(phishingMsg)
+        assertEquals(Classification.SMISHING, result.classification)
+        assertTrue("Expected score >= 0.80 for high risk bank phish", result.probability >= 0.80f)
+        assertTrue(result.overallExplanation?.contains("Harmful", ignoreCase = true) == true)
+    }
+
+    @Test
+    fun testHeuristicFallback_safeMessageRemainsSafe() {
+        val safeMsg = "Kumain ka na ba? Kita na lang tayo mamaya sa labas."
+        val result = LocalClassifier.classifyWithHeuristics(safeMsg)
+        assertEquals(Classification.SAFE, result.classification)
+        assertTrue("Expected safe score < 0.30", result.probability < 0.30f)
+    }
+
+    @Test
+    fun testHeuristicFallback_promoUrgencyFlagged() {
+        val promoMsg = "Claim your free 100 pesos reward ngayon! Limited time offer text NOW."
+        val result = LocalClassifier.classifyWithHeuristics(promoMsg)
+        assertTrue(result.classification != Classification.SAFE)
+        assertTrue(result.probability >= 0.50f)
+    }
 }
