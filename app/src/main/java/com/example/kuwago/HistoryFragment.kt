@@ -10,10 +10,14 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -29,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class HistoryFragment : Fragment() {
 
@@ -39,13 +44,29 @@ class HistoryFragment : Fragment() {
     private lateinit var tvEmptyTitle: TextView
     private lateinit var tvEmptyMessage: TextView
 
+    // Search + filter
+    private lateinit var searchBox: EditText
+    private lateinit var btnFilter: ImageView
+    private lateinit var filterChipScroll: View
+    private lateinit var chipAll: TextView
+    private lateinit var chipHarmful: TextView
+    private lateinit var chipSuspicious: TextView
+    private lateinit var chipSafe: TextView
+    private lateinit var chipNewest: TextView
+    private lateinit var chipOldest: TextView
+    private var filterChipsVisible = false
+    private var activeFilterChip: TextView? = null
+    private var activeSortChip: TextView? = null
+
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
+    // allSmsList holds the full unfiltered load; smsList is what the adapter sees
+    private val allSmsList = mutableListOf<DetectionResult>()
     private val smsList = mutableListOf<DetectionResult>()
     private lateinit var smsAdapter: SmsHistoryAdapter
 
-    private var isUserAction = true // Prevents request loops when toggling switch programmatically
+    private var isUserAction = true
 
     companion object {
         private const val REQUEST_CODE_SMS = 1001
@@ -65,6 +86,17 @@ class HistoryFragment : Fragment() {
         tvEmptyTitle = view.findViewById(R.id.tv_empty_title)
         tvEmptyMessage = view.findViewById(R.id.tv_empty_message)
 
+        // Search + filter views
+        searchBox = view.findViewById(R.id.history_search)
+        btnFilter = view.findViewById(R.id.history_btn_filter)
+        filterChipScroll = view.findViewById(R.id.history_filter_chip_scroll)
+        chipAll = view.findViewById(R.id.history_chip_all)
+        chipHarmful = view.findViewById(R.id.history_chip_harmful)
+        chipSuspicious = view.findViewById(R.id.history_chip_suspicious)
+        chipSafe = view.findViewById(R.id.history_chip_safe)
+        chipNewest = view.findViewById(R.id.history_chip_newest)
+        chipOldest = view.findViewById(R.id.history_chip_oldest)
+
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         smsAdapter = SmsHistoryAdapter(smsList, { result ->
             showDetailsDialog(result)
@@ -72,6 +104,7 @@ class HistoryFragment : Fragment() {
         historyRecyclerView.adapter = smsAdapter
 
         setupListeners()
+        setupSearchAndFilter()
         return view
     }
 
@@ -87,32 +120,32 @@ class HistoryFragment : Fragment() {
             if (liveList.isEmpty()) return@observe
 
             var hasNewItems = false
-            // Iterate in reverse order to preserve latest-first order when inserting at index 0
             for (liveItem in liveList.asReversed()) {
-                val index = smsList.indexOfFirst {
+                val index = allSmsList.indexOfFirst {
                     it.id == liveItem.id || (it.message == liveItem.message && it.sender == liveItem.sender)
                 }
                 if (index != -1) {
-                    val current = smsList[index]
+                    val current = allSmsList[index]
                     if (liveItem.cnnProb != current.cnnProb ||
                         liveItem.isScanning != current.isScanning ||
                         liveItem.classification != current.classification ||
                         liveItem.probability != current.probability ||
                         liveItem.urlScore != current.urlScore
                     ) {
-                        smsList[index] = liveItem.copy(id = current.id, timestamp = current.timestamp)
-                        smsAdapter.notifyItemChanged(index)
+                        allSmsList[index] = liveItem.copy(id = current.id, timestamp = current.timestamp)
+                        hasNewItems = true
                     }
                 } else {
-                    // Newly intercepted or scanned message! Prepend to history list
-                    smsList.add(0, liveItem)
-                    smsAdapter.notifyItemInserted(0)
+                    allSmsList.add(0, liveItem)
                     hasNewItems = true
                 }
             }
 
             if (hasNewItems) {
-                historyRecyclerView.scrollToPosition(0)
+                applyFilters()
+                if (smsList.isNotEmpty()) {
+                    historyRecyclerView.scrollToPosition(0)
+                }
             }
             if (smsList.isNotEmpty()) {
                 historyRecyclerView.visibility = View.VISIBLE
@@ -234,6 +267,7 @@ class HistoryFragment : Fragment() {
     }
 
     private fun clearSmsList() {
+        allSmsList.clear()
         smsList.clear()
         smsAdapter.notifyDataSetChanged()
         historyRecyclerView.visibility = View.GONE
@@ -245,7 +279,6 @@ class HistoryFragment : Fragment() {
         historyRecyclerView.visibility = View.VISIBLE
         layoutEmptyState.visibility = View.GONE
 
-        // Run query and local classification asynchronously
         scope.launch {
             val results = withContext(Dispatchers.IO) {
                 val list = mutableListOf<DetectionResult>()
@@ -307,7 +340,7 @@ class HistoryFragment : Fragment() {
                         arrayOf("_id", "address", "body", "date"),
                         null,
                         null,
-                        "date DESC LIMIT 50" // Limit to last 50 for performance
+                        "date DESC LIMIT 50"
                     )
 
                     cursor?.use { c ->
@@ -323,10 +356,8 @@ class HistoryFragment : Fragment() {
                             val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
                             val date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
 
-                            // Skip if already present in list
                             if (list.any { it.message == body && it.sender == sender }) continue
 
-                            // Classify locally on-the-fly
                             val classificationResult = LocalClassifier.classify(ctx, body)
                             val finalRes = classificationResult.copy(id = smsId, sender = sender, timestamp = date)
                             list.add(finalRes)
@@ -340,9 +371,9 @@ class HistoryFragment : Fragment() {
                 list.sortedByDescending { it.timestamp }
             }
 
-            smsList.clear()
-            smsList.addAll(results)
-            smsAdapter.notifyDataSetChanged()
+            allSmsList.clear()
+            allSmsList.addAll(results)
+            applyFilters()
 
             if (smsList.isEmpty()) {
                 historyRecyclerView.visibility = View.GONE
@@ -358,6 +389,119 @@ class HistoryFragment : Fragment() {
                 historyRecyclerView.visibility = View.VISIBLE
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Search + Filter
+    // -------------------------------------------------------------------------
+
+    private fun setupSearchAndFilter() {
+        // Filter toggle
+        btnFilter.setOnClickListener {
+            filterChipsVisible = !filterChipsVisible
+            filterChipScroll.visibility = if (filterChipsVisible) View.VISIBLE else View.GONE
+        }
+
+        // Search watcher
+        searchBox.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { applyFilters() }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        // Category chips (All / Harmful / Suspicious / Safe)
+        val categoryChips = listOf(chipAll, chipHarmful, chipSuspicious, chipSafe)
+        categoryChips.forEach { chip ->
+            chip.setOnClickListener {
+                if (activeFilterChip == chip) {
+                    setChipSelected(chip, false)
+                    activeFilterChip = null
+                    setChipSelected(chipAll, true)
+                    activeFilterChip = chipAll
+                } else {
+                    activeFilterChip?.let { setChipSelected(it, false) }
+                    setChipSelected(chip, true)
+                    activeFilterChip = chip
+                }
+                applyFilters()
+            }
+        }
+
+        // Sort chips
+        val sortChips = listOf(chipNewest, chipOldest)
+        sortChips.forEach { chip ->
+            chip.setOnClickListener {
+                if (activeSortChip == chip) {
+                    setChipSelected(chip, false)
+                    activeSortChip = null
+                } else {
+                    activeSortChip?.let { setChipSelected(it, false) }
+                    setChipSelected(chip, true)
+                    activeSortChip = chip
+                }
+                applyFilters()
+            }
+        }
+
+        // Default: All selected
+        setChipSelected(chipAll, true)
+        activeFilterChip = chipAll
+    }
+
+    private fun applyFilters() {
+        val query = searchBox.text.toString().trim().lowercase(Locale.getDefault())
+
+        var result = allSmsList.toList()
+
+        // Text search — match sender or message body
+        if (query.isNotEmpty()) {
+            result = result.filter {
+                it.sender.lowercase(Locale.getDefault()).contains(query) ||
+                it.message.lowercase(Locale.getDefault()).contains(query)
+            }
+        }
+
+        // Category filter
+        result = when (activeFilterChip) {
+            chipHarmful    -> result.filter { it.getEffectiveClassification() == Classification.SMISHING }
+            chipSuspicious -> result.filter { it.getEffectiveClassification() == Classification.SUSPICIOUS }
+            chipSafe       -> result.filter { it.getEffectiveClassification() == Classification.SAFE }
+            else           -> result
+        }
+
+        // Sort
+        result = when (activeSortChip) {
+            chipNewest -> result.sortedByDescending { it.timestamp }
+            chipOldest -> result.sortedBy { it.timestamp }
+            else       -> result.sortedByDescending { it.timestamp } // default newest first
+        }
+
+        smsList.clear()
+        smsList.addAll(result)
+        smsAdapter.notifyDataSetChanged()
+
+        if (smsList.isEmpty() && allSmsList.isNotEmpty()) {
+            // Has data but filtered to nothing
+            historyRecyclerView.visibility = View.GONE
+            layoutEmptyState.visibility = View.VISIBLE
+            tvEmptyTitle.text = "No Results"
+            tvEmptyMessage.text = "No messages match your search or filter."
+        } else if (smsList.isNotEmpty()) {
+            historyRecyclerView.visibility = View.VISIBLE
+            layoutEmptyState.visibility = View.GONE
+        }
+    }
+
+    private fun setChipSelected(chip: TextView, selected: Boolean) {
+        chip.setBackgroundResource(
+            if (selected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected
+        )
+        chip.setTextColor(
+            ContextCompat.getColor(
+                requireContext(),
+                if (selected) R.color.text_primary else R.color.text_secondary
+            )
+        )
     }
 
     private fun showDetailsDialog(result: DetectionResult) {

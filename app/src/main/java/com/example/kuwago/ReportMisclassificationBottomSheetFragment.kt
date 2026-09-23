@@ -13,7 +13,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat
 import com.example.kuwago.network.MisclassificationReportRequest
 import com.example.kuwago.network.RetrofitClient
@@ -146,6 +146,9 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
                 return@setOnClickListener
             }
             tvError.visibility = View.GONE
+            // Dismiss keyboard before submitting
+            val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(etComment.windowToken, 0)
             submitReport(view, result, reportType, etComment.text.toString().trim())
         }
     }
@@ -236,6 +239,15 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
             "1.0.0"
         }
 
+        // ML score: rfProb or xgbProb — null if both are zero (never ran or failed)
+        val originalMlScore: Float? = when {
+            result.rfProb > 0f || result.xgbProb > 0f ->
+                (0.75f * result.rfProb + 0.25f * result.xgbProb)
+            else -> null
+        }
+        // DL score: cnnScore or cnnProb — null if neither is present
+        val originalDlScore: Float? = result.cnnScore ?: result.cnnProb
+
         val request = MisclassificationReportRequest(
             message = result.message,
             sender = result.sender,
@@ -243,6 +255,8 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
             extractedUrl = result.extractedUrl,
             originalVerdict = originalVerdict,
             originalScore = originalScore,
+            originalMlScore = originalMlScore,
+            originalDlScore = originalDlScore,
             userVerdict = userVerdict,
             reportType = reportType,
             userComment = userComment.ifEmpty {
