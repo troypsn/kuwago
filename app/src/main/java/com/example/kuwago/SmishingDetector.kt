@@ -86,7 +86,7 @@ object SmishingDetector {
         ) ?: SettingsFragment.MODE_AUTOMATIC
         val dataSaver = prefs.getBoolean(SettingsFragment.KEY_DATA_SAVER, false)
         val isMobileData = isConnectedToMobileData(context)
-        val skipDueToDataSaver = dataSaver && isMobileData
+        val skipDueToDataSaver = dataSaver && isMobileData && !isManual
         val isOnlineDisabled = onlineScanMode == SettingsFragment.MODE_DISABLED && !isManual
 
         if (isOnlineDisabled || skipDueToDataSaver) {
@@ -317,8 +317,8 @@ object SmishingDetector {
                             (e.localizedMessage?.contains("failed to connect", ignoreCase = true) == true) ||
                             (e.localizedMessage?.contains("connection reset", ignoreCase = true) == true)
             val errorVerdict = when {
-                is5xxWakeup -> "Server waking up (~40s on free cloud). Please tap to retry in a moment."
-                isTimeout -> "Server wake-up timed out. Free cloud instances take ~40s to wake up. Tap to retry."
+                is5xxWakeup -> "Server waking up (~1 min on free cloud). Please tap to retry in a moment."
+                isTimeout -> "Server wake-up timed out. Free cloud instances take ~1 min to wake up. Tap to retry."
                 isConnect -> "Server waking up or unreachable. Please tap to retry in a moment."
                 else -> "API Error: ${e.localizedMessage ?: "Failed to connect"}"
             }

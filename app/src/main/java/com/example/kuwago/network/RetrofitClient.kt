@@ -9,10 +9,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private val BASE_URL = BuildConfig.API_URL
+    private val BASE_URL = if (BuildConfig.API_URL.endsWith("/")) {
+        BuildConfig.API_URL
+    } else {
+        "${BuildConfig.API_URL}/"
+    }
 
     private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.NONE
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
     }
 
     private val connectionPool = ConnectionPool(5, 30, TimeUnit.SECONDS)

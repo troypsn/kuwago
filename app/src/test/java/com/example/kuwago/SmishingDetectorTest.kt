@@ -289,4 +289,10 @@ class SmishingDetectorTest {
         assertTrue(result.classification != Classification.SAFE)
         assertTrue(result.probability >= 0.50f)
     }
+
+    @Test
+    fun testRetrofitClient_initializesWithValidBaseUrl() {
+        val service = com.example.kuwago.network.RetrofitClient.instance
+        assertNotNull(service)
+    }
 }

@@ -11,9 +11,10 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-val apiUrl: String = System.getenv("API_URL")
+val rawApiUrl: String = System.getenv("API_URL")
     ?: localProperties.getProperty("API_URL")
     ?: "https://kwagobackend.onrender.com/"
+val apiUrl: String = if (rawApiUrl.endsWith("/")) rawApiUrl else "$rawApiUrl/"
 
 val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")
     ?: localProperties.getProperty("KWAGO_API_KEY")

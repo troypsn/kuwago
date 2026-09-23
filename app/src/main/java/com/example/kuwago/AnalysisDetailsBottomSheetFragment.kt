@@ -84,10 +84,11 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
         val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
         val hasDlData = result.cnnScore != null || result.cnnProb != null
+        val isDeepScanning = result.isScanning || DeepScanManager.isScanning(result)
         if (hasDlData) {
             btnDeepScan?.visibility = View.GONE
             pbDeepScanLoading?.visibility = View.GONE
-        } else if (result.isScanning) {
+        } else if (isDeepScanning) {
             btnDeepScan?.visibility = View.GONE
             pbDeepScanLoading?.visibility = View.VISIBLE
         } else {
@@ -96,6 +97,31 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             btnDeepScan?.isEnabled = true
             btnDeepScan?.setOnClickListener {
                 runDeepAnalysis(view, result)
+            }
+        }
+
+        // Live observation of deep scan progress across tab switches and app pauses
+        DeepScanManager.statusUpdates.observe(viewLifecycleOwner) {
+            val current = detectionResult ?: return@observe
+            val isScanning = DeepScanManager.isScanning(current)
+            val btnRun = view.findViewById<Button>(R.id.btn_run_deep_analysis)
+            val btnDeep = view.findViewById<ImageView>(R.id.btn_deep_scan)
+            val pbDeep = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
+            val hasDl = current.cnnScore != null || current.cnnProb != null
+
+            if (isScanning && !hasDl) {
+                btnDeep?.visibility = View.GONE
+                pbDeep?.visibility = View.VISIBLE
+                btnRun?.isEnabled = false
+                btnRun?.text = DeepScanManager.getStatus(current)
+            } else if (!isScanning && !hasDl) {
+                pbDeep?.visibility = View.GONE
+                btnDeep?.visibility = View.VISIBLE
+                btnDeep?.isEnabled = true
+                btnRun?.isEnabled = true
+                if (btnRun?.text?.startsWith("Waking") == true || btnRun?.text?.startsWith("Server") == true || btnRun?.text?.startsWith("Scanning") == true) {
+                    btnRun?.text = "Run Deep Analysis"
+                }
             }
         }
 
@@ -357,6 +383,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvDlScoreBadge.setTextColor(Color.parseColor("#888888"))
             llDlPendingState?.visibility = View.VISIBLE
             llDlResultState?.visibility = View.GONE
+            val isDeepScanning = result.isScanning || DeepScanManager.isScanning(result)
+            if (isDeepScanning) {
+                btnRunDeepAnalysis?.isEnabled = false
+                btnRunDeepAnalysis?.text = DeepScanManager.getStatus(result)
+            } else {
+                btnRunDeepAnalysis?.isEnabled = true
+                btnRunDeepAnalysis?.text = "Run Deep Analysis"
+            }
         }
 
         btnRunDeepAnalysis?.setOnClickListener {
@@ -725,144 +759,119 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         container.addView(row)
     }
 
-    private fun runDeepAnalysis(view: View, result: DetectionResult) {
-        val ctx = context ?: return
-        val btnRunDeepAnalysis = view.findViewById<Button>(R.id.btn_run_deep_analysis) ?: return
-        val llDlPendingState = view.findViewById<LinearLayout>(R.id.ll_dl_pending_state) ?: return
-        val llDlResultState = view.findViewById<LinearLayout>(R.id.ll_dl_result_state) ?: return
+    private fun applyCompletedDlResult(view: View, finalResult: DetectionResult) {
         val tvDlScoreBadge = view.findViewById<TextView>(R.id.tv_dl_score_badge) ?: return
         val tvDlConfidenceVal = view.findViewById<TextView>(R.id.tv_dl_confidence_val) ?: return
         val pbDlConfidence = view.findViewById<ProgressBar>(R.id.pb_dl_confidence) ?: return
         val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge) ?: return
         val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container) ?: return
+        val llDlPendingState = view.findViewById<LinearLayout>(R.id.ll_dl_pending_state) ?: return
+        val llDlResultState = view.findViewById<LinearLayout>(R.id.ll_dl_result_state) ?: return
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
         val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
 
-        btnRunDeepAnalysis.isEnabled = false
-        btnRunDeepAnalysis.text = "Scanning…"
+        pbDeepScanLoading?.visibility = View.GONE
+        btnDeepScan?.visibility = View.GONE
+
+        val dlScore = finalResult.cnnScore ?: finalResult.cnnProb ?: 0f
+        val dlColor = getVerdictColor(dlScore)
+        tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
+        tvDlScoreBadge.setTextColor(dlColor)
+        tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
+        tvDlConfidenceVal.setTextColor(dlColor)
+        pbDlConfidence.progress = (dlScore * 100).toInt()
+        pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
+        tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+        tvDlClassifiedBadge.setTextColor(dlColor)
+        populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
+        llDlPendingState.visibility = View.GONE
+        llDlResultState.visibility = View.VISIBLE
+
+        setupClassificationSection(view, finalResult)
+
+        val llUrlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_url_metrics_container)
+        if (llUrlMetricsContainer != null) {
+            populateUrlMetrics(llUrlMetricsContainer, finalResult, finalResult.urlScore ?: 0f)
+        }
+        val tvUrlScoreBadge = view.findViewById<TextView>(R.id.tv_url_score_badge)
+        val pbUrlConfidence = view.findViewById<ProgressBar>(R.id.pb_url_confidence)
+        val tvUrlConfidenceVal = view.findViewById<TextView>(R.id.tv_url_confidence_val)
+        val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
+        if (finalResult.urlFound) {
+            val urlScore = finalResult.urlScore ?: 0f
+            val urlColor = getVerdictColor(urlScore)
+            tvUrlScoreBadge?.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", urlScore) else "–"
+            tvUrlScoreBadge?.setTextColor(urlColor)
+            pbUrlConfidence?.progress = (urlScore * 100).toInt()
+            pbUrlConfidence?.progressTintList = ColorStateList.valueOf(urlColor)
+            tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
+            tvUrlConfidenceVal?.setTextColor(urlColor)
+            val vStr = finalResult.urlVerdict?.lowercase()
+            tvUrlClassifiedBadge?.text = when {
+                vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
+                vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
+                else -> "No threats detected"
+            }
+            tvUrlClassifiedBadge?.setTextColor(urlColor)
+        }
+
+        setupCombinedScore(view, finalResult)
+        setupSecurityActions(view, finalResult)
+    }
+
+    private fun runDeepAnalysis(view: View, result: DetectionResult) {
+        val ctx = context ?: return
+        if (DeepScanManager.isScanning(result)) return
+
+        val btnRunDeepAnalysis = view.findViewById<Button>(R.id.btn_run_deep_analysis)
+        val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
+        val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
+
+        btnRunDeepAnalysis?.isEnabled = false
+        btnRunDeepAnalysis?.text = "Scanning…"
         btnDeepScan?.isEnabled = false
         btnDeepScan?.visibility = View.GONE
         pbDeepScanLoading?.visibility = View.VISIBLE
 
-        // Purge any stale/idle sockets so the attempt starts with a clean connection
-        com.example.kuwago.network.RetrofitClient.resetConnectionPool()
+        DeepScanManager.startDeepScan(
+            context = ctx,
+            result = result,
+            onComplete = { finalResult ->
+                if (!isAdded) return@startDeepScan
+                val targetView = getView() ?: view
+                detectionResult = finalResult
+                applyCompletedDlResult(targetView, finalResult)
+                onResultUpdatedListener?.invoke(finalResult)
+                Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()
+            },
+            onError = { errMsg ->
+                if (!isAdded) return@startDeepScan
+                val targetView = getView() ?: view
+                val isColdStart = errMsg.contains("wake", ignoreCase = true) ||
+                                  errMsg.contains("timeout", ignoreCase = true) ||
+                                  errMsg.contains("connect", ignoreCase = true) ||
+                                  errMsg.contains("instances take", ignoreCase = true) ||
+                                  errMsg.contains("502") || errMsg.contains("503") || errMsg.contains("504")
 
-        val tickerJob = scope.launch {
-            kotlinx.coroutines.delay(6000L)
-            btnRunDeepAnalysis.text = "Waking up server (~40s)…"
-            kotlinx.coroutines.delay(16000L)
-            btnRunDeepAnalysis.text = "Server spinning up… almost ready"
-            kotlinx.coroutines.delay(16000L)
-            btnRunDeepAnalysis.text = "Finalizing scan…"
-        }
+                val btnRun = targetView.findViewById<Button>(R.id.btn_run_deep_analysis)
+                val btnDeep = targetView.findViewById<ImageView>(R.id.btn_deep_scan)
+                val pbDeep = targetView.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
 
-        scope.launch {
-            try {
-                val finalResult = withContext(Dispatchers.IO) {
-                    val scanResult = SmishingDetector.analyze(ctx, result.message, result.sender, isManual = true)
-                    scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
-                }
-
-                val hasDlData = finalResult.cnnScore != null || finalResult.cnnProb != null
-                if (hasDlData) {
-                    val dlScore = finalResult.cnnScore ?: finalResult.cnnProb ?: 0f
-                    val dlColor = getVerdictColor(dlScore)
-                    tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
-                    tvDlScoreBadge.setTextColor(dlColor)
-                    tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
-                    tvDlConfidenceVal.setTextColor(dlColor)
-                    pbDlConfidence.progress = (dlScore * 100).toInt()
-                    pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
-                    tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
-                    tvDlClassifiedBadge.setTextColor(dlColor)
-                    populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
-                    llDlPendingState.visibility = View.GONE
-                    llDlResultState.visibility = View.VISIBLE
-                    btnDeepScan?.visibility = View.GONE
-
-                    // Update the top classification card (Risk badge, Title, Total percentage, summaries, etc.)
-                    setupClassificationSection(view, finalResult)
-
-                    // Update URL accordion dropdown metrics and headers immediately
-                    val llUrlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_url_metrics_container)
-                    if (llUrlMetricsContainer != null) {
-                        populateUrlMetrics(llUrlMetricsContainer, finalResult, finalResult.urlScore ?: 0f)
-                    }
-                    val tvUrlScoreBadge = view.findViewById<TextView>(R.id.tv_url_score_badge)
-                    val pbUrlConfidence = view.findViewById<ProgressBar>(R.id.pb_url_confidence)
-                    val tvUrlConfidenceVal = view.findViewById<TextView>(R.id.tv_url_confidence_val)
-                    val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
-                    if (finalResult.urlFound) {
-                        val urlScore = finalResult.urlScore ?: 0f
-                        val urlColor = getVerdictColor(urlScore)
-                        tvUrlScoreBadge?.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", urlScore) else "–"
-                        tvUrlScoreBadge?.setTextColor(urlColor)
-                        pbUrlConfidence?.progress = (urlScore * 100).toInt()
-                        pbUrlConfidence?.progressTintList = ColorStateList.valueOf(urlColor)
-                        tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
-                        tvUrlConfidenceVal?.setTextColor(urlColor)
-                        val vStr = finalResult.urlVerdict?.lowercase()
-                        tvUrlClassifiedBadge?.text = when {
-                            vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
-                            vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
-                            else -> "No threats detected"
-                        }
-                        tvUrlClassifiedBadge?.setTextColor(urlColor)
-                    }
-
-                    // Update the Combined Score card
-                    setupCombinedScore(view, finalResult)
-
-                    // Notify history list to update chip state and refresh security actions with latest DL result
-                    detectionResult = finalResult
-                    setupSecurityActions(view, finalResult)
-                    DetectionRepository.addDetection(ctx, finalResult)
-                    onResultUpdatedListener?.invoke(finalResult)
-
-                    Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()
-                } else {
-                    val errMsg = finalResult.cnnVerdict ?: "API connection failed"
-                    val isColdStart = errMsg.contains("wake", ignoreCase = true) ||
-                                      errMsg.contains("timeout", ignoreCase = true) ||
-                                      errMsg.contains("connect", ignoreCase = true) ||
-                                      errMsg.contains("instances take", ignoreCase = true) ||
-                                      errMsg.contains("502") || errMsg.contains("503") || errMsg.contains("504")
-                    if (isColdStart) {
-                        Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
-                        btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
-                    } else {
-                        Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
-                        btnRunDeepAnalysis.text = "Retry Deep Analysis"
-                    }
-                    btnRunDeepAnalysis.isEnabled = true
-                    btnRunDeepAnalysis.setOnClickListener { runDeepAnalysis(view, result) }
-                    btnDeepScan?.isEnabled = true
-                    btnDeepScan?.visibility = View.VISIBLE
-                    btnDeepScan?.setOnClickListener { runDeepAnalysis(view, result) }
-                }
-            } catch (e: Exception) {
-                val err = e.localizedMessage ?: "Unknown error"
-                val isColdStart = err.contains("wake", ignoreCase = true) ||
-                                  err.contains("timeout", ignoreCase = true) ||
-                                  err.contains("connect", ignoreCase = true) ||
-                                  err.contains("502") || err.contains("503") || err.contains("504")
                 if (isColdStart) {
-                    Toast.makeText(ctx, "Cloud server is waking up from idle (~40s). Please tap to retry.", Toast.LENGTH_LONG).show()
-                    btnRunDeepAnalysis.text = "Server waking up — Tap to retry"
+                    Toast.makeText(ctx, "Cloud server is waking up from idle (~1 min). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
+                    btnRun?.text = "Server waking up — Tap to retry"
                 } else {
-                    Toast.makeText(ctx, "Error: $err", Toast.LENGTH_LONG).show()
-                    btnRunDeepAnalysis.text = "Retry Deep Analysis"
+                    Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
+                    btnRun?.text = "Retry Deep Analysis"
                 }
-                btnRunDeepAnalysis.isEnabled = true
-                btnRunDeepAnalysis.setOnClickListener { runDeepAnalysis(view, result) }
-                btnDeepScan?.isEnabled = true
-                btnDeepScan?.visibility = View.VISIBLE
-                btnDeepScan?.setOnClickListener { runDeepAnalysis(view, result) }
-            } finally {
-                tickerJob.cancel()
-                pbDeepScanLoading?.visibility = View.GONE
+                btnRun?.isEnabled = true
+                btnRun?.setOnClickListener { runDeepAnalysis(targetView, result) }
+                btnDeep?.isEnabled = true
+                btnDeep?.visibility = View.VISIBLE
+                btnDeep?.setOnClickListener { runDeepAnalysis(targetView, result) }
+                pbDeep?.visibility = View.GONE
             }
-        }
+        )
     }
 
     private fun setupSecurityActions(view: View, result: DetectionResult) {

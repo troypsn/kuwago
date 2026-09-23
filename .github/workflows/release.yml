@@ -13,6 +13,10 @@ jobs:
     name: Build, Test and Release APK
     runs-on: ubuntu-latest
 
+    env:
+      API_URL: "https://kwagobackend.onrender.com/"
+      KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -26,16 +30,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Run Unit Tests
         run: ./gradlew test
-        env:
-          KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
-        env:
-          API_URL: "https://kwagobackend.onrender.com/"
-          KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
