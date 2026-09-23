@@ -23,9 +23,9 @@ object RetrofitClient {
 
     private val client = OkHttpClient.Builder()
         .connectionPool(connectionPool)
-        .connectTimeout(75, TimeUnit.SECONDS)
-        .readTimeout(75, TimeUnit.SECONDS)
-        .writeTimeout(75, TimeUnit.SECONDS)
+        .connectTimeout(120, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
+        .writeTimeout(120, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .addInterceptor { chain ->
             val original = chain.request()

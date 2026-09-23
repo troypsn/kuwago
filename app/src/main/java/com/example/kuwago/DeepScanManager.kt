@@ -62,15 +62,18 @@ object DeepScanManager {
         _statusUpdates.postValue(HashMap(statusTexts))
 
         val job = scope.launch {
-            // Ticker job for progress updates (total ~1 min for Render cold boot)
+            // Ticker job for progress updates (total up to 2 mins for Render cold boot)
             val tickerJob = launch {
-                delay(8000L)
-                statusTexts[key] = "Waking up server (~1 min)…"
+                delay(7000L)
+                statusTexts[key] = "Waking up server (~1-2 mins)…"
                 _statusUpdates.postValue(HashMap(statusTexts))
-                delay(22000L)
+                delay(30000L)
                 statusTexts[key] = "Server spinning up… almost ready"
                 _statusUpdates.postValue(HashMap(statusTexts))
-                delay(20000L)
+                delay(35000L)
+                statusTexts[key] = "Running deep scan model…"
+                _statusUpdates.postValue(HashMap(statusTexts))
+                delay(30000L)
                 statusTexts[key] = "Finalizing scan…"
                 _statusUpdates.postValue(HashMap(statusTexts))
             }

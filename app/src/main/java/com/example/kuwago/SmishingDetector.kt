@@ -12,7 +12,7 @@ import kotlinx.coroutines.withTimeout
 
 object SmishingDetector {
 
-    private const val TIMEOUT_MS = 75000L // 75 seconds for backend CNN + VirusTotal URL scan
+    private const val TIMEOUT_MS = 120_000L // 120 seconds (2 minutes) for backend CNN + VirusTotal URL scan
 
     fun isConnectedToMobileData(context: Context): Boolean {
         return try {
@@ -317,8 +317,8 @@ object SmishingDetector {
                             (e.localizedMessage?.contains("failed to connect", ignoreCase = true) == true) ||
                             (e.localizedMessage?.contains("connection reset", ignoreCase = true) == true)
             val errorVerdict = when {
-                is5xxWakeup -> "Server waking up (~1 min on free cloud). Please tap to retry in a moment."
-                isTimeout -> "Server wake-up timed out. Free cloud instances take ~1 min to wake up. Tap to retry."
+                is5xxWakeup -> "Server waking up (~1-2 mins on free cloud). Please tap to retry in a moment."
+                isTimeout -> "Server wake-up timed out. Free cloud instances take ~1-2 mins to wake up. Tap to retry."
                 isConnect -> "Server waking up or unreachable. Please tap to retry in a moment."
                 else -> "API Error: ${e.localizedMessage ?: "Failed to connect"}"
             }

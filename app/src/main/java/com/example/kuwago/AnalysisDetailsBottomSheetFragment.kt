@@ -858,7 +858,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 val pbDeep = targetView.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
 
                 if (isColdStart) {
-                    Toast.makeText(ctx, "Cloud server is waking up from idle (~1 min). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(ctx, "Cloud server is waking up from idle (~1-2 mins). Please tap to retry in a moment.", Toast.LENGTH_LONG).show()
                     btnRun?.text = "Server waking up — Tap to retry"
                 } else {
                     Toast.makeText(ctx, "Deep scan failed: $errMsg", Toast.LENGTH_LONG).show()
