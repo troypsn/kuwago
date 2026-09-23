@@ -153,19 +153,16 @@ class KuwagoVpnService : VpnService() {
             val builder = Builder()
                 .setSession("Kuwago URL Shield")
                 .addAddress(VPN_ADDRESS, 24)
-                // Point all DNS through our virtual DNS server
                 .addDnsServer(DNS_PROXY_IP)
-                // Only route traffic addressed to our virtual DNS server
-                // through the tun interface.  All other traffic (web, API, etc.)
-                // continues via the normal network stack.
                 .addRoute(DNS_PROXY_IP, DNS_PROXY_PREFIX)
-                // Exclude Kuwago's own traffic to prevent a routing loop where
-                // backend scan requests re-enter the VPN indefinitely.
-                try {
-                    builder.addDisallowedApplication(packageName)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not disallow app package", e)
-                }
+
+            // Exclude Kuwago's own traffic to prevent a routing loop where
+            // backend scan requests re-enter the VPN indefinitely.
+            try {
+                builder.addDisallowedApplication(packageName)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not disallow app package", e)
+            }
 
             tunFd = builder.establish()
             if (tunFd == null) {

@@ -61,6 +61,8 @@ data class MisclassificationReportRequest(
     @SerializedName("extracted_url") val extractedUrl: String?,
     @SerializedName("original_verdict") val originalVerdict: String,
     @SerializedName("original_score") val originalScore: Float,
+    @SerializedName("original_ml_score") val originalMlScore: Float?,
+    @SerializedName("original_dl_score") val originalDlScore: Float?,
     @SerializedName("user_verdict") val userVerdict: String,
     @SerializedName("report_type") val reportType: String,
     @SerializedName("user_comment") val userComment: String,
