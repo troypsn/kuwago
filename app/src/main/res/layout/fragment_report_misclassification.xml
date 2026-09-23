@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- ===== SCREEN 1: REPORT FORM ===== -->
+    <LinearLayout
+        android:id="@+id/screen_report_form"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:id="@+id/btn_back_report"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:src="@drawable/ic_arrow_back"
+                android:tint="#FFFFFFFF" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:text="Report a Mistake"
+                android:textColor="#FFFFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Subtitle -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    android:text="Help us improve our detection model by reporting messages that were incorrectly classified."
+                    android:textColor="#888888"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.4" />
+
+                <!-- Reported Message Card -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Reported Message"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    android:background="@drawable/bg_layer_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- Sender + Badge row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_report_sender"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="SENDER"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                        <TextView
+                            android:id="@+id/tv_report_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_status_badge"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            android:text="12%"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Message preview -->
+                    <TextView
+                        android:id="@+id/tv_report_message_preview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:maxLines="3"
+                        android:text="Message content preview..."
+                        android:textColor="#AAAAAA"
+                        android:textSize="12sp"
+                        android:lineSpacingMultiplier="1.3" />
+
+                    <!-- Chips + timestamp row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <!-- ML Chip -->
+                        <LinearLayout
+                            android:id="@+id/report_chip_ml"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_ml"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ML"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- DL Chip -->
+                        <LinearLayout
+                            android:id="@+id/report_chip_dl"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_brain"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="DL"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- URL Chip -->
+                        <LinearLayout
+                            android:id="@+id/report_chip_url"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_link"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="URL"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- Spacer -->
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <!-- Timestamp -->
+                        <TextView
+                            android:id="@+id/tv_report_timestamp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="7/7/26"
+                            android:textColor="#888888"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Issue Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Issue"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <!-- What did we get wrong -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="What did we get wrong?"
+                    android:textColor="#AAAAAA"
+                    android:textSize="12sp" />
+
+                <!-- Issue type selection -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal">
+
+                    <!-- False Positive option -->
+                    <LinearLayout
+                        android:id="@+id/option_false_positive"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_layer_card"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Flagged as Harmful"
+                            android:textColor="#CCCCCC"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="But it's actually safe"
+                            android:textColor="#888888"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- False Negative option -->
+                    <LinearLayout
+                        android:id="@+id/option_false_negative"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_layer_card"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Flagged as Safe"
+                            android:textColor="#CCCCCC"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="But it's actually harmful"
+                            android:textColor="#888888"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Your comments -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Additional comments (optional)"
+                    android:textColor="#AAAAAA"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/et_user_comment"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_input_field"
+                    android:gravity="top|start"
+                    android:hint="Describe why this message was misclassified..."
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:padding="12dp"
+                    android:textColor="#FFFFFFFF"
+                    android:textColorHint="#555555"
+                    android:textSize="13sp" />
+
+                <!-- Hint text -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:text="Your feedback is anonymous and helps us improve our AI detection model for everyone."
+                    android:textColor="#555555"
+                    android:textSize="11sp"
+                    android:lineSpacingMultiplier="1.4" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Submit Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="24dp">
+
+            <!-- Error message -->
+            <TextView
+                android:id="@+id/tv_report_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Please select an issue type before submitting."
+                android:textColor="#FF4D55"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btn_submit_report"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_scan_button"
+                android:stateListAnimator="@null"
+                android:text="Submit Report"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ===== SCREEN 2: SUCCESS / THANK YOU ===== -->
+    <LinearLayout
+        android:id="@+id/screen_report_success"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:id="@+id/btn_back_success"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:src="@drawable/ic_arrow_back"
+                android:tint="#FFFFFFFF" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:text="Report a Mistake"
+                android:textColor="#FFFFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="24dp">
+
+                <!-- Green checkmark badge -->
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="20dp"
+                    android:src="@drawable/ic_shield"
+                    android:tint="#26CE6B" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="8dp"
+                    android:text="Thank you!"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="28dp"
+                    android:gravity="center"
+                    android:text="Your feedback helps us improve our detection models and keep everyone safer."
+                    android:textColor="#888888"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.4" />
+
+                <!-- Reported Message summary card -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Reported Message"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    android:background="@drawable/bg_layer_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- Sender + Badge row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_success_sender"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="SENDER"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                        <TextView
+                            android:id="@+id/tv_success_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_status_badge"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            android:text="12%"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Message preview -->
+                    <TextView
+                        android:id="@+id/tv_success_message_preview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:maxLines="3"
+                        android:text="Message content preview..."
+                        android:textColor="#AAAAAA"
+                        android:textSize="12sp"
+                        android:lineSpacingMultiplier="1.3" />
+
+                    <!-- Chips + timestamp row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <!-- ML Chip -->
+                        <LinearLayout
+                            android:id="@+id/success_chip_ml"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_ml"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ML"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- DL Chip -->
+                        <LinearLayout
+                            android:id="@+id/success_chip_dl"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_brain"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="DL"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- URL Chip -->
+                        <LinearLayout
+                            android:id="@+id/success_chip_url"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="8dp">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_marginEnd="4dp"
+                                android:src="@drawable/ic_link"
+                                app:tint="#888888" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="URL"
+                                android:textColor="#888888"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <!-- Spacer -->
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <!-- Timestamp -->
+                        <TextView
+                            android:id="@+id/tv_success_timestamp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="7/7/26"
+                            android:textColor="#888888"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Issue description card -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Issue"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:background="@drawable/bg_layer_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:id="@+id/tv_success_issue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="This message is PHISHING but was flagged as low-risk."
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp"
+                        android:lineSpacingMultiplier="1.4" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Done Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="24dp">
+
+            <Button
+                android:id="@+id/btn_done"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_scan_button"
+                android:stateListAnimator="@null"
+                android:text="Done"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

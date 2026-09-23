@@ -59,9 +59,19 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
 
         setContentView(R.layout.activity_main)
+        val bottomNav = findViewById<LinearLayout>(R.id.bottom_nav)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply left/top/right to root; bottom handled by the nav bar itself
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            // Pad the nav bar downward so its content clears the system navigation bar
+            // (gesture mode → bottom = 0, 3-button mode → bottom = nav bar height)
+            bottomNav.setPadding(
+                bottomNav.paddingLeft,
+                bottomNav.paddingTop,
+                bottomNav.paddingRight,
+                systemBars.bottom
+            )
             insets
         }
 

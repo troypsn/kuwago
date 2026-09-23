@@ -233,10 +233,10 @@ object SmsLocalRepository {
     suspend fun syncUrlReputationsFromBackend(context: Context) {
         withContext(Dispatchers.IO) {
             try {
-                // Calculate timestamp for 3 months ago (90 days in milliseconds)
-                val threeMonthsAgoMs = System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000)
-                android.util.Log.i("SmsLocalRepository", "Syncing URL reputations older than 3 months (since_timestamp=$threeMonthsAgoMs)...")
-                val response = com.example.kuwago.network.RetrofitClient.instance.syncUrlReputations(threeMonthsAgoMs)
+                // Calculate timestamp for 3 months ago in Unix seconds (API expects seconds, not ms)
+                val threeMonthsAgoSecs = (System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000)) / 1000L
+                android.util.Log.i("SmsLocalRepository", "Syncing URL reputations older than 3 months (since_timestamp=$threeMonthsAgoSecs seconds)...")
+                val response = com.example.kuwago.network.RetrofitClient.instance.syncUrlReputations(threeMonthsAgoSecs)
                 android.util.Log.i("SmsLocalRepository", "Received ${response.urls.size} pre-analyzed URLs from backend sync")
 
                 val db = getDatabase(context)

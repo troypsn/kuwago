@@ -264,9 +264,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         }
 
-        // Date format
+        // Date format — guard against epoch-seconds vs epoch-ms mismatch (2070 bug)
+        val safeTimestamp = sanitizeTimestamp(result.timestamp)
         val sdf = SimpleDateFormat("h:mm a • MMM d, yyyy", Locale.US)
-        tvScannedDate.text = sdf.format(Date(result.timestamp))
+        tvScannedDate.text = sdf.format(Date(safeTimestamp))
     }
 
     private fun getVerdictText(prob: Float): String {
@@ -875,7 +876,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnReport.setOnClickListener {
-            Toast.makeText(requireContext(), "Report misclassification template not configured yet.", Toast.LENGTH_SHORT).show()
+            val reportSheet = ReportMisclassificationBottomSheetFragment.newInstance(result)
+            reportSheet.show(parentFragmentManager, "ReportMisclassificationBottomSheetFragment")
         }
     }
 
@@ -926,5 +928,22 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         dialog.show()
+    }
+
+    /**
+     * Sanity-checks a timestamp to guard against the epoch-seconds vs epoch-ms mismatch
+     * bug that causes dates to appear as year 2070 or similar far-future/past dates.
+     * A valid "current era" millisecond timestamp should be > Jan 1, 2000 and < Jan 1, 2100.
+     */
+    private fun sanitizeTimestamp(timestamp: Long): Long {
+        val minValidMs = 946684800000L  // Jan 1, 2000 in ms
+        val maxValidMs = 4102444800000L // Jan 1, 2100 in ms
+        return when {
+            timestamp in minValidMs..maxValidMs -> timestamp
+            // Looks like it might be in seconds (e.g. ~1.7×10^9 for current era)
+            timestamp * 1000L in minValidMs..maxValidMs -> timestamp * 1000L
+            // Fallback to current time if timestamp is completely invalid
+            else -> System.currentTimeMillis()
+        }
     }
 }
