@@ -14,6 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.view.inputmethod.InputMethodManager
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.kuwago.network.MisclassificationReportRequest
 import com.example.kuwago.network.RetrofitClient
@@ -243,10 +244,13 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         val originalMlScore: Float? = when {
             result.rfProb > 0f || result.xgbProb > 0f ->
                 (0.75f * result.rfProb + 0.25f * result.xgbProb)
+            result.localVerdict != null -> result.probability
             else -> null
         }
         // DL score: cnnScore or cnnProb — null if neither is present
         val originalDlScore: Float? = result.cnnScore ?: result.cnnProb
+
+        Log.i("ReportMisclassification", "Submitting misclassification report: origDlScore=$originalDlScore, origMlScore=$originalMlScore, origScore=$originalScore, origVerdict=$originalVerdict, userVerdict=$userVerdict, reportType=$reportType")
 
         val request = MisclassificationReportRequest(
             message = result.message,

@@ -810,8 +810,9 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     // Update the Combined Score card
                     setupCombinedScore(view, finalResult)
 
-                    // Notify history list to update chip state
+                    // Notify history list to update chip state and refresh security actions with latest DL result
                     detectionResult = finalResult
+                    setupSecurityActions(view, finalResult)
                     DetectionRepository.addDetection(ctx, finalResult)
                     onResultUpdatedListener?.invoke(finalResult)
 
@@ -859,24 +860,27 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val btnBlacklist = view.findViewById<Button>(R.id.btn_blacklist_contact)
         val btnReport = view.findViewById<Button>(R.id.btn_report_misclassification)
 
-        updateBlacklistButtonState(btnBlacklist, result.sender)
+        val currentSender = (detectionResult ?: result).sender
+        updateBlacklistButtonState(btnBlacklist, currentSender)
 
         btnBlacklist.setOnClickListener {
-            val isBlacklisted = BlacklistRepository.isBlacklisted(requireContext(), result.sender)
+            val currentResult = detectionResult ?: result
+            val isBlacklisted = BlacklistRepository.isBlacklisted(requireContext(), currentResult.sender)
             if (isBlacklisted) {
                 // Remove from blacklist
-                BlacklistRepository.removeEntry(requireContext(), result.sender)
-                Toast.makeText(requireContext(), "Removed ${result.sender} from Blacklist", Toast.LENGTH_SHORT).show()
-                updateBlacklistButtonState(btnBlacklist, result.sender)
+                BlacklistRepository.removeEntry(requireContext(), currentResult.sender)
+                Toast.makeText(requireContext(), "Removed ${currentResult.sender} from Blacklist", Toast.LENGTH_SHORT).show()
+                updateBlacklistButtonState(btnBlacklist, currentResult.sender)
                 onBlacklistUpdatedListener?.invoke()
             } else {
                 // Open Custom Blacklist Confirmation Dialog
-                showBlacklistConfirmationDialog(result, btnBlacklist)
+                showBlacklistConfirmationDialog(currentResult, btnBlacklist)
             }
         }
 
         btnReport.setOnClickListener {
-            val reportSheet = ReportMisclassificationBottomSheetFragment.newInstance(result)
+            val currentResult = detectionResult ?: result
+            val reportSheet = ReportMisclassificationBottomSheetFragment.newInstance(currentResult)
             reportSheet.show(parentFragmentManager, "ReportMisclassificationBottomSheetFragment")
         }
     }

@@ -203,6 +203,7 @@ object SmsLocalRepository {
                         timestamp = sms.receivedTimestamp,
                         cnnScore = analysis?.dlConfidence,
                         cnnVerdict = analysis?.dlPrediction,
+                        cnnProb = analysis?.dlConfidence,
                         urlFound = hasUrl,
                         extractedUrl = firstUrl,
                         urlScore = urlScore,
