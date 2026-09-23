@@ -54,6 +54,25 @@ data class UrlSyncResponse(
     @SerializedName("urls") val urls: List<UrlSyncItem> = emptyList()
 )
 
+data class MisclassificationReportRequest(
+    @SerializedName("message") val message: String,
+    @SerializedName("sender") val sender: String,
+    @SerializedName("has_url") val hasUrl: Boolean,
+    @SerializedName("extracted_url") val extractedUrl: String?,
+    @SerializedName("original_verdict") val originalVerdict: String,
+    @SerializedName("original_score") val originalScore: Float,
+    @SerializedName("user_verdict") val userVerdict: String,
+    @SerializedName("report_type") val reportType: String,
+    @SerializedName("user_comment") val userComment: String,
+    @SerializedName("app_version") val appVersion: String,
+    @SerializedName("device_id") val deviceId: String
+)
+
+data class MisclassificationReportResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("message") val message: String = ""
+)
+
 interface SmishingApiService {
     @POST("scan-sms")
     suspend fun scanSms(@Body request: SmsScanRequest): SmsScanResponse
@@ -62,4 +81,7 @@ interface SmishingApiService {
     suspend fun syncUrlReputations(
         @retrofit2.http.Query("since_timestamp") sinceTimestamp: Long
     ): UrlSyncResponse
+
+    @POST("report-misclassification")
+    suspend fun reportMisclassification(@Body request: MisclassificationReportRequest): MisclassificationReportResponse
 }

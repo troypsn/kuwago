@@ -401,9 +401,9 @@ class SmsHistoryAdapter(
         holder.senderText.text = item.sender
         holder.messageText.text = item.message
 
-        // Format timestamp
+        // Format timestamp — sanitize to guard against epoch-seconds vs epoch-ms mismatch
         val sdf = java.text.SimpleDateFormat("h:mm a", java.util.Locale.US)
-        holder.timeText.text = sdf.format(java.util.Date(item.timestamp))
+        holder.timeText.text = sdf.format(java.util.Date(sanitizeTimestamp(item.timestamp)))
 
         holder.itemView.isClickable = true
         holder.itemView.setOnClickListener {
@@ -455,4 +455,18 @@ class SmsHistoryAdapter(
     }
 
     override fun getItemCount() = items.size
+
+    /**
+     * Guards against epoch-seconds vs epoch-ms mismatch (e.g. causes "2070" dates).
+     * Valid current-era ms timestamps are between Jan 1, 2000 and Jan 1, 2100.
+     */
+    private fun sanitizeTimestamp(timestamp: Long): Long {
+        val minValidMs = 946684800000L  // Jan 1, 2000 in ms
+        val maxValidMs = 4102444800000L // Jan 1, 2100 in ms
+        return when {
+            timestamp in minValidMs..maxValidMs -> timestamp
+            timestamp * 1000L in minValidMs..maxValidMs -> timestamp * 1000L
+            else -> System.currentTimeMillis()
+        }
+    }
 }
