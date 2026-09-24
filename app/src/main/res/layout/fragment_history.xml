@@ -318,8 +318,8 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingBottom="80dp"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:visibility="gone" />
 
         <!-- Empty / Permission Required state view -->

@@ -35,6 +35,7 @@
             android:name=".SplashActivity"
             android:theme="@style/Theme.App.SplashScreen"
             android:noHistory="true"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -46,16 +47,19 @@
             android:name=".MainActivity"
             android:theme="@style/Theme.Mykotlinapp"
             android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:exported="true" />
 
         <activity
             android:name=".OnboardingActivity"
             android:theme="@style/Theme.Mykotlinapp"
+            android:screenOrientation="portrait"
             android:exported="false" />
 
         <activity
             android:name=".WarningOverlayActivity"
             android:exported="false"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.Mykotlinapp" />
 
         <receiver
@@ -104,6 +108,7 @@
         <activity
             android:name=".VpnBlockedActivity"
             android:exported="false"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.Mykotlinapp"
             android:taskAffinity=""
             android:excludeFromRecents="true" />
