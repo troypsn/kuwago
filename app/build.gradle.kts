@@ -22,7 +22,7 @@ val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")
 
 android {
     namespace = "com.example.kuwago"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.kuwago"
