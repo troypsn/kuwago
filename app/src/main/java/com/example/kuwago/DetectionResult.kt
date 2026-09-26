@@ -33,6 +33,9 @@ data class DetectionResult(
     val cnnProb: Float? = null
 ) : Serializable {
     fun getEffectiveClassification(): Classification {
+        if (classification == Classification.SMISHING && (urlVerdict?.equals("malicious", ignoreCase = true) == true && (explanation?.contains("shorten", ignoreCase = true) == true || overallExplanation?.contains("shorten", ignoreCase = true) == true))) {
+            return Classification.SMISHING
+        }
         val score = calculateEnsembleScore()
         return when {
             score >= LocalClassifier.smishingThreshold -> Classification.SMISHING
@@ -58,17 +61,23 @@ data class DetectionResult(
     }
 
     fun calculateEnsembleScore(): Float {
+        val isShortenedHarmful = classification == Classification.SMISHING &&
+                urlVerdict?.equals("malicious", ignoreCase = true) == true &&
+                (explanation?.contains("shorten", ignoreCase = true) == true || overallExplanation?.contains("shorten", ignoreCase = true) == true)
+
         val mlScore = if (rfProb > 0f || xgbProb > 0f) 0.75f * rfProb + 0.25f * xgbProb else probability
         val dlScore = cnnScore ?: cnnProb
         val hasDl = dlScore != null
         val hasUrl = urlFound && urlScore != null
 
-        return when {
+        val computed = when {
             hasDl && hasUrl -> (0.50f * dlScore!!) + (0.25f * urlScore!!) + (0.25f * mlScore)
             hasDl -> (2.0f / 3.0f * dlScore!!) + (1.0f / 3.0f * mlScore)
             hasUrl -> (0.50f * urlScore!!) + (0.50f * mlScore)
             else -> mlScore
         }
+
+        return if (isShortenedHarmful) maxOf(computed, 0.95f) else computed
     }
 }
 

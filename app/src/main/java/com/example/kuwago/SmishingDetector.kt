@@ -74,7 +74,8 @@ object SmishingDetector {
 
         val hasUrl = LocalClassifier.hasUrl(message)
         val extractedUrl = LocalClassifier.extractUrl(message)
-        Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl")
+        val isShortened = LocalClassifier.containsShortenedUrl(message) || (extractedUrl != null && LocalClassifier.isShortenedUrl(extractedUrl))
+        Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl, isShortened=$isShortened")
 
         val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val allowSave = prefs.getBoolean("help_train_ai", false)
@@ -96,29 +97,34 @@ object SmishingDetector {
             return localResult.copy(
                 sender = sender,
                 message = message,
+                classification = if (isShortened) Classification.SMISHING else localResult.classification,
+                probability = if (isShortened) maxOf(localResult.probability, 0.95f) else localResult.probability,
                 overallExplanation = fallbackExplanation,
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,
                 cnnVerdict = skipReason,
-                urlFound = hasUrl,
+                urlFound = hasUrl || isShortened,
                 extractedUrl = extractedUrl,
-                urlScore = null,
-                urlVerdict = null,
-                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                urlScore = if (isShortened) 1.0f else null,
+                urlVerdict = if (isShortened) "malicious" else null,
+                urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
+                explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else null,
+                localVerdict = if (isShortened) "Harmful" else localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (75% RF + 25% XGB)"
             )
         }
 
         val censoredSenderName = censorSender(sender)
         Log.i("SmishingDetector", "AI Train Setting: allowSave=$allowSave, autoReport=$autoReport")
 
-        val mlPrediction = when (localResult.classification) {
-            Classification.SAFE -> "benign"
-            Classification.SUSPICIOUS -> "suspicious"
-            Classification.SMISHING -> "smishing"
+        val mlPrediction = when {
+            isShortened -> "smishing"
+            localResult.classification == Classification.SAFE -> "benign"
+            localResult.classification == Classification.SUSPICIOUS -> "suspicious"
+            else -> "smishing"
         }
-        val mlConfidence = localResult.probability
+        val mlConfidence = if (isShortened) maxOf(localResult.probability, 0.95f) else localResult.probability
 
         return try {
             // --- Local URL reputation cache check (avoids API round-trip for known hosts, but never bypasses explicit manual DL scan) ---
@@ -130,18 +136,24 @@ object SmishingDetector {
             // Use cached URL reputation if available AND VPN is not active AND user didn't explicitly request Deep Scan
             if (!isManual && cachedReputation != null && !isVpnActive) {
                 Log.i("SmishingDetector", "URL cache hit for host=$normalizedHost → $cachedReputation. Skipping backend URL scan.")
-                val cachedUrlScore = if (cachedReputation == Classification.SMISHING) 1.0f
+                val cachedUrlScore = if (cachedReputation == Classification.SMISHING || isShortened) 1.0f
                                      else if (cachedReputation == Classification.SUSPICIOUS) 0.6f
                                      else 0.0f
-                val cachedUrlVerdict = if (cachedReputation == Classification.SMISHING) "malicious"
+                val cachedUrlVerdict = if (cachedReputation == Classification.SMISHING || isShortened) "malicious"
                                        else if (cachedReputation == Classification.SUSPICIOUS) "suspicious"
                                        else "clean"
                 val localScore = localResult.probability
-                val finalProb = (0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore)
-                val classification = when {
+                val finalProb = if (isShortened) maxOf((0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore), 0.95f)
+                                else (0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore)
+                val classification = if (isShortened) Classification.SMISHING else when {
                     finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
                     finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
                     else -> Classification.SAFE
+                }
+                val explanation = if (isShortened) {
+                    "Flagged as Harmful: This message contains a shortened URL ($extractedUrl). ${LocalClassifier.SHORTENED_URL_REASONING}"
+                } else {
+                    "Result from local URL cache for host: $normalizedHost"
                 }
                 return DetectionResult(
                     sender = sender,
@@ -151,13 +163,15 @@ object SmishingDetector {
                     isScanning = false,
                     cnnScore = null,
                     cnnVerdict = "Served from cache",
-                    urlFound = hasUrl,
+                    urlFound = hasUrl || isShortened,
                     extractedUrl = extractedUrl,
                     urlScore = cachedUrlScore,
                     urlVerdict = cachedUrlVerdict,
-                    explanation = "Result from local URL cache for host: $normalizedHost",
-                    localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                    ensembleFormula = "Cache hit: 75% Local + 25% Cached URL",
+                    explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else "Result from local URL cache for host: $normalizedHost",
+                    overallExplanation = explanation,
+                    urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
+                    localVerdict = if (isShortened) "Harmful" else localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                    ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Cached URL" else "Cache hit: 75% Local + 25% Cached URL",
                     rfProb = localResult.rfProb,
                     rfRawLogit = localResult.rfRawLogit,
                     xgbProb = localResult.xgbProb,
@@ -166,11 +180,17 @@ object SmishingDetector {
             }
 
             withTimeout(TIMEOUT_MS) {
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$hasUrl, allow_save=$allowSave, auto_report=$autoReport, ml_pred=$mlPrediction)...")
+                // If the URL is shortened, it is already concluded as malicious.
+                // We send the backend request WITHOUT the URL (hasUrl = false, extractedUrl = null)
+                // so the backend skips the slow remote URL scan and quickly runs CNN text analysis.
+                val apiHasUrl = if (isShortened) false else hasUrl
+                val apiExtractedUrl = if (isShortened) null else extractedUrl
+
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$apiHasUrl, is_shortened=$isShortened, allow_save=$allowSave, auto_report=$autoReport, ml_pred=$mlPrediction)...")
                 val request = SmsScanRequest(
                     message = message,
-                    hasUrl = hasUrl,
-                    extractedUrl = extractedUrl,
+                    hasUrl = apiHasUrl,
+                    extractedUrl = apiExtractedUrl,
                     sender = censoredSenderName,
                     mlPrediction = mlPrediction,
                     mlConfidence = mlConfidence,
@@ -184,25 +204,27 @@ object SmishingDetector {
                 val cnnScore = response.cnnAnalysis?.score
                 val cnnVerdict = response.cnnAnalysis?.verdict
                 val url = response.urlAnalysis ?: UrlAnalysis(false, null, null, null, null, null, emptyList())
-                val containsUrl = hasUrl || url.hasUrl
+                val containsUrl = hasUrl || url.hasUrl || isShortened
 
                 // Derive effective URL score if score is null but verdict is returned (e.g. backend database cache hit)
-                val effectiveUrlScore: Float? = url.score ?: when (url.verdict?.lowercase()) {
+                val effectiveUrlScore: Float? = if (isShortened) 1.0f else (url.score ?: when (url.verdict?.lowercase()) {
                     "malicious", "smishing", "spam" -> 1.0f
                     "suspicious" -> 0.6f
                     "clean", "benign", "safe" -> 0.0f
                     else -> null
-                }
-                val effectiveUrlVerdict: String? = url.verdict ?: effectiveUrlScore?.let {
+                })
+                val effectiveUrlVerdict: String? = if (isShortened) "malicious" else (url.verdict ?: effectiveUrlScore?.let {
                     if (it >= 0.5f) "malicious" else if (it >= 0.3f) "suspicious" else "clean"
-                }
+                })
+                val effectiveUrlExplanation: String? = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else url.explanation
+                val effectiveUrlContributions: List<String>? = if (isShortened) listOf("Shortened URL Detected") else url.contributions
 
                 val localScore = localResult.probability
 
-                // Update cache with fresh result from API
-                if (normalizedHost != null && (effectiveUrlVerdict != null || effectiveUrlScore != null)) {
+                // Update cache with fresh result from API or shortened URL rule
+                if (normalizedHost != null && (isShortened || effectiveUrlVerdict != null || effectiveUrlScore != null)) {
                     val freshReputation = when {
-                        effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f -> Classification.SMISHING
+                        isShortened || effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f -> Classification.SMISHING
                         effectiveUrlVerdict?.lowercase() == "suspicious" || (effectiveUrlScore ?: 0f) >= 0.3f -> Classification.SUSPICIOUS
                         else -> Classification.SAFE
                     }
@@ -210,7 +232,19 @@ object SmishingDetector {
                     Log.i("SmishingDetector", "Updated URL cache: $normalizedHost → $freshReputation")
                 }
 
-                val (finalProb, formulaStr) = if (hasCnnData && cnnScore != null) {
+                val (finalProb, formulaStr) = if (isShortened) {
+                    val score = if (hasCnnData && cnnScore != null) {
+                        maxOf((0.50f * cnnScore) + (0.25f * 1.0f) + (0.25f * localScore), 0.95f)
+                    } else {
+                        maxOf((0.50f * 1.0f) + (0.50f * localScore), 0.95f)
+                    }
+                    val formula = if (hasCnnData && cnnScore != null) {
+                        "Rule-based Shortened URL (Harmful) + 50% CNN + 25% Local"
+                    } else {
+                        "Rule-based Shortened URL (Harmful) + Local ML"
+                    }
+                    Pair(score, formula)
+                } else if (hasCnnData && cnnScore != null) {
                     if (containsUrl && effectiveUrlScore != null) {
                         val score = (0.50f * cnnScore) + (0.25f * effectiveUrlScore) + (0.25f * localScore)
                         val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
@@ -232,7 +266,7 @@ object SmishingDetector {
                     }
                 }
 
-                val classification = when {
+                val classification = if (isShortened) Classification.SMISHING else when {
                     finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
                     finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
                     else -> Classification.SAFE
@@ -240,20 +274,24 @@ object SmishingDetector {
 
                 Log.i("SmishingDetector", "Final classification complete: verdict=$classification, prob=$finalProb")
 
-                var explanationText = response.overallExplanation ?: when {
-                    effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f ->
-                        "This message contains an unverified web link that was flagged as malicious by security threat intelligence."
-                    effectiveUrlScore == null && containsUrl ->
-                        "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
-                    classification == Classification.SMISHING ->
-                        "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
-                    classification == Classification.SUSPICIOUS ->
-                        "This message exhibits characteristics of unsolicited or promotional SMS content. Exercise caution before opening links or replying."
-                    else ->
-                        "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
+                var explanationText = if (isShortened) {
+                    "Flagged as Harmful: This message contains a shortened URL (${extractedUrl ?: "short link"}). ${LocalClassifier.SHORTENED_URL_REASONING}"
+                } else {
+                    response.overallExplanation ?: when {
+                        effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f ->
+                            "This message contains an unverified web link that was flagged as malicious by security threat intelligence."
+                        effectiveUrlScore == null && containsUrl ->
+                            "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                        classification == Classification.SMISHING ->
+                            "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
+                        classification == Classification.SUSPICIOUS ->
+                            "This message exhibits characteristics of unsolicited or promotional SMS content. Exercise caution before opening links or replying."
+                        else ->
+                            "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
+                    }
                 }
 
-                if (containsUrl && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
+                if (containsUrl && !isShortened && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
                     explanationText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
                 }
 
@@ -266,14 +304,14 @@ object SmishingDetector {
                     cnnScore = cnnScore,
                     cnnVerdict = cnnVerdict,
                     urlFound = containsUrl,
-                    extractedUrl = url.extractedUrl ?: extractedUrl,
+                    extractedUrl = extractedUrl ?: url.extractedUrl,
                     urlScore = effectiveUrlScore,
                     urlVerdict = effectiveUrlVerdict,
-                    explanation = url.explanation,
+                    explanation = effectiveUrlExplanation,
                     overallExplanation = explanationText,
-                    urlTotalWeight = url.totalWeight,
-                    urlContributions = url.contributions,
-                    localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                    urlTotalWeight = if (isShortened) 1.0f else url.totalWeight,
+                    urlContributions = effectiveUrlContributions,
+                    localVerdict = if (isShortened) "Harmful" else localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
                     ensembleFormula = formulaStr,
                     rfProb = localResult.rfProb,
                     rfRawLogit = localResult.rfRawLogit,
@@ -303,7 +341,7 @@ object SmishingDetector {
             } catch (t: Throwable) {
                 LocalClassifier.classifyWithHeuristics(message)
             }
-            val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, localOnly.classification)
+            val fallbackExplanation = LocalClassifier.generateHumanReadableExplanation(message, if (isShortened) Classification.SMISHING else localOnly.classification)
 
             val httpCode = (e as? retrofit2.HttpException)?.code() ?: 0
             val is5xxWakeup = httpCode in 502..504 ||
@@ -325,13 +363,21 @@ object SmishingDetector {
             localOnly.copy(
                 sender = sender,
                 message = message,
+                classification = if (isShortened) Classification.SMISHING else localOnly.classification,
+                probability = if (isShortened) maxOf(localOnly.probability, 0.95f) else localOnly.probability,
                 overallExplanation = fallbackExplanation,
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,
                 cnnVerdict = errorVerdict,
-                localVerdict = localOnly.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                urlFound = hasUrl || isShortened,
+                extractedUrl = extractedUrl,
+                urlScore = if (isShortened) 1.0f else null,
+                urlVerdict = if (isShortened) "malicious" else null,
+                urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
+                explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else null,
+                localVerdict = if (isShortened) "Harmful" else localOnly.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (75% RF + 25% XGB)"
             )
         }
     }

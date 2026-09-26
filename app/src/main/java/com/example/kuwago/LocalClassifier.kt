@@ -175,6 +175,25 @@ object LocalClassifier {
         "kunin", "i-click", "i-verify", "i-update", "i-confirm",
         "mag-claim", "i-redeem", "i-activate", "mag-log", "mag-login"
     )
+    const val SHORTENED_URL_REASONING =
+        "The URL is hidden behind a URL shortening process which hides the website intentions, destination, and other possible information, commonly used to conceal malicious links."
+
+    val URL_SHORTENER_REGEX: Pattern = Pattern.compile(
+        """(?i)\b(?:https?://|www\.)?(?:bit\.ly|tinyurl\.com|tinyurl|t\.co|goo\.gl|ow\.ly|short\.link|rb\.gy|cutt\.ly|tiny\.cc|is\.gd|buff\.ly|adf\.ly|bit\.do|shorturl\.at|t\.ly|v\.gd|clck\.ru|s\.id|rebrand\.ly|bl\.ink|surl\.li|rotf\.lol|tiny\.one|qr\.ae|ity\.im|bc\.vc|twitthis\.com|u\.to|j\.mp|buzurl\.com|cutt\.us|u\.bb|yourls\.org|prettylinkpro\.com|scrnch\.me|filoops\.info|vzturl\.com|qr\.net|1url\.com|tweez\.me|v\.ht|tr\.im|linktr\.ee|qrs\.ly|soo\.gd|tny\.im|chilp\.it)(?:/[a-zA-Z0-9_\-\./%+?&=#]*)?""",
+        Pattern.CASE_INSENSITIVE
+    )
+
+    val KNOWN_SHORTENER_DOMAINS = listOf(
+        "bit.ly", "tinyurl.com", "tinyurl", "t.co", "goo.gl", "ow.ly",
+        "short.link", "rb.gy", "cutt.ly", "tiny.cc", "is.gd",
+        "buff.ly", "adf.ly", "bit.do", "shorturl.at", "t.ly", "v.gd",
+        "clck.ru", "s.id", "rebrand.ly", "bl.ink", "surl.li",
+        "rotf.lol", "tiny.one", "qr.ae", "ity.im", "bc.vc",
+        "twitthis.com", "u.to", "j.mp", "buzurl.com", "cutt.us",
+        "u.bb", "yourls.org", "qr.net", "linktr.ee", "qrs.ly",
+        "soo.gd", "tny.im", "chilp.it"
+    )
+
     private val URL_SHORTENERS = listOf(
         "bit.ly", "tinyurl", "t.co", "goo.gl", "ow.ly",
         "short.link", "rb.gy", "cutt.ly", "tiny.cc", "is.gd"
@@ -185,6 +204,24 @@ object LocalClassifier {
         "click link", "tap here", "open now", "log in now", "sign in now",
         "update now", "confirm now", "validate now", "redeem now"
     )
+
+    fun isShortenedUrl(url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        val clean = url.trim().lowercase()
+        if (URL_SHORTENER_REGEX.matcher(clean).find()) return true
+
+        val host = UrlNormalizer.extractHost(clean) ?: clean.removePrefix("http://").removePrefix("https://").substringBefore("/").substringBefore("?")
+        return KNOWN_SHORTENER_DOMAINS.any { shortener ->
+            host == shortener || host.endsWith(".$shortener") || clean.contains("$shortener/")
+        }
+    }
+
+    fun containsShortenedUrl(text: String): Boolean {
+        if (text.isBlank()) return false
+        val extracted = extractUrl(text)
+        if (extracted != null && isShortenedUrl(extracted)) return true
+        return URL_SHORTENER_REGEX.matcher(text).find()
+    }
 
     fun findMatchedBanks(text: String): List<String> {
         val lower = text.lowercase()
@@ -209,11 +246,37 @@ object LocalClassifier {
     fun classifyWithHeuristics(message: String): DetectionResult {
         val extractedUrl = extractUrl(message)
         val hasUrl = !extractedUrl.isNullOrBlank()
+        val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
 
         val matchedBanks = findMatchedBanks(message)
         val matchedTelcos = findMatchedTelcos(message)
         val matchedUrgency = findMatchedUrgency(message)
         val matchedCtas = findMatchedCta(message)
+
+        if (isShortened) {
+            val shortUrlDisplay = extractedUrl ?: "detected short link"
+            val explanation = "Flagged as Harmful: This message contains a shortened URL ($shortUrlDisplay). $SHORTENED_URL_REASONING"
+            return DetectionResult(
+                sender = "Unknown",
+                message = message,
+                classification = Classification.SMISHING,
+                probability = 0.95f,
+                isScanning = false,
+                urlFound = true,
+                extractedUrl = extractedUrl,
+                urlScore = 1.0f,
+                urlVerdict = "malicious",
+                urlContributions = listOf("Shortened URL Detected"),
+                explanation = SHORTENED_URL_REASONING,
+                overallExplanation = explanation,
+                localVerdict = "Harmful",
+                ensembleFormula = "Rule-based: Shortened URL (Harmful)",
+                rfProb = 0.95f,
+                rfRawLogit = 0f,
+                xgbProb = 0.95f,
+                cnnProb = null
+            )
+        }
 
         var score = 0.05f // baseline safe score
 
@@ -572,11 +635,16 @@ object LocalClassifier {
                 }
             }
 
-            val classification = when {
+            val extractedUrl = extractUrl(message)
+            val hasUrl = !extractedUrl.isNullOrBlank()
+            val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
+
+            val classification = if (isShortened) Classification.SMISHING else when {
                 localProb >= smishingThreshold -> Classification.SMISHING
                 localProb >= suspiciousThreshold -> Classification.SUSPICIOUS
                 else -> Classification.SAFE
             }
+            val finalProb = if (isShortened) maxOf(localProb, 0.95f) else localProb
 
             val explanation = generateHumanReadableExplanation(message, classification)
 
@@ -584,12 +652,20 @@ object LocalClassifier {
                 sender = "Unknown",
                 message = message,
                 classification = classification,
-                probability = localProb,
+                probability = finalProb,
                 isScanning = false,
+                urlFound = hasUrl || isShortened,
+                extractedUrl = extractedUrl,
+                urlScore = if (isShortened) 1.0f else null,
+                urlVerdict = if (isShortened) "malicious" else null,
+                urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
+                explanation = if (isShortened) SHORTENED_URL_REASONING else null,
                 overallExplanation = explanation,
-                rfProb = rfProb,
+                localVerdict = if (isShortened) "Harmful" else classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else null,
+                rfProb = if (isShortened) maxOf(rfProb, 0.95f) else rfProb,
                 rfRawLogit = rfRawLogit,
-                xgbProb = xgbProb,
+                xgbProb = if (isShortened) maxOf(xgbProb, 0.95f) else xgbProb,
                 cnnProb = null
             )
         } catch (t: Throwable) {
@@ -601,6 +677,13 @@ object LocalClassifier {
     fun generateHumanReadableExplanation(message: String, classification: Classification): String {
         val textLower = message.lowercase()
         val extractedUrl = extractUrl(message)
+        val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
+
+        if (isShortened) {
+            val shortUrlDisplay = extractedUrl ?: "detected short link"
+            return "Flagged as Harmful: This message contains a shortened URL ($shortUrlDisplay). $SHORTENED_URL_REASONING"
+        }
+
         val hasCta = CTA_PHRASES.any { textLower.contains(it) }
         val hasBank = PH_BANKS.any { textLower.contains(it) }
         val hasTelco = PH_TELCOS.any { textLower.contains(it) }

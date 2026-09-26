@@ -295,4 +295,27 @@ class SmishingDetectorTest {
         val service = com.example.kuwago.network.RetrofitClient.instance
         assertNotNull(service)
     }
+
+    @Test
+    fun testShortenedUrl_isDetectedAndFlaggedAsHarmful() {
+        val shortUrls = listOf(
+            "Check this link out: https://bit.ly/3xYz123",
+            "Your parcel is waiting: http://tinyurl.com/pkg987",
+            "Special promo: https://rb.gy/abcde",
+            "Verify account: http://t.co/xyz123",
+            "Claim discount: cutt.ly/sale2026"
+        )
+
+        for (msg in shortUrls) {
+            assertTrue("Expected containsShortenedUrl to be true for '$msg'", LocalClassifier.containsShortenedUrl(msg))
+            val result = LocalClassifier.classifyWithHeuristics(msg)
+            assertEquals("Expected SMISHING classification for shortened URL in '$msg'", Classification.SMISHING, result.classification)
+            assertEquals("Expected urlVerdict to be malicious", "malicious", result.urlVerdict)
+            assertEquals(1.0f, result.urlScore ?: 0f, 0.001f)
+            assertTrue("Explanation should explain why shortened URLs hide destination/intentions",
+                result.overallExplanation?.contains("shortening process", ignoreCase = true) == true ||
+                result.overallExplanation?.contains("shortened URL", ignoreCase = true) == true
+            )
+        }
+    }
 }
