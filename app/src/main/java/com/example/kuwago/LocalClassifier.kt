@@ -226,17 +226,26 @@ object LocalClassifier {
 
     fun findMatchedBanks(text: String): List<String> {
         val lower = text.lowercase()
-        return PH_BANKS.filter { lower.contains(it) }
+        return PH_BANKS.filter { 
+            if (it == "maya" || it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(lower)
+            else lower.contains(it) 
+        }
     }
 
     fun findMatchedTelcos(text: String): List<String> {
         val lower = text.lowercase()
-        return PH_TELCOS.filter { lower.contains(it) }
+        return PH_TELCOS.filter { 
+            if (it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(lower)
+            else lower.contains(it) 
+        }
     }
 
     fun findMatchedUrgency(text: String): List<String> {
         val lower = text.lowercase()
-        return PH_URGENCY.filter { lower.contains(it) }
+        return PH_URGENCY.filter { 
+            if (it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(lower)
+            else lower.contains(it) 
+        }
     }
 
     fun findMatchedCta(text: String): List<String> {
@@ -475,9 +484,20 @@ object LocalClassifier {
         val hasCta = if (CTA_PHRASES.any { textLower.contains(it) }) 1.0f else 0.0f
         val ctaCount = CTA_PHRASES.sumOf { countOccurrences(textLower, it) }.toFloat()
         
-        val hasPhBank = if (PH_BANKS.any { textLower.contains(it) }) 1.0f else 0.0f
-        val hasPhTelco = if (PH_TELCOS.any { textLower.contains(it) }) 1.0f else 0.0f
-        val hasPhUrgency = if (PH_URGENCY.any { textLower.contains(it) }) 1.0f else 0.0f
+        val hasPhBank = if (PH_BANKS.any { 
+            if (it == "maya" || it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(textLower)
+            else textLower.contains(it) 
+        }) 1.0f else 0.0f
+        
+        val hasPhTelco = if (PH_TELCOS.any { 
+            if (it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(textLower)
+            else textLower.contains(it) 
+        }) 1.0f else 0.0f
+        
+        val hasPhUrgency = if (PH_URGENCY.any { 
+            if (it.length <= 4) Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(textLower)
+            else textLower.contains(it) 
+        }) 1.0f else 0.0f
 
         return floatArrayOf(
             urlPresent, urlCount, hasShortener, hasHttps, domainLength, subdomainCount, hasIp, pathDepth, urlSpecialChars, hasSuspiciousTld, hasDeceptive,
