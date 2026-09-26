@@ -179,12 +179,12 @@ object LocalClassifier {
         "The URL is hidden behind a URL shortening process which hides the website intentions, destination, and other possible information, commonly used to conceal malicious links."
 
     val URL_SHORTENER_REGEX: Pattern = Pattern.compile(
-        """(?i)\b(?:https?://|www\.)?(?:bit\.ly|tinyurl\.com|tinyurl|t\.co|goo\.gl|ow\.ly|short\.link|rb\.gy|cutt\.ly|tiny\.cc|is\.gd|buff\.ly|adf\.ly|bit\.do|shorturl\.at|t\.ly|v\.gd|clck\.ru|s\.id|rebrand\.ly|bl\.ink|surl\.li|rotf\.lol|tiny\.one|qr\.ae|ity\.im|bc\.vc|twitthis\.com|u\.to|j\.mp|buzurl\.com|cutt\.us|u\.bb|yourls\.org|prettylinkpro\.com|scrnch\.me|filoops\.info|vzturl\.com|qr\.net|1url\.com|tweez\.me|v\.ht|tr\.im|linktr\.ee|qrs\.ly|soo\.gd|tny\.im|chilp\.it)(?:/[a-zA-Z0-9_\-\./%+?&=#]*)?""",
+        """(?i)\b(?:https?://|www\.)?(?:bit\.ly|tinyurl\.com|t\.co|goo\.gl|ow\.ly|short\.link|rb\.gy|cutt\.ly|tiny\.cc|is\.gd|buff\.ly|adf\.ly|bit\.do|shorturl\.at|t\.ly|v\.gd|clck\.ru|s\.id|rebrand\.ly|bl\.ink|surl\.li|rotf\.lol|tiny\.one|qr\.ae|ity\.im|bc\.vc|twitthis\.com|u\.to|j\.mp|buzurl\.com|cutt\.us|u\.bb|yourls\.org|prettylinkpro\.com|scrnch\.me|filoops\.info|vzturl\.com|qr\.net|1url\.com|tweez\.me|v\.ht|tr\.im|linktr\.ee|qrs\.ly|soo\.gd|tny\.im|chilp\.it)/[a-zA-Z0-9_\-\./%+?&=#]+""",
         Pattern.CASE_INSENSITIVE
     )
 
     val KNOWN_SHORTENER_DOMAINS = listOf(
-        "bit.ly", "tinyurl.com", "tinyurl", "t.co", "goo.gl", "ow.ly",
+        "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly",
         "short.link", "rb.gy", "cutt.ly", "tiny.cc", "is.gd",
         "buff.ly", "adf.ly", "bit.do", "shorturl.at", "t.ly", "v.gd",
         "clck.ru", "s.id", "rebrand.ly", "bl.ink", "surl.li",
@@ -195,7 +195,7 @@ object LocalClassifier {
     )
 
     private val URL_SHORTENERS = listOf(
-        "bit.ly", "tinyurl", "t.co", "goo.gl", "ow.ly",
+        "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly",
         "short.link", "rb.gy", "cutt.ly", "tiny.cc", "is.gd"
     )
     private val CTA_PHRASES = listOf(
@@ -210,9 +210,10 @@ object LocalClassifier {
         val clean = url.trim().lowercase()
         if (URL_SHORTENER_REGEX.matcher(clean).find()) return true
 
-        val host = UrlNormalizer.extractHost(clean) ?: clean.removePrefix("http://").removePrefix("https://").substringBefore("/").substringBefore("?")
+        val host = UrlNormalizer.extractHost(clean)
+            ?: clean.removePrefix("http://").removePrefix("https://").removePrefix("www.").substringBefore("/").substringBefore("?").substringBefore(":")
         return KNOWN_SHORTENER_DOMAINS.any { shortener ->
-            host == shortener || host.endsWith(".$shortener") || clean.contains("$shortener/")
+            host == shortener || host.endsWith(".$shortener")
         }
     }
 
