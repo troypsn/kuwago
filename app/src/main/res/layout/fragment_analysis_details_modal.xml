@@ -117,8 +117,7 @@
                             android:id="@+id/iv_reasoning_icon"
                             android:layout_width="18dp"
                             android:layout_height="18dp"
-                            android:src="@drawable/ic_shield"
-                            android:tint="#FF4D55" />
+                            android:src="@drawable/ic_shield" />
 
                         <TextView
                             android:layout_width="wrap_content"
