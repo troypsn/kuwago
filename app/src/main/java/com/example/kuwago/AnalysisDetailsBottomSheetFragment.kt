@@ -843,6 +843,17 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 applyCompletedDlResult(targetView, finalResult)
                 onResultUpdatedListener?.invoke(finalResult)
                 Toast.makeText(ctx, "Deep Analysis complete", Toast.LENGTH_SHORT).show()
+
+                if (finalResult.urlFound && finalResult.urlScore != null && isAdded && activity?.isFinishing == false) {
+                    val host = finalResult.extractedUrl?.let { UrlNormalizer.extractHost(it) } ?: "this link"
+                    androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("🌐 URL Threat Reputation Cached")
+                        .setMessage(
+                            "The threat analysis for $host was successfully retrieved from the cloud and saved to your device's URL protection cache."
+                        )
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             },
             onError = { errMsg ->
                 if (!isAdded) return@startDeepScan

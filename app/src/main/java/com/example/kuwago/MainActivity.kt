@@ -82,7 +82,15 @@ class MainActivity : AppCompatActivity() {
 
         // Trigger initial bulk sync for URL reputations (3 months old or younger)
         CoroutineScope(Dispatchers.IO).launch {
-            com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(applicationContext)
+            val count = com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(applicationContext)
+            if (count > 0 && !hasShownUrlCacheDialog) {
+                hasShownUrlCacheDialog = true
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) {
+                        showUrlCacheDialog(count)
+                    }
+                }
+            }
         }
 
         // Set default fragment
@@ -236,6 +244,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showUrlCacheDialog(count: Int) {
+        val recordsText = if (count == 1) "1 URL threat reputation" else "$count URL threat reputations"
+        AlertDialog.Builder(this)
+            .setTitle("🌐 Cloud Threat Cache Updated")
+            .setMessage(
+                "Kuwago successfully fetched $recordsText from the cloud.\n\n" +
+                "These pre-analyzed reputations are now cached on your device to immediately identify known scam links and keep URL Shield up to date."
+            )
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == SMS_PERMISSION_CODE) {
@@ -323,6 +343,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val TAB_ORDER = listOf("home", "history", "scan", "blacklist", "settings")
+        private var hasShownUrlCacheDialog = false
     }
 
     private fun switchFragment(fragment: Fragment, tag: String) {

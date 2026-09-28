@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Settings sub-page for the Kuwago URL Shield (VPN-based enforcement).
@@ -187,7 +188,19 @@ class SettingsVpnShieldFragment : Fragment() {
 
         // Asynchronously sync URL analysis database from the last 3 months
         CoroutineScope(Dispatchers.IO).launch {
-            com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(ctx)
+            val count = com.example.kuwago.db.SmsLocalRepository.syncUrlReputationsFromBackend(ctx)
+            if (count > 0) {
+                withContext(Dispatchers.Main) {
+                    if (isAdded && activity?.isFinishing == false) {
+                        val recordsText = if (count == 1) "1 URL threat reputation" else "$count URL threat reputations"
+                        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("🌐 Cloud Threat Cache Updated")
+                            .setMessage("Successfully fetched $recordsText from the cloud.\n\nYour URL Shield blocking cache is now up to date with the latest known scam links.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                }
+            }
         }
     }
 

@@ -231,17 +231,19 @@ object SmsLocalRepository {
      * Populates both the local encrypted Room database and the in-memory UrlReputationCache
      * for instant VPN enforcement.
      */
-    suspend fun syncUrlReputationsFromBackend(context: Context) {
-        withContext(Dispatchers.IO) {
+    suspend fun syncUrlReputationsFromBackend(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            var syncedCount = 0
             try {
                 // Calculate timestamp for 3 months ago in Unix seconds (API expects seconds, not ms)
                 val threeMonthsAgoSecs = (System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000)) / 1000L
                 android.util.Log.i("SmsLocalRepository", "Syncing URL reputations older than 3 months (since_timestamp=$threeMonthsAgoSecs seconds)...")
                 val response = com.example.kuwago.network.RetrofitClient.instance.syncUrlReputations(threeMonthsAgoSecs)
-                android.util.Log.i("SmsLocalRepository", "Received ${response.urls.size} pre-analyzed URLs from backend sync")
+                val list = response.urls ?: emptyList()
+                android.util.Log.i("SmsLocalRepository", "Received ${list.size} pre-analyzed URLs from backend sync")
 
                 val db = getDatabase(context)
-                for (item in response.urls) {
+                for (item in list) {
                     val rawUrl = item.extractedUrl.trim()
                     if (rawUrl.isEmpty()) continue
 
@@ -286,10 +288,12 @@ object SmsLocalRepository {
                         decisionTimestamp = System.currentTimeMillis()
                     )
                     db.analysisDao().insertFinalDecision(decisionEntity)
+                    syncedCount++
                 }
             } catch (e: Exception) {
                 android.util.Log.w("SmsLocalRepository", "URL reputation sync warning: ${e.message}")
             }
+            syncedCount
         }
     }
 }
