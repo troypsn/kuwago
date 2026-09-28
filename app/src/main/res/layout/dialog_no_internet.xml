@@ -18,13 +18,13 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:text="Add to blacklist?"
+            android:text="No Connection"
             android:textColor="#FFFFFFFF"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <ImageView
-            android:id="@+id/btn_close_dialog"
+            android:id="@+id/btn_close_no_internet"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_alignParentEnd="true"
@@ -50,49 +50,34 @@
             android:layout_height="28dp"
             android:layout_marginEnd="12dp"
             android:src="@drawable/ic_warning_triangle"
-            android:tint="#DDDDDD" />
+            android:tint="#F07048" />
 
         <TextView
-            android:id="@+id/tv_blacklist_message"
+            android:id="@+id/tv_no_internet_message"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:lineSpacingExtra="3dp"
-            android:text="Proceeding will add +63 949 651 0557 to the blacklisted contact numbers."
+            android:text="No Wi-Fi or cellular data connection is available. Please check your internet connection and try again."
             android:textColor="#CCCCCC"
             android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- Buttons Row -->
+    <!-- Button Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="end"
         android:orientation="horizontal">
 
         <android.widget.Button
-            android:id="@+id/btn_confirm_add"
-            android:layout_width="0dp"
+            android:id="@+id/btn_ok_no_internet"
+            android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="1"
-            android:minWidth="100dp"
-            android:background="@drawable/bg_red_button"
-            android:stateListAnimator="@null"
-            android:text="Yes, add it"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <android.widget.Button
-            android:id="@+id/btn_cancel_add"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:minWidth="100dp"
+            android:minWidth="120dp"
             android:background="@drawable/bg_dark_button"
             android:stateListAnimator="@null"
-            android:text="No, exit"
+            android:text="OK"
             android:textAllCaps="false"
             android:textColor="#FFFFFFFF"
             android:textSize="14sp"

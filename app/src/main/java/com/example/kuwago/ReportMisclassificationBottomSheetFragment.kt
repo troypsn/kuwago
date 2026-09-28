@@ -1,8 +1,12 @@
 package com.example.kuwago
 
+import android.app.Dialog
+import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -12,6 +16,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.view.inputmethod.InputMethodManager
 import android.util.Log
@@ -36,6 +41,9 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
 
     // Selected report type: "false_positive" or "false_negative" or null
     private var selectedReportType: String? = null
+
+    // Prevent duplicate clicks / multiple concurrent submissions
+    private var isSubmitting: Boolean = false
 
     companion object {
         private const val ARG_RESULT = "arg_detection_result"
@@ -141,15 +149,24 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         val btnSubmit = view.findViewById<Button>(R.id.btn_submit_report)
 
         btnSubmit.setOnClickListener {
+            if (isSubmitting) return@setOnClickListener
+
             val reportType = selectedReportType
             if (reportType == null) {
                 tvError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
             tvError.visibility = View.GONE
+
+            val ctx = requireContext()
+            if (!isNetworkAvailable(ctx)) {
+                showNoInternetDialog()
+                return@setOnClickListener
+            }
+
             // Dismiss keyboard before submitting
-            val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(etComment.windowToken, 0)
+            val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.hideSoftInputFromWindow(etComment.windowToken, 0)
             submitReport(view, result, reportType, etComment.text.toString().trim())
         }
     }
@@ -211,9 +228,17 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun submitReport(view: View, result: DetectionResult, reportType: String, userComment: String) {
         val ctx = context ?: return
+        if (isSubmitting) return
+        isSubmitting = true
+
         val btnSubmit = view.findViewById<Button>(R.id.btn_submit_report)
+        val pbReportSubmitting = view.findViewById<ProgressBar>(R.id.pb_report_submitting)
+        val pbSubmitSpinner = view.findViewById<ProgressBar>(R.id.pb_submit_spinner)
+
         btnSubmit.isEnabled = false
         btnSubmit.text = "Submitting…"
+        pbReportSubmitting?.visibility = View.VISIBLE
+        pbSubmitSpinner?.visibility = View.VISIBLE
 
         // Determine user verdict (opposite of original for misclassification reports)
         val userVerdict = when (reportType) {
@@ -276,20 +301,69 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
 
         scope.launch {
             try {
+                if (!isNetworkAvailable(ctx)) {
+                    throw java.io.IOException("No internet connection available")
+                }
+
                 withContext(Dispatchers.IO) {
                     RetrofitClient.instance.reportMisclassification(request)
                 }
                 // Success: show thank you screen
-                showSuccessScreen(view, result, request.userComment)
+                if (isAdded) {
+                    showSuccessScreen(view, result, request.userComment)
+                }
             } catch (e: Exception) {
-                // Even on network failure, show success (best-effort telemetry)
-                // so we don't frustrate users with error states for optional feedback
-                showSuccessScreen(view, result, request.userComment)
+                Log.e("ReportMisclassification", "Failed to submit report: ${e.message}", e)
+                if (isAdded) {
+                    showNoInternetDialog(
+                        "Unable to submit report because Wi-Fi or cellular data is not available. Please check your internet connection and try again."
+                    )
+                }
             } finally {
-                btnSubmit.isEnabled = true
-                btnSubmit.text = "Submit Report"
+                isSubmitting = false
+                if (isAdded) {
+                    btnSubmit.isEnabled = true
+                    btnSubmit.text = "Submit Report"
+                    pbReportSubmitting?.visibility = View.GONE
+                    pbSubmitSpinner?.visibility = View.GONE
+                }
             }
         }
+    }
+
+    private fun isNetworkAvailable(context: Context): Boolean {
+        return try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun showNoInternetDialog(customMessage: String? = null) {
+        val ctx = context ?: return
+        val dialog = Dialog(ctx)
+        dialog.setContentView(R.layout.dialog_no_internet)
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val horizontalMarginPx = (24 * displayMetrics.density).toInt()
+            val maxDialogWidthPx = (360 * displayMetrics.density).toInt()
+            val targetWidth = (screenWidth - (horizontalMarginPx * 2)).coerceAtMost(maxDialogWidthPx)
+            window.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        if (customMessage != null) {
+            dialog.findViewById<TextView>(R.id.tv_no_internet_message)?.text = customMessage
+        }
+
+        dialog.findViewById<ImageView>(R.id.btn_close_no_internet)?.setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<Button>(R.id.btn_ok_no_internet)?.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
     }
 
     private fun showSuccessScreen(view: View, result: DetectionResult, issueText: String) {

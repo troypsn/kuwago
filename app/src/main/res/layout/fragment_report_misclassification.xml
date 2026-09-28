@@ -372,17 +372,42 @@
                 android:textSize="12sp"
                 android:visibility="gone" />
 
-            <Button
-                android:id="@+id/btn_submit_report"
+            <!-- Horizontal loading bar -->
+            <ProgressBar
+                android:id="@+id/pb_report_submitting"
+                style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_scan_button"
-                android:stateListAnimator="@null"
-                android:text="Submit Report"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_height="4dp"
+                android:layout_marginBottom="8dp"
+                android:indeterminate="true"
+                android:indeterminateTint="#26CE6B"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp">
+
+                <Button
+                    android:id="@+id/btn_submit_report"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_scan_button"
+                    android:stateListAnimator="@null"
+                    android:text="Submit Report"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/pb_submit_spinner"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="16dp"
+                    android:indeterminateTint="#FFFFFFFF"
+                    android:visibility="gone" />
+            </FrameLayout>
         </LinearLayout>
 
     </LinearLayout>

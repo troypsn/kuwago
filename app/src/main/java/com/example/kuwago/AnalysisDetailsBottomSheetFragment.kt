@@ -928,7 +928,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     private fun showBlacklistConfirmationDialog(result: DetectionResult, btnBlacklist: Button) {
         val dialog = Dialog(requireContext())
         dialog.setContentView(R.layout.dialog_blacklist_confirmation)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val horizontalMarginPx = (24 * displayMetrics.density).toInt()
+            val maxDialogWidthPx = (360 * displayMetrics.density).toInt()
+            val targetWidth = (screenWidth - (horizontalMarginPx * 2)).coerceAtMost(maxDialogWidthPx)
+            window.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
 
         val tvMessage = dialog.findViewById<TextView>(R.id.tv_blacklist_message)
         val btnClose = dialog.findViewById<ImageView>(R.id.btn_close_dialog)
