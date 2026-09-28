@@ -481,16 +481,15 @@
                             android:id="@+id/tv_ml_classified_badge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:background="@drawable/bg_badge_outline"
+                            android:layout_marginTop="14dp"
+                            android:paddingTop="2dp"
                             android:drawablePadding="6dp"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
-                            android:text="Classified as smishing"
-                            android:textColor="#FF4D55"
+                            android:gravity="center_vertical"
+                            android:text="Classified as safe"
+                            android:textColor="#26CE6B"
                             android:textSize="12sp"
                             app:drawableStartCompat="@drawable/ic_shield"
-                            app:drawableTint="#FF4D55" />
+                            app:drawableTint="#26CE6B" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -674,16 +673,15 @@
                                 android:id="@+id/tv_dl_classified_badge"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:background="@drawable/bg_badge_outline"
+                                android:layout_marginTop="14dp"
+                                android:paddingTop="2dp"
                                 android:drawablePadding="6dp"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="5dp"
-                                android:text="Classified as smishing"
-                                android:textColor="#FF4D55"
+                                android:gravity="center_vertical"
+                                android:text="Classified as safe"
+                                android:textColor="#26CE6B"
                                 android:textSize="12sp"
                                 app:drawableStartCompat="@drawable/ic_shield"
-                                app:drawableTint="#FF4D55" />
+                                app:drawableTint="#26CE6B" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -829,16 +827,15 @@
                             android:id="@+id/tv_url_classified_badge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:background="@drawable/bg_badge_outline"
+                            android:layout_marginTop="14dp"
+                            android:paddingTop="2dp"
                             android:drawablePadding="6dp"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
-                            android:text="Classified as malicious link"
-                            android:textColor="#FF4D55"
+                            android:gravity="center_vertical"
+                            android:text="Classified as safe"
+                            android:textColor="#26CE6B"
                             android:textSize="12sp"
                             app:drawableStartCompat="@drawable/ic_shield"
-                            app:drawableTint="#FF4D55" />
+                            app:drawableTint="#26CE6B" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
