@@ -4,20 +4,24 @@
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="30dp">
+    android:paddingHorizontal="24dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="24dp">
+
+    <Space
+        android:layout_width="1dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="313dp"
-        android:layout_gravity="center|center_horizontal|center_vertical"
-        android:layout_marginTop="80dp"
-        android:baselineAligned="false"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:orientation="vertical">
 
         <ImageView
             android:layout_width="match_parent"
-            android:layout_height="133dp"
-            android:layout_marginTop="100dp"
+            android:layout_height="100dp"
             android:adjustViewBounds="true"
             android:contentDescription="@string/app_name"
             android:src="@drawable/kuwago_text_hat" />
@@ -25,11 +29,12 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:fontFamily="@font/sf_pro"
             android:gravity="center"
             android:text="@string/onboarding_get_started_title"
             android:textColor="@color/text_primary"
-            android:textSize="28sp"
+            android:textSize="26sp"
             android:textStyle="bold" />
 
         <TextView
@@ -38,10 +43,10 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/sf_pro"
             android:gravity="center"
-            android:lineSpacingExtra="4dp"
+            android:lineSpacingExtra="3dp"
             android:text="@string/onboarding_get_started_body"
             android:textColor="@color/text_secondary"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <Space
@@ -52,7 +57,7 @@
     <Button
         android:id="@+id/btn_get_started"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="54dp"
         android:background="@drawable/bg_onboarding_primary"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_get_started"
@@ -65,7 +70,7 @@
         android:id="@+id/tv_terms_notice"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"

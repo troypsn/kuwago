@@ -54,9 +54,10 @@ class SmsReceiver : BroadcastReceiver() {
                                 id = smsId,
                                 sender = sender,
                                 message = fullBody,
-                                classification = Classification.SUSPICIOUS,
+                                classification = Classification.SMISHING,
                                 probability = 1.0f,
                                 isScanning = false,
+                                overallExplanation = "user is blacklisted",
                                 timestamp = firstTimestamp
                             )
                             DetectionRepository.updateDetection(context, finalResult)

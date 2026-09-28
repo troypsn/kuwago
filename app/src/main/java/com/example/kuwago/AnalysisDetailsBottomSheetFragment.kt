@@ -15,6 +15,8 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.widget.ImageViewCompat
+import androidx.core.widget.TextViewCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.CoroutineScope
@@ -215,17 +217,25 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlSummaryVerdict.text = "Scanning…"
             tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
         } else {
-            val effectiveClassification = result.getEffectiveClassification()
-            var reasoningText = result.overallExplanation ?: result.explanation ?: when {
-                result.urlFound && result.urlScore == null ->
-                    "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
-                effectiveClassification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
-                effectiveClassification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
-                effectiveClassification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
-                else -> ""
+            val isSenderBlacklisted = context?.let { BlacklistRepository.isBlacklisted(it, result.sender) } ?: false
+            val isTextBlacklisted = result.message.length < 50 && (context?.let { BlacklistRepository.isBlacklisted(it, result.message) } ?: false)
+            val isBlacklisted = isSenderBlacklisted || isTextBlacklisted || result.overallExplanation?.contains("blacklist", ignoreCase = true) == true
+
+            val effectiveClassification = if (isBlacklisted) Classification.SMISHING else result.getEffectiveClassification()
+            var reasoningText = if (isBlacklisted) {
+                "user is blacklisted"
+            } else {
+                result.overallExplanation ?: result.explanation ?: when {
+                    result.urlFound && result.urlScore == null ->
+                        "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
+                    effectiveClassification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
+                    effectiveClassification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
+                    effectiveClassification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
+                    else -> ""
+                }
             }
 
-            if (result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true)) {
+            if (!isBlacklisted && result.urlFound && result.urlScore == null && !reasoningText.contains("cannot be guaranteed", ignoreCase = true) && !reasoningText.contains("no online threat scan", ignoreCase = true)) {
                 reasoningText += " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
             }
 
@@ -234,18 +244,30 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             when (effectiveClassification) {
                 Classification.SMISHING -> {
                     tvClassificationTitle.text = "Harmful"
-                    tvClassificationTitle.setTextColor(Color.parseColor("#FF4D55"))
-                    ivReasoningIcon?.setColorFilter(Color.parseColor("#FF4D55"))
+                    val color = Color.parseColor("#FF4D55")
+                    tvClassificationTitle.setTextColor(color)
+                    ivReasoningIcon?.let {
+                        ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(color))
+                        it.setColorFilter(color)
+                    }
                 }
                 Classification.SUSPICIOUS -> {
                     tvClassificationTitle.text = "Suspicious"
-                    tvClassificationTitle.setTextColor(Color.parseColor("#FFF07048"))
-                    ivReasoningIcon?.setColorFilter(Color.parseColor("#FFF07048"))
+                    val color = Color.parseColor("#FFF07048")
+                    tvClassificationTitle.setTextColor(color)
+                    ivReasoningIcon?.let {
+                        ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(color))
+                        it.setColorFilter(color)
+                    }
                 }
                 Classification.SAFE -> {
                     tvClassificationTitle.text = "Safe"
-                    tvClassificationTitle.setTextColor(Color.parseColor("#26CE6B"))
-                    ivReasoningIcon?.setColorFilter(Color.parseColor("#26CE6B"))
+                    val color = Color.parseColor("#26CE6B")
+                    tvClassificationTitle.setTextColor(color)
+                    ivReasoningIcon?.let {
+                        ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(color))
+                        it.setColorFilter(color)
+                    }
                 }
             }
 
@@ -334,8 +356,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         tvMlConfidenceVal.setTextColor(mlColor)
         pbMlConfidence.progress = (mlScore * 100).toInt()
         pbMlConfidence.progressTintList = ColorStateList.valueOf(mlColor)
-        tvMlClassifiedBadge.text = "Classified as ${getVerdictText(mlScore).lowercase()}"
+        val mlVerdict = getVerdictText(mlScore)
+        tvMlClassifiedBadge.text = if (mlVerdict == "Safe") "Classified as safe" else "Classified as ${mlVerdict.lowercase()}"
         tvMlClassifiedBadge.setTextColor(mlColor)
+        TextViewCompat.setCompoundDrawableTintList(tvMlClassifiedBadge, ColorStateList.valueOf(mlColor))
 
         populateMlMetrics(llMlMetricsContainer, result)
 
@@ -373,8 +397,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvDlConfidenceVal.setTextColor(dlColor)
             pbDlConfidence.progress = (dlScore * 100).toInt()
             pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
-            tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+            val dlVerdict = getVerdictText(dlScore)
+            tvDlClassifiedBadge.text = if (dlVerdict == "Safe") "Classified as safe" else "Classified as ${dlVerdict.lowercase()}"
             tvDlClassifiedBadge.setTextColor(dlColor)
+            TextViewCompat.setCompoundDrawableTintList(tvDlClassifiedBadge, ColorStateList.valueOf(dlColor))
             llDlPendingState?.visibility = View.GONE
             llDlResultState?.visibility = View.VISIBLE
             populateDlMetrics(llDlMetricsContainer, result, dlScore)
@@ -426,6 +452,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "No URLs found in this message"
             tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
+            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(Color.parseColor("#888888")))
         } else if (result.urlScore == null) {
             // URL found but not yet scanned
             tvUrlScoreBadge.text = "–"
@@ -435,6 +462,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "URL scan pending"
             tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
+            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(Color.parseColor("#888888")))
         } else {
             val urlScore = result.urlScore
             val urlColor = getVerdictColor(urlScore)
@@ -448,9 +476,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlClassifiedBadge.text = when {
                 vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
                 vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
-                else -> "No threats detected"
+                else -> "Classified as safe"
             }
             tvUrlClassifiedBadge.setTextColor(urlColor)
+            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(urlColor))
         }
 
         populateUrlMetrics(llUrlMetricsContainer, result, result.urlScore ?: 0f)
@@ -781,8 +810,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         tvDlConfidenceVal.setTextColor(dlColor)
         pbDlConfidence.progress = (dlScore * 100).toInt()
         pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
-        tvDlClassifiedBadge.text = "Classified as ${getVerdictText(dlScore).lowercase()}"
+        val dlVerdict = getVerdictText(dlScore)
+        tvDlClassifiedBadge.text = if (dlVerdict == "Safe") "Classified as safe" else "Classified as ${dlVerdict.lowercase()}"
         tvDlClassifiedBadge.setTextColor(dlColor)
+        TextViewCompat.setCompoundDrawableTintList(tvDlClassifiedBadge, ColorStateList.valueOf(dlColor))
         populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
         llDlPendingState.visibility = View.GONE
         llDlResultState.visibility = View.VISIBLE
@@ -810,9 +841,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvUrlClassifiedBadge?.text = when {
                 vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
                 vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
-                else -> "No threats detected"
+                else -> "Classified as safe"
             }
             tvUrlClassifiedBadge?.setTextColor(urlColor)
+            tvUrlClassifiedBadge?.let {
+                TextViewCompat.setCompoundDrawableTintList(it, ColorStateList.valueOf(urlColor))
+            }
         }
 
         setupCombinedScore(view, finalResult)
@@ -928,7 +962,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     private fun showBlacklistConfirmationDialog(result: DetectionResult, btnBlacklist: Button) {
         val dialog = Dialog(requireContext())
         dialog.setContentView(R.layout.dialog_blacklist_confirmation)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val horizontalMarginPx = (24 * displayMetrics.density).toInt()
+            val maxDialogWidthPx = (360 * displayMetrics.density).toInt()
+            val targetWidth = (screenWidth - (horizontalMarginPx * 2)).coerceAtMost(maxDialogWidthPx)
+            window.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
 
         val tvMessage = dialog.findViewById<TextView>(R.id.tv_blacklist_message)
         val btnClose = dialog.findViewById<ImageView>(R.id.btn_close_dialog)

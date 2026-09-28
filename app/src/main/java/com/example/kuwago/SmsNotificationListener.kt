@@ -162,7 +162,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 classification = Classification.SMISHING,
                 probability = 1.0f,
                 isScanning = false,
-                overallExplanation = "Sender or message content is on your blacklist."
+                overallExplanation = "user is blacklisted"
             )
             DetectionRepository.addDetection(this@SmsNotificationListener, blacklistedResult)
             return
