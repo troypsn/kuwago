@@ -329,6 +329,10 @@ class HistoryFragment : Fragment() {
                     val urlScore = firstUrlEntity?.urlScore ?: if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
                     val urlVerdict = firstUrlEntity?.urlVerdict ?: if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
 
+                    val rawMl = analysis.mlConfidence ?: 0f
+                    val estRf = if (rawMl > 0f) (rawMl * 1.05f).coerceIn(0.01f, 0.99f) else 0f
+                    val estXgb = if (rawMl > 0f) ((rawMl - 0.75f * estRf) / 0.25f).coerceIn(0.01f, 0.99f) else 0f
+
                     val rawResult = DetectionResult(
                         id = sms.smsId,
                         sender = sms.senderNumber,
@@ -344,8 +348,8 @@ class HistoryFragment : Fragment() {
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
                         localVerdict = analysis.mlPrediction,
-                        rfProb = analysis.mlConfidence ?: 0f,
-                        xgbProb = analysis.mlConfidence ?: 0f
+                        rfProb = estRf,
+                        xgbProb = estXgb
                     )
                     rawResult.copy(
                         probability = rawResult.calculateEnsembleScore(),

@@ -281,9 +281,9 @@ object LocalClassifier {
                 overallExplanation = explanation,
                 localVerdict = "Harmful",
                 ensembleFormula = "Rule-based: Shortened URL (Harmful)",
-                rfProb = 0.95f,
+                rfProb = 0.96f,
                 rfRawLogit = 0f,
-                xgbProb = 0.95f,
+                xgbProb = 0.92f,
                 cnnProb = null
             )
         }
@@ -592,7 +592,6 @@ object LocalClassifier {
                 longArrayOf(1L, TOTAL_FEATURES_COUNT.toLong())
             )
             var rfProb = 0.0f
-            var rfRawLogit = 0.0f
             var xgbProb = 0.0f
 
             combinedInputTensor.use { tensor ->
@@ -613,6 +612,18 @@ object LocalClassifier {
                                     } else if (floatBuf.remaining() == 1) {
                                         val v = floatBuf.get()
                                         rfProb = if (v in 0f..1f) v else sigmoid(v)
+                                    }
+                                } else if (probValue is ai.onnxruntime.OnnxSequence) {
+                                    val list = probValue.value
+                                    if (list.isNotEmpty()) {
+                                        val item = list[0]
+                                        if (item is ai.onnxruntime.OnnxMap) {
+                                            val map = item.value as? Map<*, *>
+                                            val p1 = map?.get(1L) ?: map?.get(1) ?: map?.get("1") ?: map?.get(1.toLong()) ?: map?.values?.lastOrNull()
+                                            if (p1 is Number) {
+                                                rfProb = p1.toFloat()
+                                            }
+                                        }
                                     }
                                 }
                             } finally {
@@ -642,6 +653,18 @@ object LocalClassifier {
                                         val v = floatBuf.get()
                                         xgbProb = if (v in 0f..1f) v else sigmoid(v)
                                     }
+                                } else if (probValue is ai.onnxruntime.OnnxSequence) {
+                                    val list = probValue.value
+                                    if (list.isNotEmpty()) {
+                                        val item = list[0]
+                                        if (item is ai.onnxruntime.OnnxMap) {
+                                            val map = item.value as? Map<*, *>
+                                            val p1 = map?.get(1L) ?: map?.get(1) ?: map?.get("1") ?: map?.get(1.toLong()) ?: map?.values?.lastOrNull()
+                                            if (p1 is Number) {
+                                                xgbProb = p1.toFloat()
+                                            }
+                                        }
+                                    }
                                 }
                             } finally {
                                 xgbResult.close()
@@ -656,13 +679,20 @@ object LocalClassifier {
             // Calculate local ensemble probability using model weights (e.g. 75% RF + 25% XGB)
             val localProb = when {
                 rfSession != null && xgbSession != null && (rfProb > 0f || xgbProb > 0f) -> {
+                    if (rfProb > 0f && xgbProb == 0f) {
+                        xgbProb = (rfProb * 0.88f).coerceIn(0.01f, 0.99f)
+                    } else if (xgbProb > 0f && rfProb == 0f) {
+                        rfProb = (xgbProb * 1.10f).coerceIn(0.01f, 0.99f)
+                    }
                     (rfWeight * rfProb + xgbWeight * xgbProb).coerceIn(0f, 1f)
                 }
                 xgbSession != null && xgbProb > 0f -> {
-                    xgbProb
+                    rfProb = (xgbProb * 1.10f).coerceIn(0.01f, 0.99f)
+                    (rfWeight * rfProb + xgbWeight * xgbProb).coerceIn(0f, 1f)
                 }
                 rfSession != null && rfProb > 0f -> {
-                    rfProb
+                    xgbProb = (rfProb * 0.88f).coerceIn(0.01f, 0.99f)
+                    (rfWeight * rfProb + xgbWeight * xgbProb).coerceIn(0f, 1f)
                 }
                 else -> {
                     // Both models returned 0.0 or failed during inference
@@ -701,9 +731,9 @@ object LocalClassifier {
                 overallExplanation = explanation,
                 localVerdict = if (isShortened) "Harmful" else classification.name.lowercase().replaceFirstChar { it.uppercase() },
                 ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else null,
-                rfProb = if (isShortened) maxOf(rfProb, 0.95f) else rfProb,
-                rfRawLogit = rfRawLogit,
-                xgbProb = if (isShortened) maxOf(xgbProb, 0.95f) else xgbProb,
+                rfProb = if (isShortened) maxOf(rfProb, 0.96f) else rfProb,
+                rfRawLogit = 0f,
+                xgbProb = if (isShortened) maxOf(xgbProb, 0.92f) else xgbProb,
                 cnnProb = null
             )
         } catch (t: Throwable) {

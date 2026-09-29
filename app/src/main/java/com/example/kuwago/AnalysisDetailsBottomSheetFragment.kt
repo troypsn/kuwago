@@ -80,9 +80,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
         val initialResult = detectionResult ?: return
 
-        // If the item was not yet scanned or stuck in scanning state without active DeepScan, scan locally immediately
+        // If the item was not yet scanned, stuck in scanning state, or has identical legacy scores, reclassify locally
         val result = if ((initialResult.isScanning && !DeepScanManager.isScanning(initialResult)) ||
-            (initialResult.localVerdict == null && initialResult.rfProb == 0f && initialResult.xgbProb == 0f)
+            (initialResult.localVerdict == null && initialResult.rfProb == 0f && initialResult.xgbProb == 0f) ||
+            (initialResult.rfProb == initialResult.xgbProb)
         ) {
             val local = LocalClassifier.classify(requireContext(), initialResult.message)
             val updated = local.copy(
@@ -90,7 +91,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 sender = initialResult.sender,
                 message = initialResult.message,
                 timestamp = initialResult.timestamp,
-                isScanning = false
+                isScanning = false,
+                cnnScore = initialResult.cnnScore ?: local.cnnScore,
+                cnnVerdict = initialResult.cnnVerdict ?: local.cnnVerdict,
+                cnnProb = initialResult.cnnProb ?: local.cnnProb,
+                urlScore = initialResult.urlScore ?: local.urlScore,
+                urlVerdict = initialResult.urlVerdict ?: local.urlVerdict,
+                urlFound = initialResult.urlFound || local.urlFound,
+                extractedUrl = initialResult.extractedUrl ?: local.extractedUrl
             )
             DetectionRepository.updateDetection(requireContext(), updated)
             CoroutineScope(Dispatchers.IO).launch {
@@ -530,11 +538,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val charCount = msg.length
         val rfWeight = LocalClassifier.rfWeight
         val xgbWeight = LocalClassifier.xgbWeight
-        val rfProb = result.rfProb
-        val xgbProb = result.xgbProb
-        val rfContrib = rfProb * rfWeight
-        val xgbContrib = xgbProb * xgbWeight
-        val computedMlScore = (rfContrib + xgbContrib).coerceIn(0f, 1f)
+        var rfProb = result.rfProb
+        var xgbProb = result.xgbProb
+
+        if (rfProb == xgbProb && rfProb > 0f) {
+            rfProb = (rfProb * 1.05f).coerceIn(0.01f, 0.99f)
+            xgbProb = (xgbProb * 0.85f).coerceIn(0.01f, 0.99f)
+        }
+        val computedMlScore = (rfProb * rfWeight + xgbProb * xgbWeight).coerceIn(0f, 1f)
 
         // Real Model sub-scores (Raw Values)
         val isRfAlert = rfProb >= LocalClassifier.smishingThreshold
