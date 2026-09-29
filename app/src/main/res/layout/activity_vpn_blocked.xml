@@ -22,11 +22,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:fontFamily="@font/sf_pro"
-        android:textStyle="bold"
-        android:text="🛡️ CONNECTION BLOCKED"
+        android:gravity="center"
+        android:text="CONNECTION BLOCKED"
         android:textColor="@color/color_alert"
         android:textSize="22sp"
-        android:gravity="center" />
+        android:textStyle="bold" />
 
     <!-- Subtitle -->
     <TextView

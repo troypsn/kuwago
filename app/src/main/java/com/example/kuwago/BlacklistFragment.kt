@@ -116,16 +116,22 @@ class BlacklistFragment : Fragment() {
 
     private fun showRemoveConfirmationDialog(entry: BlacklistEntry) {
         val ctx = requireContext()
-        AlertDialog.Builder(ctx)
-            .setTitle("Remove from Blacklist")
-            .setMessage("Are you sure you want to remove \"${entry.sender}\" from your blacklist?\n\nThis will re-enable notification popups from this sender.")
-            .setPositiveButton("Remove") { _, _ ->
+        CustomDialogHelper.showConfirmDialog(
+            context = ctx,
+            title = "Remove from Blacklist?",
+            message = "Are you sure you want to remove \"${entry.sender}\" from your blacklist?\n\nThis will re-enable notification popups from this sender.",
+            iconRes = R.drawable.ic_warning_triangle,
+            iconTint = android.graphics.Color.parseColor("#F07048"),
+            confirmText = "Remove",
+            confirmBg = R.drawable.bg_red_button,
+            cancelText = "Cancel",
+            cancelBg = R.drawable.bg_dark_button,
+            onConfirm = {
                 BlacklistRepository.removeEntry(ctx, entry.sender)
                 Toast.makeText(ctx, "Removed ${entry.sender} from blacklist", Toast.LENGTH_SHORT).show()
                 loadRealData()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        )
     }
 
     // --- Listeners ---

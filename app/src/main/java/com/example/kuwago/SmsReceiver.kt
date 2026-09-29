@@ -33,15 +33,6 @@ class SmsReceiver : BroadcastReceiver() {
                         val smsId = UUID.nameUUIDFromBytes(rawSeed.toByteArray()).toString()
                         
                         Log.d("SmsReceiver", "Processing SMS broadcast (id=$smsId, parts=${parts.size})")
-                        
-                        val placeholder = DetectionResult(
-                            id = smsId,
-                            sender = sender,
-                            message = fullBody,
-                            isScanning = true,
-                            timestamp = firstTimestamp
-                        )
-                        DetectionRepository.addDetection(context, placeholder)
 
                         val isBlacklisted = BlacklistRepository.isBlacklisted(context, sender) || 
                                 (fullBody.length < 50 && BlacklistRepository.isBlacklisted(context, fullBody))
@@ -60,42 +51,55 @@ class SmsReceiver : BroadcastReceiver() {
                                 overallExplanation = "user is blacklisted",
                                 timestamp = firstTimestamp
                             )
-                            DetectionRepository.updateDetection(context, finalResult)
+                            DetectionRepository.addDetection(context, finalResult)
+                            com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(context, finalResult)
                             continue
                         }
-                        
+
+                        // Always scan locally first for instant, non-blocking classification
+                        val localResult = LocalClassifier.classify(context, fullBody)
+                        val hasUrl = LocalClassifier.hasUrl(fullBody)
+                        val extractedUrl = LocalClassifier.extractUrl(fullBody)
+                        val explanation = LocalClassifier.generateHumanReadableExplanation(fullBody, localResult.classification)
+                        val instantResult = localResult.copy(
+                            id = smsId,
+                            sender = sender,
+                            message = fullBody,
+                            overallExplanation = explanation,
+                            timestamp = firstTimestamp,
+                            isScanning = false,
+                            urlFound = hasUrl,
+                            extractedUrl = extractedUrl,
+                            localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                            ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                        )
+
+                        DetectionRepository.addDetection(context, instantResult)
+                        com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(context, instantResult)
+
                         val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
                         val onlineScanMode = prefs.getString(
                             SettingsFragment.KEY_ONLINE_SCAN_MODE,
                             SettingsFragment.MODE_AUTOMATIC
                         ) ?: SettingsFragment.MODE_AUTOMATIC
 
-                        val finalResult = if (onlineScanMode == SettingsFragment.MODE_ON_APP || onlineScanMode == SettingsFragment.MODE_DISABLED) {
-                            val localResult = LocalClassifier.classify(context, fullBody)
-                            val hasUrl = LocalClassifier.hasUrl(fullBody)
-                            val extractedUrl = LocalClassifier.extractUrl(fullBody)
-                            val explanation = LocalClassifier.generateHumanReadableExplanation(fullBody, localResult.classification)
-                            localResult.copy(
-                                id = smsId,
-                                sender = sender,
-                                message = fullBody,
-                                overallExplanation = explanation,
-                                timestamp = firstTimestamp,
-                                isScanning = false,
-                                urlFound = hasUrl,
-                                extractedUrl = extractedUrl,
-                                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
-                            )
-                        } else {
-                            SmishingDetector.analyze(context, fullBody, sender, isManual = false).copy(
-                                id = smsId,
-                                sender = sender,
-                                timestamp = firstTimestamp
-                            )
+                        var finalResult = instantResult
+
+                        if (onlineScanMode == SettingsFragment.MODE_AUTOMATIC && CustomDialogHelper.isNetworkAvailable(context)) {
+                            try {
+                                val deepResult = SmishingDetector.analyze(context, fullBody, sender, isManual = false).copy(
+                                    id = smsId,
+                                    sender = sender,
+                                    timestamp = firstTimestamp,
+                                    isScanning = false
+                                )
+                                finalResult = deepResult
+                                DetectionRepository.updateDetection(context, deepResult)
+                                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(context, deepResult)
+                            } catch (e: Exception) {
+                                Log.w("SmsReceiver", "Deep analysis skipped or failed: ${e.message}")
+                            }
                         }
-                        
-                        DetectionRepository.updateDetection(context, finalResult)
                         Log.d("SmsReceiver", "Analysis completed for id=$smsId")
 
                         if (finalResult.classification != Classification.SAFE &&

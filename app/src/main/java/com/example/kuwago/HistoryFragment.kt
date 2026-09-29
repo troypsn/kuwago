@@ -99,7 +99,7 @@ class HistoryFragment : Fragment() {
 
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         smsAdapter = SmsHistoryAdapter(smsList, { result ->
-            showDetailsDialog(result)
+            handleItemClick(result)
         })
         historyRecyclerView.adapter = smsAdapter
 
@@ -177,24 +177,33 @@ class HistoryFragment : Fragment() {
                 }
             } else {
                 // Confirm turning off SMS inbox integration
-                AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"SMS Inbox Integration\"?")
-                    .setPositiveButton("Turn Off") { _, _ ->
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Disable SMS Integration?",
+                    message = "Are you sure you want to turn off \"SMS Inbox Integration\"?",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
                         tvPermissionDesc.text = "Grant permission to analyze device SMS history"
                         loadAndClassifySms()
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
+                    },
+                    onCancel = {
                         isUserAction = false
                         switchSmsPermission.isChecked = true
                         isUserAction = true
-                        dialog.dismiss()
+                    },
+                    onDismiss = {
+                        if (hasSmsPermission()) {
+                            isUserAction = false
+                            switchSmsPermission.isChecked = true
+                            isUserAction = true
+                        }
                     }
-                    .setOnCancelListener {
-                        isUserAction = false
-                        switchSmsPermission.isChecked = true
-                        isUserAction = true
-                    }
-                    .show()
+                )
             }
         }
     }
@@ -232,25 +241,27 @@ class HistoryFragment : Fragment() {
     }
 
     private fun showSettingsGuideDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Permission Restricted")
-            .setMessage(
-                "SMS Inbox integration is restricted by system permissions.\n\n" +
-                "To enable it:\n" +
-                "1. Click 'Go to Settings' below.\n" +
-                "2. Choose 'Permissions'.\n" +
-                "3. Enable 'SMS' access."
-            )
-            .setPositiveButton("Go to Settings") { _, _ ->
+        CustomDialogHelper.showConfirmDialog(
+            context = requireContext(),
+            title = "Permission Restricted",
+            message = "SMS Inbox integration is restricted by system permissions.\n\n" +
+                    "To enable it:\n" +
+                    "1. Click 'Go to Settings' below.\n" +
+                    "2. Choose 'Permissions'.\n" +
+                    "3. Enable 'SMS' access.",
+            iconRes = R.drawable.ic_warning_triangle,
+            iconTint = android.graphics.Color.parseColor("#F07048"),
+            confirmText = "Go to Settings",
+            confirmBg = R.drawable.bg_dark_button,
+            cancelText = "Cancel",
+            cancelBg = R.drawable.bg_dark_button,
+            onConfirm = {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", requireContext().packageName, null)
                 }
                 startActivity(intent)
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        )
     }
 
     private fun syncPermissionState() {
@@ -291,15 +302,29 @@ class HistoryFragment : Fragment() {
                     val urls = db.analysisDao().getUrlAnalysesBySmsId(sms.smsId)
                     val decision = db.analysisDao().getFinalDecisionBySmsId(sms.smsId)
 
-                    val classification = decision?.riskLevel?.let {
+                    // If not yet processed or analysis missing, classify locally immediately to prevent stuck scanning
+                    if (sms.isProcessed == 0 || analysis == null || decision == null) {
+                        val local = LocalClassifier.classify(ctx, sms.messageContent)
+                        val resolved = local.copy(
+                            id = sms.smsId,
+                            sender = sms.senderNumber,
+                            message = sms.messageContent,
+                            timestamp = sms.receivedTimestamp,
+                            isScanning = false
+                        )
+                        com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(ctx, resolved)
+                        return@map resolved
+                    }
+
+                    val classification = decision.riskLevel?.let {
                         try { Classification.valueOf(it) } catch (_: Exception) { Classification.SAFE }
                     } ?: Classification.SAFE
 
-                    val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
+                    val prob = decision.finalScore ?: analysis.mlConfidence ?: 0f
                     val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
                     val firstUrlEntity = urls.firstOrNull()
                     val firstUrl = firstUrlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
-                    val hasDlRun = analysis?.dlConfidence != null
+                    val hasDlRun = analysis.dlConfidence != null
                     val isMalicious = firstUrlEntity?.isMalicious == 1
                     val urlScore = firstUrlEntity?.urlScore ?: if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
                     val urlVerdict = firstUrlEntity?.urlVerdict ?: if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
@@ -310,17 +335,17 @@ class HistoryFragment : Fragment() {
                         message = sms.messageContent,
                         classification = classification,
                         probability = prob,
-                        isScanning = sms.isProcessed == 0,
+                        isScanning = false,
                         timestamp = sms.receivedTimestamp,
-                        cnnScore = analysis?.dlConfidence,
-                        cnnVerdict = analysis?.dlPrediction,
+                        cnnScore = analysis.dlConfidence,
+                        cnnVerdict = analysis.dlPrediction,
                         urlFound = hasUrl,
                         extractedUrl = firstUrl,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
-                        localVerdict = analysis?.mlPrediction,
-                        rfProb = analysis?.mlConfidence ?: 0f,
-                        xgbProb = analysis?.mlConfidence ?: 0f
+                        localVerdict = analysis.mlPrediction,
+                        rfProb = analysis.mlConfidence ?: 0f,
+                        xgbProb = analysis.mlConfidence ?: 0f
                     )
                     rawResult.copy(
                         probability = rawResult.calculateEnsembleScore(),
@@ -502,6 +527,29 @@ class HistoryFragment : Fragment() {
                 if (selected) R.color.text_primary else R.color.text_secondary
             )
         )
+    }
+
+    private fun handleItemClick(result: DetectionResult) {
+        val finalTarget = if ((result.isScanning && !DeepScanManager.isScanning(result)) ||
+            (result.localVerdict == null && result.rfProb == 0f && result.xgbProb == 0f)
+        ) {
+            val local = LocalClassifier.classify(requireContext(), result.message)
+            val resolved = local.copy(
+                id = result.id,
+                sender = result.sender,
+                message = result.message,
+                timestamp = result.timestamp,
+                isScanning = false
+            )
+            DetectionRepository.updateDetection(requireContext(), resolved)
+            scope.launch(Dispatchers.IO) {
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(requireContext(), resolved)
+            }
+            resolved
+        } else {
+            result
+        }
+        showDetailsDialog(finalTarget)
     }
 
     private fun showDetailsDialog(result: DetectionResult) {

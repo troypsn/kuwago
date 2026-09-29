@@ -27,23 +27,32 @@ class SettingsTrainAiFragment : Fragment() {
         switchTrainAi.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (!isChecked) {
-                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"Help Train AI\"?")
-                    .setPositiveButton("Turn Off") { _, _ ->
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Turn off Train AI?",
+                    message = "Are you sure you want to turn off \"Help Train AI\"?",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
                         prefs.edit().putBoolean("help_train_ai", false).apply()
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
+                    },
+                    onCancel = {
                         isProgrammaticChange = true
                         switchTrainAi.isChecked = true
                         isProgrammaticChange = false
-                        dialog.dismiss()
+                    },
+                    onDismiss = {
+                        if (prefs.getBoolean("help_train_ai", false)) {
+                            isProgrammaticChange = true
+                            switchTrainAi.isChecked = true
+                            isProgrammaticChange = false
+                        }
                     }
-                    .setOnCancelListener {
-                        isProgrammaticChange = true
-                        switchTrainAi.isChecked = true
-                        isProgrammaticChange = false
-                    }
-                    .show()
+                )
             } else {
                 prefs.edit().putBoolean("help_train_ai", true).apply()
             }

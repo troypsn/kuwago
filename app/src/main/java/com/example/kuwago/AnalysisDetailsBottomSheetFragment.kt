@@ -78,7 +78,29 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val result = detectionResult ?: return
+        val initialResult = detectionResult ?: return
+
+        // If the item was not yet scanned or stuck in scanning state without active DeepScan, scan locally immediately
+        val result = if ((initialResult.isScanning && !DeepScanManager.isScanning(initialResult)) ||
+            (initialResult.localVerdict == null && initialResult.rfProb == 0f && initialResult.xgbProb == 0f)
+        ) {
+            val local = LocalClassifier.classify(requireContext(), initialResult.message)
+            val updated = local.copy(
+                id = initialResult.id,
+                sender = initialResult.sender,
+                message = initialResult.message,
+                timestamp = initialResult.timestamp,
+                isScanning = false
+            )
+            DetectionRepository.updateDetection(requireContext(), updated)
+            CoroutineScope(Dispatchers.IO).launch {
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(requireContext(), updated)
+            }
+            detectionResult = updated
+            updated
+        } else {
+            initialResult
+        }
 
         val btnBack = view.findViewById<ImageView>(R.id.btn_back)
         btnBack.setOnClickListener { dismiss() }
@@ -880,13 +902,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
                 if (finalResult.urlFound && finalResult.urlScore != null && isAdded && activity?.isFinishing == false) {
                     val host = finalResult.extractedUrl?.let { UrlNormalizer.extractHost(it) } ?: "this link"
-                    androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                        .setTitle("🌐 URL Threat Reputation Cached")
-                        .setMessage(
-                            "The threat analysis for $host was successfully retrieved from the cloud and saved to your device's URL protection cache."
-                        )
-                        .setPositiveButton("OK", null)
-                        .show()
+                    CustomDialogHelper.showInfoDialog(
+                        context = requireContext(),
+                        title = "URL Threat Reputation Cached",
+                        message = "The threat analysis for $host was successfully retrieved from the cloud and saved to your device's URL protection cache.",
+                        iconRes = R.drawable.ic_shield,
+                        iconTint = android.graphics.Color.parseColor("#60A5FA"),
+                        buttonText = "OK"
+                    )
                 }
             },
             onError = { errMsg ->

@@ -27,23 +27,32 @@ class SettingsRealtimeScanFragment : Fragment() {
         switchInstant.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (!isChecked) {
-                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"Auto-Block\"?")
-                    .setPositiveButton("Turn Off") { _, _ ->
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Turn off Auto-Block?",
+                    message = "Are you sure you want to turn off \"Auto-Block\"?",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
                         prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false).apply()
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
+                    },
+                    onCancel = {
                         isProgrammaticChange = true
                         switchInstant.isChecked = true
                         isProgrammaticChange = false
-                        dialog.dismiss()
+                    },
+                    onDismiss = {
+                        if (prefs.getBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false)) {
+                            isProgrammaticChange = true
+                            switchInstant.isChecked = true
+                            isProgrammaticChange = false
+                        }
                     }
-                    .setOnCancelListener {
-                        isProgrammaticChange = true
-                        switchInstant.isChecked = true
-                        isProgrammaticChange = false
-                    }
-                    .show()
+                )
             } else {
                 prefs.edit().putBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, true).apply()
             }

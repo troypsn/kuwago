@@ -221,24 +221,28 @@ class MainActivity : AppCompatActivity() {
                         .putBoolean("has_prompted_vpn_shield", true)
                         .apply()
 
-                    AlertDialog.Builder(this@MainActivity)
-                        .setTitle("🛡️ URL Shield Available")
-                        .setMessage(
-                            "Kuwago detected phishing URLs in its threat database.\n\n" +
-                            "URL Shield can automatically block phishing sites at the network level, " +
-                            "so even if you accidentally tap a link in a message, the connection " +
-                            "will be stopped before your browser opens it.\n\n" +
-                            "You can enable or disable URL Shield anytime in Settings → Security."
-                        )
-                        .setPositiveButton("Enable URL Shield") { _, _ ->
+                    CustomDialogHelper.showConfirmDialog(
+                        context = this@MainActivity,
+                        title = "URL Shield Available",
+                        message = "Kuwago detected phishing URLs in its threat database.\n\n" +
+                                "URL Shield can automatically block phishing sites at the network level, " +
+                                "so even if you accidentally tap a link in a message, the connection " +
+                                "will be stopped before your browser opens it.\n\n" +
+                                "You can enable or disable URL Shield anytime in Settings → Security.",
+                        iconRes = R.drawable.ic_shield,
+                        iconTint = android.graphics.Color.parseColor("#4ADE80"),
+                        confirmText = "Enable URL Shield",
+                        confirmBg = R.drawable.bg_red_button,
+                        cancelText = "Maybe Later",
+                        cancelBg = R.drawable.bg_dark_button,
+                        onConfirm = {
                             val vpnFragment = SettingsVpnShieldFragment().apply {
                                 arguments = Bundle().apply { putBoolean("auto_enable", true) }
                             }
                             switchFragment(vpnFragment, "settings")
                             updateNavUI("settings")
                         }
-                        .setNegativeButton("Maybe Later", null)
-                        .show()
+                    )
                 }
             }
         }
@@ -246,14 +250,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUrlCacheDialog(count: Int) {
         val recordsText = if (count == 1) "1 URL threat reputation" else "$count URL threat reputations"
-        AlertDialog.Builder(this)
-            .setTitle("🌐 Cloud Threat Cache Updated")
-            .setMessage(
-                "Kuwago successfully fetched $recordsText from the cloud.\n\n" +
-                "These pre-analyzed reputations are now cached on your device to immediately identify known scam links and keep URL Shield up to date."
-            )
-            .setPositiveButton("OK", null)
-            .show()
+        CustomDialogHelper.showInfoDialog(
+            context = this,
+            title = "Cloud Threat Cache Updated",
+            message = "Kuwago successfully fetched $recordsText from the cloud.\n\n" +
+                    "These pre-analyzed reputations are now cached on your device to immediately identify known scam links and keep URL Shield up to date.",
+            iconRes = R.drawable.ic_shield,
+            iconTint = android.graphics.Color.parseColor("#60A5FA"),
+            buttonText = "OK"
+        )
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -271,14 +276,20 @@ class MainActivity : AppCompatActivity() {
         if (isRequestingSmsPermissions || hasShownNotificationAccessDialog) return
         if (!isNotificationServiceEnabled()) {
             hasShownNotificationAccessDialog = true
-            AlertDialog.Builder(this)
-                .setTitle("Notification Access Required")
-                .setMessage("Kuwago needs Notification Access to intercept and block scam SMS messages before you see them. Please enable it in the next screen.")
-                .setPositiveButton("Enable in Settings") { _, _ ->
+            CustomDialogHelper.showConfirmDialog(
+                context = this,
+                title = "Notification Access Required",
+                message = "Kuwago needs Notification Access to intercept and block scam SMS messages before you see them. Please enable it in the next screen.",
+                iconRes = R.drawable.ic_notification,
+                iconTint = android.graphics.Color.parseColor("#F07048"),
+                confirmText = "Enable in Settings",
+                confirmBg = R.drawable.bg_dark_button,
+                cancelText = "Maybe Later",
+                cancelBg = R.drawable.bg_dark_button,
+                onConfirm = {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }
-                .setNegativeButton("Maybe Later", null)
-                .show()
+            )
         }
     }
 
