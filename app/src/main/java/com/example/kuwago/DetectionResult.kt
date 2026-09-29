@@ -65,15 +65,17 @@ data class DetectionResult(
                 urlVerdict?.equals("malicious", ignoreCase = true) == true &&
                 (explanation?.contains("shorten", ignoreCase = true) == true || overallExplanation?.contains("shorten", ignoreCase = true) == true)
 
-        val mlScore = if (rfProb > 0f || xgbProb > 0f) 0.75f * rfProb + 0.25f * xgbProb else probability
+        val mlScore = if (rfProb > 0f || xgbProb > 0f) {
+            LocalClassifier.rfWeight * rfProb + LocalClassifier.xgbWeight * xgbProb
+        } else probability
         val dlScore = cnnScore ?: cnnProb
         val hasDl = dlScore != null
         val hasUrl = urlFound && urlScore != null
 
         val computed = when {
-            hasDl && hasUrl -> (0.50f * dlScore!!) + (0.25f * urlScore!!) + (0.25f * mlScore)
-            hasDl -> (2.0f / 3.0f * dlScore!!) + (1.0f / 3.0f * mlScore)
-            hasUrl -> (0.50f * urlScore!!) + (0.50f * mlScore)
+            hasDl && hasUrl -> (LocalClassifier.withUrlDlWeight * dlScore!!) + (LocalClassifier.withUrlUrlWeight * urlScore!!) + (LocalClassifier.withUrlMlWeight * mlScore)
+            hasDl -> (LocalClassifier.noUrlDlWeight * dlScore!!) + (LocalClassifier.noUrlMlWeight * mlScore)
+            hasUrl -> (LocalClassifier.urlOnlyUrlWeight * urlScore!!) + (LocalClassifier.urlOnlyMlWeight * mlScore)
             else -> mlScore
         }
 

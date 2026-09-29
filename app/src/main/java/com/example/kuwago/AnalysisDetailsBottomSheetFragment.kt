@@ -747,21 +747,28 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         llCombinedBreakdown.removeAllViews()
 
         val mlScore = if (result.rfProb > 0f || result.xgbProb > 0f) {
-            0.75f * result.rfProb + 0.25f * result.xgbProb
+            LocalClassifier.rfWeight * result.rfProb + LocalClassifier.xgbWeight * result.xgbProb
         } else result.probability
 
         val hasDl = result.cnnScore != null || result.cnnProb != null
         val dlScore = result.cnnScore ?: result.cnnProb
         val urlScore = result.urlScore
         val containsUrl = result.urlFound
+        val withUrlDlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.withUrlDlWeight * 100)
+        val withUrlMlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.withUrlMlWeight * 100)
+        val withUrlUrlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.withUrlUrlWeight * 100)
+
+        val noUrlDlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.noUrlDlWeight * 100)
+        val noUrlMlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.noUrlMlWeight * 100)
+
         if (containsUrl && urlScore != null) {
-            addBreakdownLine(llCombinedBreakdown, "ML Layer", "25% • " + String.format(Locale.US, "%.2f", mlScore))
-            addBreakdownLine(llCombinedBreakdown, "DL Layer", if (hasDl && dlScore != null) "50% • " + String.format(Locale.US, "%.2f", dlScore) else "50% • Pending Scan")
-            addBreakdownLine(llCombinedBreakdown, "URL Scan", "25% • " + String.format(Locale.US, "%.2f", urlScore))
+            addBreakdownLine(llCombinedBreakdown, "ML Layer", "$withUrlMlPctStr • " + String.format(Locale.US, "%.2f", mlScore))
+            addBreakdownLine(llCombinedBreakdown, "DL Layer", if (hasDl && dlScore != null) "$withUrlDlPctStr • " + String.format(Locale.US, "%.2f", dlScore) else "$withUrlDlPctStr • Pending Scan")
+            addBreakdownLine(llCombinedBreakdown, "URL Scan", "$withUrlUrlPctStr • " + String.format(Locale.US, "%.2f", urlScore))
         } else if (containsUrl && urlScore == null) {
             if (hasDl) {
-                addBreakdownLine(llCombinedBreakdown, "ML Layer", "33.3% • " + String.format(Locale.US, "%.2f", mlScore))
-                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "66.7% • " + String.format(Locale.US, "%.2f", dlScore) else "66.7% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "$noUrlMlPctStr • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "$noUrlDlPctStr • " + String.format(Locale.US, "%.2f", dlScore) else "$noUrlDlPctStr • Pending Scan")
                 addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • Pending Scan")
             } else {
                 addBreakdownLine(llCombinedBreakdown, "ML Layer", "100% • " + String.format(Locale.US, "%.2f", mlScore))
@@ -770,8 +777,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         } else {
             if (hasDl) {
-                addBreakdownLine(llCombinedBreakdown, "ML Layer", "33.3% • " + String.format(Locale.US, "%.2f", mlScore))
-                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "66.7% • " + String.format(Locale.US, "%.2f", dlScore) else "66.7% • Pending Scan")
+                addBreakdownLine(llCombinedBreakdown, "ML Layer", "$noUrlMlPctStr • " + String.format(Locale.US, "%.2f", mlScore))
+                addBreakdownLine(llCombinedBreakdown, "DL Layer", if (dlScore != null) "$noUrlDlPctStr • " + String.format(Locale.US, "%.2f", dlScore) else "$noUrlDlPctStr • Pending Scan")
                 addBreakdownLine(llCombinedBreakdown, "URL Scan", "0% • No Link")
             } else {
                 addBreakdownLine(llCombinedBreakdown, "ML Layer", "100% • " + String.format(Locale.US, "%.2f", mlScore))

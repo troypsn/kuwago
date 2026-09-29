@@ -233,35 +233,56 @@ object SmishingDetector {
                 }
 
                 val (finalProb, formulaStr) = if (isShortened) {
+                    val dlW = LocalClassifier.withUrlDlWeight
+                    val urlW = LocalClassifier.withUrlUrlWeight
+                    val mlW = LocalClassifier.withUrlMlWeight
                     val score = if (hasCnnData && cnnScore != null) {
-                        maxOf((0.50f * cnnScore) + (0.25f * 1.0f) + (0.25f * localScore), 0.95f)
+                        maxOf((dlW * cnnScore) + (urlW * 1.0f) + (mlW * localScore), 0.95f)
                     } else {
-                        maxOf((0.50f * 1.0f) + (0.50f * localScore), 0.95f)
+                        maxOf((LocalClassifier.urlOnlyUrlWeight * 1.0f) + (LocalClassifier.urlOnlyMlWeight * localScore), 0.95f)
                     }
+                    val dlPct = String.format(java.util.Locale.US, "%.0f%%", dlW * 100)
+                    val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
                     val formula = if (hasCnnData && cnnScore != null) {
-                        "Rule-based Shortened URL (Harmful) + 50% CNN + 25% Local"
+                        "Rule-based Shortened URL (Harmful) + $dlPct CNN + $mlPct Local"
                     } else {
                         "Rule-based Shortened URL (Harmful) + Local ML"
                     }
                     Pair(score, formula)
                 } else if (hasCnnData && cnnScore != null) {
                     if (containsUrl && effectiveUrlScore != null) {
-                        val score = (0.50f * cnnScore) + (0.25f * effectiveUrlScore) + (0.25f * localScore)
-                        val formula = "Weighted Ensemble: 50% CNN + 25% URL + 25% Local"
+                        val dlW = LocalClassifier.withUrlDlWeight
+                        val urlW = LocalClassifier.withUrlUrlWeight
+                        val mlW = LocalClassifier.withUrlMlWeight
+                        val dlPct = String.format(java.util.Locale.US, "%.0f%%", dlW * 100)
+                        val urlPct = String.format(java.util.Locale.US, "%.0f%%", urlW * 100)
+                        val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
+                        val score = (dlW * cnnScore) + (urlW * effectiveUrlScore) + (mlW * localScore)
+                        val formula = "Weighted Ensemble: $dlPct CNN + $urlPct URL + $mlPct Local"
                         Pair(score, formula)
                     } else {
-                        val score = (2.0f / 3.0f * cnnScore) + (1.0f / 3.0f * localScore)
-                        val formula = if (containsUrl) "Weighted Ensemble: 66.7% CNN + 33.3% Local (URL scan pending)" else "Weighted Ensemble: 66.7% CNN + 33.3% Local"
+                        val dlW = LocalClassifier.noUrlDlWeight
+                        val mlW = LocalClassifier.noUrlMlWeight
+                        val dlPct = String.format(java.util.Locale.US, "%.0f%%", dlW * 100)
+                        val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
+                        val score = (dlW * cnnScore) + (mlW * localScore)
+                        val formula = if (containsUrl) "Weighted Ensemble: $dlPct CNN + $mlPct Local (URL scan pending)" else "Weighted Ensemble: $dlPct CNN + $mlPct Local"
                         Pair(score, formula)
                     }
                 } else {
                     if (containsUrl && effectiveUrlScore != null) {
-                        val score = (0.50f * effectiveUrlScore) + (0.50f * localScore)
-                        val formula = "Weighted Ensemble: 50% URL + 50% Local"
+                        val urlW = LocalClassifier.urlOnlyUrlWeight
+                        val mlW = LocalClassifier.urlOnlyMlWeight
+                        val urlPct = String.format(java.util.Locale.US, "%.0f%%", urlW * 100)
+                        val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
+                        val score = (urlW * effectiveUrlScore) + (mlW * localScore)
+                        val formula = "Weighted Ensemble: $urlPct URL + $mlPct Local"
                         Pair(score, formula)
                     } else {
+                        val rfPct = String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)
+                        val xgbPct = String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)
                         val score = localScore
-                        val formula = if (containsUrl) "Local ML Model (75% RF + 25% XGB, URL scan pending)" else "Local ML Model (75% RF + 25% XGB)"
+                        val formula = if (containsUrl) "Local ML Model ($rfPct RF + $xgbPct XGB, URL scan pending)" else "Local ML Model ($rfPct RF + $xgbPct XGB)"
                         Pair(score, formula)
                     }
                 }

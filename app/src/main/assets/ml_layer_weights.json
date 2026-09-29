@@ -3,6 +3,9 @@
   "xgb_weight": 0.25,
   "local_weight": 0.50,
   "cnn_weight": 0.50,
+  "with_url_dl_weight": 0.50,
+  "with_url_ml_weight": 0.25,
+  "with_url_url_weight": 0.25,
   "suspicious_threshold": 0.65,
   "smishing_threshold": 0.85,
   "val_f1": 0.9179

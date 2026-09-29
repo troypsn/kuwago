@@ -59,10 +59,10 @@ class SettingsAutoBlacklistFragment : Fragment() {
 
         val adapter = ArrayAdapter(
             requireContext(),
-            R.layout.item_spinner_mode,
+            R.layout.item_spinner_auto_blacklist,
             thresholdLabels
         ).apply {
-            setDropDownViewResource(R.layout.item_spinner_dropdown_mode)
+            setDropDownViewResource(R.layout.item_spinner_dropdown_auto_blacklist)
         }
         spinner.adapter = adapter
 

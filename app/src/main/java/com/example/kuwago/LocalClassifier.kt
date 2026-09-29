@@ -20,13 +20,34 @@ object LocalClassifier {
     private const val NUMERICAL_FEATURES_COUNT = 21
     private const val TOTAL_FEATURES_COUNT = 1521
 
-    // Default configuration weights (can be updated dynamically or loaded from JSON)
+    // Default configuration weights (loaded dynamically from JSON)
     var rfWeight = 0.75f
     var xgbWeight = 0.25f
-    var localWeight = 0.50f
-    var cnnWeight = 0.50f
-    var suspiciousThreshold = 0.50f
+
+    // Weights when NO URL is present (DL 50% + Local ML 50%)
+    var noUrlDlWeight = 0.50f
+    var noUrlMlWeight = 0.50f
+
+    // Weights when URL is present (DL 50% + ML 25% + URL 25%)
+    var withUrlDlWeight = 0.50f
+    var withUrlMlWeight = 0.25f
+    var withUrlUrlWeight = 0.25f
+
+    // Weights when only URL + ML (fallback if DL not available)
+    var urlOnlyUrlWeight = 0.50f
+    var urlOnlyMlWeight = 0.50f
+
+    var suspiciousThreshold = 0.65f
     var smishingThreshold = 0.85f
+
+    // Aliases for compatibility
+    var localWeight: Float
+        get() = noUrlMlWeight
+        set(value) { noUrlMlWeight = value }
+
+    var cnnWeight: Float
+        get() = noUrlDlWeight
+        set(value) { noUrlDlWeight = value }
 
     val isInitialized: Boolean
         get() = (env != null && (rfSession != null || xgbSession != null) && tfidfSession != null && scalerSession != null)
@@ -98,27 +119,66 @@ object LocalClassifier {
 
     @Synchronized
     fun initialize(context: Context?) {
+        // Try loading weights from config JSON (checks ensemble_layer_weights.json first, then ml_layer_weights.json)
+        try {
+            val jsonBytes = try {
+                readAsset(context, "ensemble_layer_weights.json")
+            } catch (e: Exception) {
+                readAsset(context, "ml_layer_weights.json")
+            }
+            val json = JSONObject(String(jsonBytes, Charsets.UTF_8))
+
+            if (json.has("local_ml")) {
+                val localMlObj = json.getJSONObject("local_ml")
+                rfWeight = localMlObj.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
+                xgbWeight = localMlObj.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
+            } else {
+                rfWeight = json.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
+                xgbWeight = json.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
+            }
+
+            if (json.has("no_url_weights")) {
+                val noUrlObj = json.getJSONObject("no_url_weights")
+                noUrlDlWeight = noUrlObj.optDouble("dl_weight", noUrlDlWeight.toDouble()).toFloat()
+                noUrlMlWeight = noUrlObj.optDouble("ml_weight", noUrlMlWeight.toDouble()).toFloat()
+            } else {
+                noUrlDlWeight = json.optDouble("cnn_weight", json.optDouble("dl_weight", noUrlDlWeight.toDouble())).toFloat()
+                noUrlMlWeight = json.optDouble("local_weight", json.optDouble("ml_weight", noUrlMlWeight.toDouble())).toFloat()
+            }
+
+            if (json.has("with_url_weights")) {
+                val withUrlObj = json.getJSONObject("with_url_weights")
+                withUrlDlWeight = withUrlObj.optDouble("dl_weight", withUrlDlWeight.toDouble()).toFloat()
+                withUrlMlWeight = withUrlObj.optDouble("ml_weight", withUrlMlWeight.toDouble()).toFloat()
+                withUrlUrlWeight = withUrlObj.optDouble("url_weight", withUrlUrlWeight.toDouble()).toFloat()
+            } else {
+                withUrlDlWeight = json.optDouble("with_url_dl_weight", withUrlDlWeight.toDouble()).toFloat()
+                withUrlMlWeight = json.optDouble("with_url_ml_weight", withUrlMlWeight.toDouble()).toFloat()
+                withUrlUrlWeight = json.optDouble("with_url_url_weight", withUrlUrlWeight.toDouble()).toFloat()
+            }
+
+            if (json.has("url_only_weights")) {
+                val urlOnlyObj = json.getJSONObject("url_only_weights")
+                urlOnlyUrlWeight = urlOnlyObj.optDouble("url_weight", urlOnlyUrlWeight.toDouble()).toFloat()
+                urlOnlyMlWeight = urlOnlyObj.optDouble("ml_weight", urlOnlyMlWeight.toDouble()).toFloat()
+            }
+
+            if (json.has("thresholds")) {
+                val threshObj = json.getJSONObject("thresholds")
+                suspiciousThreshold = threshObj.optDouble("suspicious_threshold", suspiciousThreshold.toDouble()).toFloat()
+                smishingThreshold = threshObj.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
+            } else {
+                suspiciousThreshold = json.optDouble("suspicious_threshold", json.optDouble("threshold", suspiciousThreshold.toDouble())).toFloat()
+                smishingThreshold = json.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
+            }
+        } catch (e: Exception) {
+            // Ignore and use defaults
+        }
+
         if (isInitialized) return
         try {
             if (env == null) {
                 env = OrtEnvironment.getEnvironment()
-            }
-            
-            // Try loading weights from config JSON
-            try {
-                val jsonStr = String(readAsset(context, "ml_layer_weights.json"), Charsets.UTF_8)
-                val json = JSONObject(jsonStr)
-                rfWeight = json.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
-                xgbWeight = json.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
-                localWeight = json.optDouble("local_weight", localWeight.toDouble()).toFloat()
-                cnnWeight = json.optDouble("cnn_weight", cnnWeight.toDouble()).toFloat()
-                suspiciousThreshold = json.optDouble("suspicious_threshold", suspiciousThreshold.toDouble()).toFloat()
-                if (json.has("threshold") && !json.has("suspicious_threshold")) {
-                    suspiciousThreshold = json.optDouble("threshold", suspiciousThreshold.toDouble()).toFloat()
-                }
-                smishingThreshold = json.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
-            } catch (e: Exception) {
-                // Ignore and use defaults
             }
 
             if (tfidfSession == null) {
@@ -778,7 +838,14 @@ object LocalClassifier {
         val urlScoreStr = if (result.urlScore != null) String.format(java.util.Locale.US, "%.1f%%", result.urlScore * 100) else "N/A"
         val urlVerdictStr = result.urlVerdict ?: "N/A"
 
-        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble (50% CNN + 25% URL + 25% Local)" else "Ensemble (66.7% CNN + 33.3% Local)"
+        val withUrlDlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlDlWeight * 100)
+        val withUrlUrlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlUrlWeight * 100)
+        val withUrlMlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlMlWeight * 100)
+
+        val noUrlDlPct = String.format(java.util.Locale.US, "%.0f%%", noUrlDlWeight * 100)
+        val noUrlMlPct = String.format(java.util.Locale.US, "%.0f%%", noUrlMlWeight * 100)
+
+        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble ($withUrlDlPct CNN + $withUrlUrlPct URL + $withUrlMlPct Local)" else "Ensemble ($noUrlDlPct CNN + $noUrlMlPct Local)"
 
         return if (hasUrl) {
             "Ensemble Calculation Breakdown:\n" +

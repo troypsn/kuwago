@@ -1,0 +1,24 @@
+{
+  "description": "Kuwago Ensemble and Layer Scoring Weights Configuration",
+  "local_ml": {
+    "rf_weight": 0.75,
+    "xgb_weight": 0.25
+  },
+  "no_url_weights": {
+    "dl_weight": 0.50,
+    "ml_weight": 0.50
+  },
+  "with_url_weights": {
+    "dl_weight": 0.50,
+    "ml_weight": 0.25,
+    "url_weight": 0.25
+  },
+  "url_only_weights": {
+    "url_weight": 0.50,
+    "ml_weight": 0.50
+  },
+  "thresholds": {
+    "suspicious_threshold": 0.65,
+    "smishing_threshold": 0.85
+  }
+}
