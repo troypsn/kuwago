@@ -105,20 +105,29 @@ class SettingsVpnShieldFragment : Fragment() {
             if (isChecked) {
                 requestVpnPermission()
             } else {
-                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setMessage("Are you sure you want to turn off \"URL Shield\"?")
-                    .setPositiveButton("Turn Off") { _, _ ->
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Turn off URL Shield?",
+                    message = "Are you sure you want to turn off \"URL Shield\"?",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
                         stopVpnService()
                         updateStatusText(false)
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
+                    },
+                    onCancel = {
                         setSwitchCheckedProgrammatically(true)
-                        dialog.dismiss()
+                    },
+                    onDismiss = {
+                        if (isVpnCurrentlyActive()) {
+                            setSwitchCheckedProgrammatically(true)
+                        }
                     }
-                    .setOnCancelListener {
-                        setSwitchCheckedProgrammatically(true)
-                    }
-                    .show()
+                )
             }
         }
     }
@@ -193,11 +202,14 @@ class SettingsVpnShieldFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     if (isAdded && activity?.isFinishing == false) {
                         val recordsText = if (count == 1) "1 URL threat reputation" else "$count URL threat reputations"
-                        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                            .setTitle("🌐 Cloud Threat Cache Updated")
-                            .setMessage("Successfully fetched $recordsText from the cloud.\n\nYour URL Shield blocking cache is now up to date with the latest known scam links.")
-                            .setPositiveButton("OK", null)
-                            .show()
+                        CustomDialogHelper.showInfoDialog(
+                            context = requireContext(),
+                            title = "Cloud Threat Cache Updated",
+                            message = "Successfully fetched $recordsText from the cloud.\n\nYour URL Shield blocking cache is now up to date with the latest known scam links.",
+                            iconRes = R.drawable.ic_shield,
+                            iconTint = android.graphics.Color.parseColor("#60A5FA"),
+                            buttonText = "OK"
+                        )
                     }
                 }
             }

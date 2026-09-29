@@ -214,17 +214,29 @@ class SmsNotificationListener : NotificationListenerService() {
 
         // 3. Run the scan
         scope.launch {
-            val placeholder = DetectionResult(
+            val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
+            val hasUrl = LocalClassifier.hasUrl(messageText)
+            val extractedUrl = LocalClassifier.extractUrl(messageText)
+            val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
+            val instantResult = localResult.copy(
                 sender = sender,
                 message = messageText,
-                isScanning = true
+                overallExplanation = explanation,
+                isScanning = false,
+                urlFound = hasUrl,
+                extractedUrl = extractedUrl,
+                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
             )
-            DetectionRepository.addDetection(this@SmsNotificationListener, placeholder)
+
+            DetectionRepository.addDetection(this@SmsNotificationListener, instantResult)
+            com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, instantResult)
 
             try {
-                val finalResult = scanMessage(sender, messageText, placeholder.id, placeholder.timestamp)
+                val finalResult = scanMessage(sender, messageText, instantResult.id, instantResult.timestamp, instantResult)
 
                 DetectionRepository.updateDetection(this@SmsNotificationListener, finalResult)
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, finalResult)
 
                 // 4. Cancel the scanning notification
                 cancelOwnNotification(scanNotifId)
@@ -257,17 +269,8 @@ class SmsNotificationListener : NotificationListenerService() {
             } catch (e: Exception) {
                 Log.e("SmsNotifListener", "[INSTANT] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
-                val fallback = DetectionResult(
-                    id = placeholder.id,
-                    sender = sender,
-                    message = messageText,
-                    classification = Classification.SAFE,
-                    probability = 0f,
-                    isScanning = false,
-                    timestamp = placeholder.timestamp,
-                    overallExplanation = "Scan failed to complete: ${e.message}"
-                )
-                DetectionRepository.updateDetection(this@SmsNotificationListener, fallback)
+                DetectionRepository.updateDetection(this@SmsNotificationListener, instantResult)
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, instantResult)
             }
         }
     }
@@ -289,17 +292,29 @@ class SmsNotificationListener : NotificationListenerService() {
         postScanningNotification(scanNotifId, sender)
 
         scope.launch {
-            val placeholder = DetectionResult(
+            val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
+            val hasUrl = LocalClassifier.hasUrl(messageText)
+            val extractedUrl = LocalClassifier.extractUrl(messageText)
+            val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
+            val instantResult = localResult.copy(
                 sender = sender,
                 message = messageText,
-                isScanning = true
+                overallExplanation = explanation,
+                isScanning = false,
+                urlFound = hasUrl,
+                extractedUrl = extractedUrl,
+                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
             )
-            DetectionRepository.addDetection(this@SmsNotificationListener, placeholder)
+
+            DetectionRepository.addDetection(this@SmsNotificationListener, instantResult)
+            com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, instantResult)
 
             try {
-                val finalResult = scanMessage(sender, messageText, placeholder.id, placeholder.timestamp)
+                val finalResult = scanMessage(sender, messageText, instantResult.id, instantResult.timestamp, instantResult)
 
                 DetectionRepository.updateDetection(this@SmsNotificationListener, finalResult)
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, finalResult)
 
                 // Cancel the scanning notification
                 cancelOwnNotification(scanNotifId)
@@ -328,17 +343,8 @@ class SmsNotificationListener : NotificationListenerService() {
             } catch (e: Exception) {
                 Log.e("SmsNotifListener", "[PASSTHROUGH] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
-                val fallback = DetectionResult(
-                    id = placeholder.id,
-                    sender = sender,
-                    message = messageText,
-                    classification = Classification.SAFE,
-                    probability = 0f,
-                    isScanning = false,
-                    timestamp = placeholder.timestamp,
-                    overallExplanation = "Scan failed to complete: ${e.message}"
-                )
-                DetectionRepository.updateDetection(this@SmsNotificationListener, fallback)
+                DetectionRepository.updateDetection(this@SmsNotificationListener, instantResult)
+                com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, instantResult)
             }
         }
     }
@@ -347,7 +353,8 @@ class SmsNotificationListener : NotificationListenerService() {
         sender: String,
         messageText: String,
         placeholderId: String,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        localFallback: DetectionResult? = null
     ): DetectionResult {
         val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val onlineScanMode = prefs.getString(
@@ -355,24 +362,26 @@ class SmsNotificationListener : NotificationListenerService() {
             SettingsFragment.MODE_AUTOMATIC
         ) ?: SettingsFragment.MODE_AUTOMATIC
 
-        return if (onlineScanMode == SettingsFragment.MODE_ON_APP || onlineScanMode == SettingsFragment.MODE_DISABLED) {
+        return if (onlineScanMode == SettingsFragment.MODE_ON_APP || onlineScanMode == SettingsFragment.MODE_DISABLED || !CustomDialogHelper.isNetworkAvailable(this)) {
             Log.i("SmsNotifListener", "Running local-only classification (onlineScanMode=$onlineScanMode)")
-            val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
-            val hasUrl = LocalClassifier.hasUrl(messageText)
-            val extractedUrl = LocalClassifier.extractUrl(messageText)
-            val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
-            localResult.copy(
-                id = placeholderId,
-                sender = sender,
-                message = messageText,
-                overallExplanation = explanation,
-                timestamp = timestamp,
-                isScanning = false,
-                urlFound = hasUrl,
-                extractedUrl = extractedUrl,
-                localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
-            )
+            localFallback ?: run {
+                val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
+                val hasUrl = LocalClassifier.hasUrl(messageText)
+                val extractedUrl = LocalClassifier.extractUrl(messageText)
+                val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
+                localResult.copy(
+                    id = placeholderId,
+                    sender = sender,
+                    message = messageText,
+                    overallExplanation = explanation,
+                    timestamp = timestamp,
+                    isScanning = false,
+                    urlFound = hasUrl,
+                    extractedUrl = extractedUrl,
+                    localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
+                    ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                )
+            }
         } else {
             SmishingDetector.analyze(
                 this@SmsNotificationListener, messageText, sender, isManual = false

@@ -93,6 +93,14 @@ class ScanFragment : Fragment() {
             return
         }
 
+        if (!CustomDialogHelper.isNetworkAvailable(ctx)) {
+            CustomDialogHelper.showNoInternetDialog(
+                ctx,
+                "No Wi-Fi or cellular data connection is available. Please connect to the internet to perform manual scanning."
+            )
+            return
+        }
+
         // Build sender string: phone takes priority, then name, then "Unknown"
         val sender = buildSenderString()
 
@@ -102,7 +110,13 @@ class ScanFragment : Fragment() {
             // ── Phase 1: Local models (instant) ───────────────────────────────
             val localResult = try {
                 withContext(Dispatchers.IO) {
-                    LocalClassifier.classify(ctx, messageText).copy(sender = sender, message = messageText)
+                    val res = LocalClassifier.classify(ctx, messageText).copy(
+                        sender = sender,
+                        message = messageText,
+                        isScanning = false
+                    )
+                    com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(ctx, res)
+                    res
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -138,8 +152,10 @@ class ScanFragment : Fragment() {
             scope.launch {
                 try {
                     val deepResult = withContext(Dispatchers.IO) {
-                        SmishingDetector.analyze(ctx, messageText, sender, isManual = true)
-                            .copy(id = localResult.id) // keep the same ID so updateDetection matches
+                        val analyzed = SmishingDetector.analyze(ctx, messageText, sender, isManual = true)
+                            .copy(id = localResult.id, isScanning = false)
+                        com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(ctx, analyzed)
+                        analyzed
                     }
                     withContext(Dispatchers.Main) {
                         DetectionRepository.updateDetection(ctx, deepResult)

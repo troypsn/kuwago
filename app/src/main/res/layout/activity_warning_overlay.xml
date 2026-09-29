@@ -22,11 +22,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:fontFamily="@font/sf_pro"
-        android:textStyle="bold"
         android:gravity="center"
-        android:text="⚠️ UNHANDLED MESSAGE ALERT"
+        android:text="UNHANDLED MESSAGE ALERT"
         android:textColor="@color/color_alert"
-        android:textSize="22sp" />
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
     <!-- Description -->
     <TextView
@@ -106,10 +106,10 @@
             android:background="@drawable/bg_status_badge"
             android:backgroundTint="@color/color_alert"
             android:fontFamily="@font/sf_pro"
-            android:textStyle="bold"
-            android:text="🔒 Blacklist &amp; Suppress Notifications"
+            android:text="Blacklist &amp; Suppress Notifications"
             android:textColor="@color/white"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/btn_proceed_anyway"

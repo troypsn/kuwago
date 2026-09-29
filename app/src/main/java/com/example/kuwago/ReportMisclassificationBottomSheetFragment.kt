@@ -332,38 +332,12 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun isNetworkAvailable(context: Context): Boolean {
-        return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } catch (e: Exception) {
-            false
-        }
+        return CustomDialogHelper.isNetworkAvailable(context)
     }
 
     private fun showNoInternetDialog(customMessage: String? = null) {
         val ctx = context ?: return
-        val dialog = Dialog(ctx)
-        dialog.setContentView(R.layout.dialog_no_internet)
-        dialog.window?.let { window ->
-            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val displayMetrics = resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val horizontalMarginPx = (24 * displayMetrics.density).toInt()
-            val maxDialogWidthPx = (360 * displayMetrics.density).toInt()
-            val targetWidth = (screenWidth - (horizontalMarginPx * 2)).coerceAtMost(maxDialogWidthPx)
-            window.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-
-        if (customMessage != null) {
-            dialog.findViewById<TextView>(R.id.tv_no_internet_message)?.text = customMessage
-        }
-
-        dialog.findViewById<ImageView>(R.id.btn_close_no_internet)?.setOnClickListener { dialog.dismiss() }
-        dialog.findViewById<Button>(R.id.btn_ok_no_internet)?.setOnClickListener { dialog.dismiss() }
-
-        dialog.show()
+        CustomDialogHelper.showNoInternetDialog(ctx, customMessage)
     }
 
     private fun showSuccessScreen(view: View, result: DetectionResult, issueText: String) {
