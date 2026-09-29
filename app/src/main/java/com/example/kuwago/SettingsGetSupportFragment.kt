@@ -38,7 +38,7 @@ class SettingsGetSupportFragment : Fragment() {
         // Contact Developers — opens email
         view.findViewById<LinearLayout>(R.id.contact_developers_card).setOnClickListener {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:kuwago.support@gmail.com")
+                data = Uri.parse("mailto:kuwagosms.ph@gmail.com")
                 putExtra(Intent.EXTRA_SUBJECT, "Kuwago App — Support Request")
             }
             if (intent.resolveActivity(requireContext().packageManager) != null) {
