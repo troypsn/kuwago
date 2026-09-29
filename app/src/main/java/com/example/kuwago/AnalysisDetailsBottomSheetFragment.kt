@@ -85,10 +85,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
         val initialResult = detectionResult ?: return
 
-        // If the item was not yet scanned or stuck in scanning state without active DeepScan, scan locally immediately
-        val result = if ((initialResult.isScanning && !DeepScanManager.isScanning(initialResult)) ||
-            (initialResult.localVerdict == null && initialResult.rfProb == 0f && initialResult.xgbProb == 0f)
-        ) {
+        // If the item was not yet scanned or missing local sub-scores, fill in local ML metrics safely without wiping deep/URL scan data
+        val result = if (initialResult.isScanning && !DeepScanManager.isScanning(initialResult) && initialResult.cnnScore == null && initialResult.urlScore == null) {
             val local = LocalClassifier.classify(requireContext(), initialResult.message)
             val updated = local.copy(
                 id = initialResult.id,
@@ -103,6 +101,16 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             }
             detectionResult = updated
             updated
+        } else if (initialResult.rfProb == 0f && initialResult.xgbProb == 0f) {
+            val local = LocalClassifier.classify(requireContext(), initialResult.message)
+            val enriched = initialResult.copy(
+                localVerdict = initialResult.localVerdict ?: local.localVerdict,
+                rfProb = local.rfProb,
+                rfRawLogit = local.rfRawLogit,
+                xgbProb = local.xgbProb
+            )
+            detectionResult = enriched
+            enriched
         } else {
             initialResult
         }

@@ -101,6 +101,9 @@ interface AnalysisDao {
     @Query("SELECT * FROM url_analysis WHERE sms_id = :smsId")
     suspend fun getUrlAnalysesBySmsId(smsId: String): List<UrlAnalysisEntity>
 
+    @Query("DELETE FROM url_analysis WHERE sms_id = :smsId")
+    suspend fun deleteUrlAnalysesBySmsId(smsId: String)
+
     @Query("SELECT * FROM final_decision WHERE sms_id = :smsId")
     suspend fun getFinalDecisionBySmsId(smsId: String): FinalDecisionEntity?
 

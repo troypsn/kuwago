@@ -305,8 +305,8 @@ class HistoryFragment : Fragment() {
                     val urls = db.analysisDao().getUrlAnalysesBySmsId(sms.smsId)
                     val decision = db.analysisDao().getFinalDecisionBySmsId(sms.smsId)
 
-                    // If not yet processed or analysis missing, classify locally immediately to prevent stuck scanning
-                    if (sms.isProcessed == 0 || analysis == null || decision == null) {
+                    // If not yet processed AND analysis missing, classify locally immediately to prevent stuck scanning
+                    if (sms.isProcessed == 0 && analysis == null && decision == null) {
                         val local = LocalClassifier.classify(ctx, sms.messageContent)
                         val resolved = local.copy(
                             id = sms.smsId,
@@ -319,18 +319,23 @@ class HistoryFragment : Fragment() {
                         return@map resolved
                     }
 
-                    val classification = decision.riskLevel?.let {
+                    val classification = decision?.riskLevel?.let {
                         try { Classification.valueOf(it) } catch (_: Exception) { Classification.SAFE }
                     } ?: Classification.SAFE
 
-                    val prob = decision.finalScore ?: analysis.mlConfidence ?: 0f
+                    val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
                     val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
-                    val firstUrlEntity = urls.firstOrNull()
-                    val firstUrl = firstUrlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
-                    val hasDlRun = analysis.dlConfidence != null
-                    val isMalicious = firstUrlEntity?.isMalicious == 1
-                    val urlScore = firstUrlEntity?.urlScore ?: if (hasUrl && hasDlRun) (if (isMalicious) 1.0f else 0.0f) else null
-                    val urlVerdict = firstUrlEntity?.urlVerdict ?: if (hasUrl && hasDlRun) (if (isMalicious) "malicious" else "clean") else null
+                    val urlEntity = urls.firstOrNull { it.urlScore != null } ?: urls.firstOrNull()
+                    val firstUrl = urlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val isMalicious = urlEntity?.isMalicious == 1
+                    val urlScore = urlEntity?.urlScore ?: if (isMalicious) 1.0f else null
+                    val urlVerdict = urlEntity?.urlVerdict ?: if (urlScore != null) (if (urlScore >= 0.5f) "malicious" else "clean") else null
+
+                    val localClass = LocalClassifier.classify(ctx, sms.messageContent)
+                    val rfProb = localClass.rfProb
+                    val xgbProb = localClass.xgbProb
+                    val rfRawLogit = localClass.rfRawLogit
+                    val localVerdict = analysis?.mlPrediction ?: localClass.localVerdict
 
                     val rawResult = DetectionResult(
                         id = sms.smsId,
@@ -340,15 +345,17 @@ class HistoryFragment : Fragment() {
                         probability = prob,
                         isScanning = false,
                         timestamp = sms.receivedTimestamp,
-                        cnnScore = analysis.dlConfidence,
-                        cnnVerdict = analysis.dlPrediction,
+                        cnnScore = analysis?.dlConfidence,
+                        cnnVerdict = analysis?.dlPrediction,
+                        cnnProb = analysis?.dlConfidence,
                         urlFound = hasUrl,
                         extractedUrl = firstUrl,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
-                        localVerdict = analysis.mlPrediction,
-                        rfProb = analysis.mlConfidence ?: 0f,
-                        xgbProb = analysis.mlConfidence ?: 0f
+                        localVerdict = localVerdict,
+                        rfProb = rfProb,
+                        rfRawLogit = rfRawLogit,
+                        xgbProb = xgbProb
                     )
                     rawResult.copy(
                         probability = rawResult.calculateEnsembleScore(),

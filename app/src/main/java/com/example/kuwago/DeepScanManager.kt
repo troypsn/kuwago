@@ -82,8 +82,9 @@ object DeepScanManager {
                 val scanResult = SmishingDetector.analyze(appContext, result.message, result.sender, isManual = true)
                 val finalResult = scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
 
-                val hasDlData = finalResult.cnnScore != null || finalResult.cnnProb != null
-                if (hasDlData) {
+                val hasAnalysisData = finalResult.cnnScore != null || finalResult.cnnProb != null || (finalResult.urlFound && finalResult.urlScore != null)
+                if (hasAnalysisData) {
+                    com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(appContext, finalResult)
                     DetectionRepository.addDetection(appContext, finalResult)
                     withContext(Dispatchers.Main) {
                         onComplete?.invoke(finalResult)
