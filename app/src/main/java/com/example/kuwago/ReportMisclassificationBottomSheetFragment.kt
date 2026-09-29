@@ -59,7 +59,12 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        detectionResult = arguments?.getSerializable(ARG_RESULT) as? DetectionResult
+        detectionResult = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            arguments?.getSerializable(ARG_RESULT, DetectionResult::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            arguments?.getSerializable(ARG_RESULT) as? DetectionResult
+        }
     }
 
     override fun onCreateView(

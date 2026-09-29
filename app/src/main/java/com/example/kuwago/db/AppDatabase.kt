@@ -43,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "kuwago_encrypted.db"
             )
                 .openHelperFactory(factory)
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(true)
                 .build()
         }
     }

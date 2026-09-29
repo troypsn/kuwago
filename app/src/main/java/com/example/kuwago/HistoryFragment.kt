@@ -213,10 +213,13 @@ class HistoryFragment : Fragment() {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
     }
 
+    @Suppress("DEPRECATION")
     private fun requestSmsPermission() {
         requestPermissions(arrayOf(Manifest.permission.READ_SMS), REQUEST_CODE_SMS)
     }
 
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,

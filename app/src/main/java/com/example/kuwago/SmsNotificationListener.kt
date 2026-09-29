@@ -103,6 +103,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 if (lastMessage != null) {
                     val personName = lastMessage.person?.name?.toString()
                     val personUri = lastMessage.person?.uri
+                    @Suppress("DEPRECATION")
                     val legacySender = lastMessage.sender?.toString()
                     val senderIdentifier = personUri ?: personName ?: legacySender
                     if (!senderIdentifier.isNullOrBlank()) {
@@ -601,6 +602,7 @@ class SmsNotificationListener : NotificationListenerService() {
                         for (msg in style.messages) {
                             val personUri = msg.person?.uri?.removePrefix("tel:")
                             val personName = msg.person?.name?.toString()
+                            @Suppress("DEPRECATION")
                             val legacySender = msg.sender?.toString()
                             val senderToCheck = personUri ?: personName ?: legacySender
                             if (!senderToCheck.isNullOrBlank() && BlacklistRepository.isBlacklisted(this, senderToCheck)) {
