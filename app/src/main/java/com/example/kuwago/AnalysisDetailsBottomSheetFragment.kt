@@ -536,75 +536,79 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val xgbContrib = xgbProb * xgbWeight
         val computedMlScore = (rfContrib + xgbContrib).coerceIn(0f, 1f)
 
-        // Real Model sub-scores (Random Forest & XGBoost with weight percentages and computation)
+        // Real Model sub-scores (Raw Values)
         val isRfAlert = rfProb >= LocalClassifier.smishingThreshold
         val isRfOrange = rfProb >= LocalClassifier.suspiciousThreshold && !isRfAlert
         val isXgbAlert = xgbProb >= LocalClassifier.smishingThreshold
         val isXgbOrange = xgbProb >= LocalClassifier.suspiciousThreshold && !isXgbAlert
-        val isEnsembleAlert = computedMlScore >= LocalClassifier.smishingThreshold
-        val isEnsembleOrange = computedMlScore >= LocalClassifier.suspiciousThreshold && !isEnsembleAlert
+        val isLayerAlert = computedMlScore >= LocalClassifier.smishingThreshold
+        val isLayerOrange = computedMlScore >= LocalClassifier.suspiciousThreshold && !isLayerAlert
 
         addMetricRow(
             container,
-            "Random Forest ONNX (75%)",
-            String.format(Locale.US, "%.2f (contrib: %.2f)", rfProb, rfContrib),
+            "Random Forest ONNX",
+            String.format(Locale.US, "%.2f", rfProb),
             isAlert = isRfAlert,
             isOrange = isRfOrange
         )
         addMetricRow(
             container,
-            "XGBoost ONNX (25%)",
-            String.format(Locale.US, "%.2f (contrib: %.2f)", xgbProb, xgbContrib),
+            "XGBoost ONNX",
+            String.format(Locale.US, "%.2f", xgbProb),
             isAlert = isXgbAlert,
             isOrange = isXgbOrange
         )
         addMetricRow(
             container,
-            "Model computation",
-            String.format(Locale.US, "(0.75×%.2f) + (0.25×%.2f) = %.2f", rfProb, xgbProb, computedMlScore),
-            isAlert = isEnsembleAlert,
-            isOrange = isEnsembleOrange
+            "Layer Result",
+            String.format(Locale.US, "%.2f", computedMlScore),
+            isAlert = isLayerAlert,
+            isOrange = isLayerOrange
         )
 
-        // Real Urgency triggers
-        val hasUrgency = matchedUrgency.isNotEmpty()
-        addMetricRow(
-            container,
-            "Urgency indicators",
-            if (hasUrgency) "${matchedUrgency.size} detected (${matchedUrgency.take(2).joinToString(", ")})" else "None detected",
-            isAlert = false,
-            isOrange = hasUrgency
-        )
+        // Real Urgency triggers - only show if detected
+        if (matchedUrgency.isNotEmpty()) {
+            addMetricRow(
+                container,
+                "Urgency indicators",
+                "${matchedUrgency.size} detected (${matchedUrgency.take(2).joinToString(", ")})",
+                isAlert = false,
+                isOrange = true
+            )
+        }
 
-        // Real Financial / E-wallet
-        val hasBanks = matchedBanks.isNotEmpty()
-        addMetricRow(
-            container,
-            "Financial / E-wallet",
-            if (hasBanks) matchedBanks.joinToString(", ").uppercase() else "None detected",
-            isAlert = hasBanks,
-            isOrange = false
-        )
+        // Real Financial / E-wallet - only show if detected
+        if (matchedBanks.isNotEmpty()) {
+            addMetricRow(
+                container,
+                "Financial / E-wallet",
+                matchedBanks.joinToString(", ").uppercase(),
+                isAlert = true,
+                isOrange = false
+            )
+        }
 
-        // Real Telecom Keywords
-        val hasTelcos = matchedTelcos.isNotEmpty()
-        addMetricRow(
-            container,
-            "Telecom brand names",
-            if (hasTelcos) matchedTelcos.joinToString(", ").replaceFirstChar { it.uppercase() } else "None detected",
-            isAlert = false,
-            isOrange = hasTelcos
-        )
+        // Real Telecom Keywords - only show if detected
+        if (matchedTelcos.isNotEmpty()) {
+            addMetricRow(
+                container,
+                "Telecom brand names",
+                matchedTelcos.joinToString(", ").replaceFirstChar { it.uppercase() },
+                isAlert = false,
+                isOrange = true
+            )
+        }
 
-        // Real Call-to-action
-        val hasCta = matchedCtas.isNotEmpty()
-        addMetricRow(
-            container,
-            "Action prompts (CTA)",
-            if (hasCta) "${matchedCtas.size} found (${matchedCtas.first()})" else "None detected",
-            isAlert = hasCta,
-            isOrange = false
-        )
+        // Real Call-to-action - only show if detected
+        if (matchedCtas.isNotEmpty()) {
+            addMetricRow(
+                container,
+                "Action prompts (CTA)",
+                "${matchedCtas.size} found (${matchedCtas.first()})",
+                isAlert = true,
+                isOrange = false
+            )
+        }
 
         // Real Message length
         addMetricRow(
@@ -614,12 +618,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             isAlert = false
         )
 
-        // Real Link in message
+        // Real Link in message - only show if present
         if (result.urlFound) {
             val urlDisplay = result.extractedUrl ?: "Present"
             addMetricRow(container, "Contains link", urlDisplay, isAlert = true)
-        } else {
-            addMetricRow(container, "Contains link", "No links found", isAlert = false)
         }
     }
 
