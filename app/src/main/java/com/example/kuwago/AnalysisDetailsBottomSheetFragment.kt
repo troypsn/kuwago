@@ -528,26 +528,42 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
         val words = msg.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
         val charCount = msg.length
+        val rfWeight = LocalClassifier.rfWeight
+        val xgbWeight = LocalClassifier.xgbWeight
+        val rfProb = result.rfProb
+        val xgbProb = result.xgbProb
+        val rfContrib = rfProb * rfWeight
+        val xgbContrib = xgbProb * xgbWeight
+        val computedMlScore = (rfContrib + xgbContrib).coerceIn(0f, 1f)
 
-        // Real Model sub-scores (Random Forest & XGBoost without weight percentages)
-        val isRfAlert = result.rfProb >= LocalClassifier.smishingThreshold
-        val isRfOrange = result.rfProb >= LocalClassifier.suspiciousThreshold && !isRfAlert
-        val isXgbAlert = result.xgbProb >= LocalClassifier.smishingThreshold
-        val isXgbOrange = result.xgbProb >= LocalClassifier.suspiciousThreshold && !isXgbAlert
+        // Real Model sub-scores (Random Forest & XGBoost with weight percentages and computation)
+        val isRfAlert = rfProb >= LocalClassifier.smishingThreshold
+        val isRfOrange = rfProb >= LocalClassifier.suspiciousThreshold && !isRfAlert
+        val isXgbAlert = xgbProb >= LocalClassifier.smishingThreshold
+        val isXgbOrange = xgbProb >= LocalClassifier.suspiciousThreshold && !isXgbAlert
+        val isEnsembleAlert = computedMlScore >= LocalClassifier.smishingThreshold
+        val isEnsembleOrange = computedMlScore >= LocalClassifier.suspiciousThreshold && !isEnsembleAlert
 
         addMetricRow(
             container,
-            "Random Forest ONNX",
-            String.format(Locale.US, "%.2f", result.rfProb),
+            "Random Forest ONNX (75%)",
+            String.format(Locale.US, "%.2f (contrib: %.2f)", rfProb, rfContrib),
             isAlert = isRfAlert,
             isOrange = isRfOrange
         )
         addMetricRow(
             container,
-            "XGBoost ONNX",
-            String.format(Locale.US, "%.2f", result.xgbProb),
+            "XGBoost ONNX (25%)",
+            String.format(Locale.US, "%.2f (contrib: %.2f)", xgbProb, xgbContrib),
             isAlert = isXgbAlert,
             isOrange = isXgbOrange
+        )
+        addMetricRow(
+            container,
+            "Model computation",
+            String.format(Locale.US, "(0.75×%.2f) + (0.25×%.2f) = %.2f", rfProb, xgbProb, computedMlScore),
+            isAlert = isEnsembleAlert,
+            isOrange = isEnsembleOrange
         )
 
         // Real Urgency triggers

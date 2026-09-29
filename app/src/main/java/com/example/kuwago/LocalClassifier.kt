@@ -324,7 +324,13 @@ object LocalClassifier {
         val upperRatio = if (message.isNotEmpty()) message.count { it.isUpperCase() }.toFloat() / message.length else 0f
         if (upperRatio > 0.35f) score += 0.10f
 
-        val finalProb = score.coerceIn(0.02f, 0.98f)
+        // Random Forest heuristic (emphasizes lexical length, uppercase patterns, and URL structure)
+        val rfEstimated = (score + (if (upperRatio > 0.25f || message.length > 90) 0.04f else -0.02f)).coerceIn(0.02f, 0.98f)
+        // XGBoost heuristic (emphasizes sharp non-linear triggers: financial institutions and urgent CTAs)
+        val xgbEstimated = (score + (if (matchedBanks.isNotEmpty() || matchedUrgency.isNotEmpty() || matchedCtas.isNotEmpty()) 0.06f else -0.04f)).coerceIn(0.02f, 0.98f)
+
+        // Mathematical ensemble combination honoring rfWeight (0.75) and xgbWeight (0.25)
+        val finalProb = (rfWeight * rfEstimated + xgbWeight * xgbEstimated).coerceIn(0.02f, 0.98f)
 
         val classification = when {
             finalProb >= smishingThreshold -> Classification.SMISHING
@@ -352,9 +358,9 @@ object LocalClassifier {
             probability = finalProb,
             isScanning = false,
             overallExplanation = explanation,
-            rfProb = finalProb,
+            rfProb = rfEstimated,
             rfRawLogit = 0f,
-            xgbProb = finalProb,
+            xgbProb = xgbEstimated,
             cnnProb = null
         )
     }
@@ -590,18 +596,24 @@ object LocalClassifier {
             var xgbProb = 0.0f
 
             combinedInputTensor.use { tensor ->
-                // Random Forest expects input named "features"
+                // Random Forest ONNX Inference (Supports dynamic input names: "float_input", "features", etc.)
                 if (rfSession != null) {
                     try {
-                        val rfResult = rfSession?.run(mapOf("features" to tensor))
+                        val inName = rfSession?.inputNames?.iterator()?.next() ?: "float_input"
+                        val rfResult = rfSession?.run(mapOf(inName to tensor))
                         if (rfResult != null) {
                             try {
                                 val probValue = rfResult.get(1)
                                 if (probValue is OnnxTensor) {
                                     val floatBuf = probValue.floatBuffer
                                     floatBuf.rewind()
-                                    rfRawLogit = floatBuf.get(1)
-                                    rfProb = sigmoid(rfRawLogit)
+                                    if (floatBuf.remaining() >= 2) {
+                                        floatBuf.get() // P(class=0)
+                                        rfProb = floatBuf.get() // P(class=1)
+                                    } else if (floatBuf.remaining() == 1) {
+                                        val v = floatBuf.get()
+                                        rfProb = if (v in 0f..1f) v else sigmoid(v)
+                                    }
                                 }
                             } finally {
                                 rfResult.close()
@@ -612,17 +624,24 @@ object LocalClassifier {
                     }
                 }
 
-                // XGBoost expects input named "features"
+                // XGBoost ONNX Inference (Supports dynamic input names: "float_input", "features", etc.)
                 if (xgbSession != null) {
                     try {
-                        val xgbResult = xgbSession?.run(mapOf("features" to tensor))
+                        val inName = xgbSession?.inputNames?.iterator()?.next() ?: "float_input"
+                        val xgbResult = xgbSession?.run(mapOf(inName to tensor))
                         if (xgbResult != null) {
                             try {
                                 val probValue = xgbResult.get(1)
                                 if (probValue is OnnxTensor) {
                                     val floatBuf = probValue.floatBuffer
                                     floatBuf.rewind()
-                                    xgbProb = floatBuf.get(1)
+                                    if (floatBuf.remaining() >= 2) {
+                                        floatBuf.get() // P(class=0)
+                                        xgbProb = floatBuf.get() // P(class=1)
+                                    } else if (floatBuf.remaining() == 1) {
+                                        val v = floatBuf.get()
+                                        xgbProb = if (v in 0f..1f) v else sigmoid(v)
+                                    }
                                 }
                             } finally {
                                 xgbResult.close()
@@ -634,17 +653,15 @@ object LocalClassifier {
                 }
             }
 
-            // If one model failed or wasn't loaded, adapt weights gracefully
+            // Calculate local ensemble probability using model weights (e.g. 75% RF + 25% XGB)
             val localProb = when {
                 rfSession != null && xgbSession != null && (rfProb > 0f || xgbProb > 0f) -> {
-                    rfWeight * rfProb + xgbWeight * xgbProb
+                    (rfWeight * rfProb + xgbWeight * xgbProb).coerceIn(0f, 1f)
                 }
                 xgbSession != null && xgbProb > 0f -> {
-                    rfProb = xgbProb // Mirror for UI display
                     xgbProb
                 }
                 rfSession != null && rfProb > 0f -> {
-                    xgbProb = rfProb // Mirror for UI display
                     rfProb
                 }
                 else -> {
