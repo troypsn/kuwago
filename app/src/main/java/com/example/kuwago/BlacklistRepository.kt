@@ -48,7 +48,7 @@ object BlacklistRepository {
                             sender = sender,
                             riskLevel = RiskLevel.valueOf(obj.optString("riskLevel", "HIGH")),
                             flaggedCount = obj.optInt("flaggedCount", 1),
-                            method = BlacklistMethod.valueOf(obj.optString("method", "MANUAL").replace("AUTO", "MANUAL")),
+                            method = BlacklistMethod.valueOf(obj.optString("method", "MANUAL")),
                             timestamp = obj.optLong("timestamp", System.currentTimeMillis())
                         )
                     )
@@ -168,8 +168,26 @@ object BlacklistRepository {
     }
 
     fun isAutoBlacklistEnabled(context: Context): Boolean {
-        val prefs = context.getSharedPreferences("kuwago_settings", Context.MODE_PRIVATE)
-        return prefs.getBoolean("auto_blacklist", false)
+        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(SettingsFragment.KEY_AUTO_BLACKLIST_ENABLED, false) ||
+               prefs.getBoolean("auto_blacklist", false)
+    }
+
+    fun getAutoBlacklistThreshold(context: Context): String {
+        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(
+            SettingsFragment.KEY_AUTO_BLACKLIST_THRESHOLD,
+            SettingsFragment.THRESHOLD_SUSPICIOUS_AND_ABOVE
+        ) ?: SettingsFragment.THRESHOLD_SUSPICIOUS_AND_ABOVE
+    }
+
+    fun shouldAutoBlacklist(context: Context, classification: Classification): Boolean {
+        if (!isAutoBlacklistEnabled(context)) return false
+        val threshold = getAutoBlacklistThreshold(context)
+        return when (threshold) {
+            SettingsFragment.THRESHOLD_HARMFUL -> classification == Classification.SMISHING
+            else -> classification == Classification.SMISHING || classification == Classification.SUSPICIOUS
+        }
     }
 
     fun normalizeSender(sender: String): String {

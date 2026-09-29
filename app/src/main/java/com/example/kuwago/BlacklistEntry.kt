@@ -19,5 +19,6 @@ enum class RiskLevel {
 }
 
 enum class BlacklistMethod {
-    MANUAL
+    MANUAL,
+    AUTO
 }

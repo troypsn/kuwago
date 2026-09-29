@@ -24,6 +24,12 @@ class SettingsFragment : Fragment() {
         const val MODE_ON_APP          = "on_app"
         const val MODE_DISABLED        = "disabled"
 
+        // Auto-blacklist Setting Keys
+        const val KEY_AUTO_BLACKLIST_ENABLED   = "auto_blacklist_enabled"
+        const val KEY_AUTO_BLACKLIST_THRESHOLD = "auto_blacklist_threshold"
+        const val THRESHOLD_SUSPICIOUS_AND_ABOVE = "suspicious_and_above"
+        const val THRESHOLD_HARMFUL             = "harmful"
+
         // NTC Auto-report Setting
         const val KEY_AUTO_REPORT_NTC  = "auto_report_ntc"
 
@@ -57,6 +63,10 @@ class SettingsFragment : Fragment() {
 
         view.findViewById<View>(R.id.settings_row_online_scan).setOnClickListener {
             openSubPage(SettingsOnlineScanFragment())
+        }
+
+        view.findViewById<View>(R.id.settings_row_auto_blacklist)?.setOnClickListener {
+            openSubPage(SettingsAutoBlacklistFragment())
         }
 
         view.findViewById<View>(R.id.settings_row_vpn_shield).setOnClickListener {

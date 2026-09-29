@@ -95,8 +95,14 @@
 
     <!-- Auto-blacklist -->
     <string name="settings_auto_blacklist_title">Auto-blacklist</string>
-    <string name="settings_auto_blacklist_desc">Blacklist high-risk senders automatically</string>
-    <string name="settings_auto_blacklist_body">When enabled, senders whose messages are flagged as high-risk phishing attempts will be automatically added to your blacklist. Future messages from these senders will be silently blocked.\n\nThis helps you stay protected without needing to manually review and block each flagged contact.</string>
+    <string name="settings_auto_blacklist_desc">Blacklist malicious senders automatically</string>
+    <string name="settings_auto_blacklist_switch_label">Auto-blacklist</string>
+    <string name="settings_auto_blacklist_body">It auto blacklists senders that are classified as the option below.\n\nFuture incoming messages from blacklisted senders will be silently blocked from your device.</string>
+    <string name="settings_auto_blacklist_block_classification_label">Block-Classification</string>
+    <string name="settings_auto_blacklist_opt_suspicious_above">Suspicious and above</string>
+    <string name="settings_auto_blacklist_opt_harmful">Harmful</string>
+    <string name="settings_auto_blacklist_desc_suspicious_above">Senders whose incoming messages are classified as Suspicious or Harmful (Smishing) will be automatically added to your Blacklist and blocked from contacting you.</string>
+    <string name="settings_auto_blacklist_desc_harmful">Only senders whose incoming messages are classified as Harmful (Smishing) will be automatically added to your Blacklist and blocked from contacting you.</string>
 
     <!-- Deep Analysis -->
     <string name="settings_deep_analysis_title">Deep Analysis</string>

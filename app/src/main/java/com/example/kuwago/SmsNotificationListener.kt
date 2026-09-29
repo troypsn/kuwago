@@ -254,6 +254,15 @@ class SmsNotificationListener : NotificationListenerService() {
                     Log.i("SmsNotifListener", "[INSTANT] THREAT (${finalResult.classification}) — posting result for $sender")
                     postThreatNotification(sender, finalResult.classification, confidencePct)
 
+                    // Check if Auto-Blacklist should trigger for this sender
+                    if (BlacklistRepository.shouldAutoBlacklist(this@SmsNotificationListener, finalResult.classification) &&
+                        !BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender)
+                    ) {
+                        val risk = if (finalResult.classification == Classification.SMISHING) RiskLevel.HIGH else RiskLevel.MEDIUM
+                        BlacklistRepository.addOrUpdateEntry(this@SmsNotificationListener, sender, risk, BlacklistMethod.AUTO)
+                        Log.i("SmsNotifListener", "[INSTANT] Auto-blacklisted sender: $sender (classification=${finalResult.classification})")
+                    }
+
                     // Save pending warning for in-app overlay
                     if (!BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender) &&
                         !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, sender)
@@ -328,6 +337,15 @@ class SmsNotificationListener : NotificationListenerService() {
                     postSafeResultNotification(sender, confidencePct)
                 } else {
                     postThreatNotification(sender, finalResult.classification, confidencePct)
+
+                    // Check if Auto-Blacklist should trigger for this sender
+                    if (BlacklistRepository.shouldAutoBlacklist(this@SmsNotificationListener, finalResult.classification) &&
+                        !BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender)
+                    ) {
+                        val risk = if (finalResult.classification == Classification.SMISHING) RiskLevel.HIGH else RiskLevel.MEDIUM
+                        BlacklistRepository.addOrUpdateEntry(this@SmsNotificationListener, sender, risk, BlacklistMethod.AUTO)
+                        Log.i("SmsNotifListener", "[PASSTHROUGH] Auto-blacklisted sender: $sender (classification=${finalResult.classification})")
+                    }
 
                     if (!BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender) &&
                         !BlacklistRepository.isWarningAcknowledged(this@SmsNotificationListener, sender)

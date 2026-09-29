@@ -319,13 +319,14 @@ object SmishingDetector {
                     cnnProb = cnnScore
                 )
 
-                if (classification == Classification.SMISHING && BlacklistRepository.isAutoBlacklistEnabled(context)) {
-                    Log.i("SmishingDetector", "Auto-blacklisting high-risk sender")
+                if (BlacklistRepository.shouldAutoBlacklist(context, classification)) {
+                    Log.i("SmishingDetector", "Auto-blacklisting sender $sender (classification=$classification)")
+                    val risk = if (classification == Classification.SMISHING) RiskLevel.HIGH else RiskLevel.MEDIUM
                     BlacklistRepository.addOrUpdateEntry(
                         context = context,
                         sender = sender,
-                        riskLevel = RiskLevel.HIGH,
-                        method = BlacklistMethod.MANUAL
+                        riskLevel = risk,
+                        method = BlacklistMethod.AUTO
                     )
                 }
 

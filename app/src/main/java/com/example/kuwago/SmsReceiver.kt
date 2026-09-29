@@ -102,6 +102,15 @@ class SmsReceiver : BroadcastReceiver() {
                         }
                         Log.d("SmsReceiver", "Analysis completed for id=$smsId")
 
+                        // Check if Auto-Blacklist should trigger for this sender
+                        if (BlacklistRepository.shouldAutoBlacklist(context, finalResult.classification) &&
+                            !BlacklistRepository.isBlacklisted(context, sender)
+                        ) {
+                            val risk = if (finalResult.classification == Classification.SMISHING) RiskLevel.HIGH else RiskLevel.MEDIUM
+                            BlacklistRepository.addOrUpdateEntry(context, sender, risk, BlacklistMethod.AUTO)
+                            Log.i("SmsReceiver", "Auto-blacklisted sender: $sender (classification=${finalResult.classification})")
+                        }
+
                         if (finalResult.classification != Classification.SAFE &&
                             !BlacklistRepository.isBlacklisted(context, sender) &&
                             !BlacklistRepository.isWarningAcknowledged(context, sender)
