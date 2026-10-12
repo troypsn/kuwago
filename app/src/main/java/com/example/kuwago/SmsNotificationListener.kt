@@ -68,6 +68,9 @@ class SmsNotificationListener : NotificationListenerService() {
         val extras = notification.extras
 
         val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val systemStatus = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+        if (systemStatus == SettingsFragment.STATUS_OFF) return
+
         val scanOtherApps = prefs.getBoolean(SettingsFragment.KEY_SCAN_OTHER_APPS, true)
         val scanInstantly = prefs.getBoolean(SettingsFragment.KEY_SCAN_INSTANTLY, false)
 

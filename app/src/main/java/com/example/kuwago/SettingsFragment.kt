@@ -33,6 +33,15 @@ class SettingsFragment : Fragment() {
         // NTC Auto-report Setting
         const val KEY_AUTO_REPORT_NTC  = "auto_report_ntc"
 
+        // Developer Mode Setting
+        const val KEY_DEVELOPER_MODE   = "developer_mode"
+
+        // System Status Setting Keys
+        const val KEY_SYSTEM_STATUS    = "system_status"
+        const val STATUS_ON            = "on"
+        const val STATUS_OFF           = "off"
+        const val STATUS_DATA_SAVER    = "data_saver"
+
         // Legacy keys kept for backwards compatibility
         const val KEY_URL_SCAN         = "url_scan"
         const val KEY_DEEP_ANALYSIS    = "deep_analysis"
@@ -95,6 +104,30 @@ class SettingsFragment : Fragment() {
 
         view.findViewById<View>(R.id.settings_row_terms).setOnClickListener {
             TermsBottomSheetFragment().show(parentFragmentManager, "TermsBottomSheet")
+        }
+
+        // Developer Mode Toggle
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val switchDevMode = view.findViewById<SwitchCompat>(R.id.switch_developer_mode)
+        switchDevMode?.isChecked = prefs.getBoolean(KEY_DEVELOPER_MODE, false)
+
+        var isProgrammaticDevChange = false
+        switchDevMode?.setOnCheckedChangeListener { _, isChecked ->
+            if (isProgrammaticDevChange) return@setOnCheckedChangeListener
+            prefs.edit().putBoolean(KEY_DEVELOPER_MODE, isChecked).apply()
+            if (isChecked) {
+                CustomDialogHelper.showInfoDialog(
+                    context = requireContext(),
+                    title = "Developer Mode",
+                    message = "Turning this on will show you extra details specifically made for developers.",
+                    iconRes = R.drawable.ic_brain,
+                    buttonText = "Got it"
+                )
+            }
+        }
+
+        view.findViewById<View>(R.id.settings_row_developer_mode)?.setOnClickListener {
+            switchDevMode?.toggle()
         }
     }
 

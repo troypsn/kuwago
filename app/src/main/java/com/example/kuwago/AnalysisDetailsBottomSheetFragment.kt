@@ -1,6 +1,7 @@
 package com.example.kuwago
 
 import android.app.Dialog
+import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -167,6 +168,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         setupAnalysisAccordions(view, result)
         setupCombinedScore(view, result)
         setupSecurityActions(view, result)
+        applyDeveloperMode(view)
 
         // Observe DetectionRepository to update live when background scan completes
         DetectionRepository.detections.observe(viewLifecycleOwner) { liveList ->
@@ -180,6 +182,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 setupAnalysisAccordions(view, updated)
                 setupCombinedScore(view, updated)
                 setupSecurityActions(view, updated)
+                applyDeveloperMode(view)
 
                 val btnDeep = view.findViewById<ImageView>(R.id.btn_deep_scan)
                 val pbDeep = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
@@ -197,6 +200,32 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     btnDeep?.setOnClickListener { runDeepAnalysis(view, updated) }
                 }
             }
+        }
+    }
+
+    private fun applyDeveloperMode(view: View) {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val isDevMode = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
+
+        val tvLayerMlTitle = view.findViewById<TextView>(R.id.tv_layer_ml_title)
+        val tvLayerDlTitle = view.findViewById<TextView>(R.id.tv_layer_dl_title)
+        val tvLayerUrlTitle = view.findViewById<TextView>(R.id.tv_layer_url_title)
+        val llAnalysisBreakdown = view.findViewById<View>(R.id.ll_analysis_breakdown_section)
+        val llCombinedScore = view.findViewById<View>(R.id.ll_combined_score_card)
+
+        if (isDevMode) {
+            tvLayerMlTitle?.text = "ML Layer"
+            tvLayerDlTitle?.text = "DL Layer"
+            tvLayerUrlTitle?.text = "URL Scan"
+            llAnalysisBreakdown?.visibility = View.VISIBLE
+            llCombinedScore?.visibility = View.VISIBLE
+        } else {
+            tvLayerMlTitle?.text = "Local Scan"
+            tvLayerDlTitle?.text = "Online Scan"
+            tvLayerUrlTitle?.text = "URL Scan"
+            llAnalysisBreakdown?.visibility = View.GONE
+            llCombinedScore?.visibility = View.GONE
         }
     }
 

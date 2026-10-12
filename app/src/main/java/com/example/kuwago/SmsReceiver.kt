@@ -15,6 +15,13 @@ class SmsReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
+            val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            val systemStatus = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+            if (systemStatus == SettingsFragment.STATUS_OFF) {
+                Log.i("SmsReceiver", "System status is OFF — skipping SMS processing")
+                return
+            }
+
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (messages.isNullOrEmpty()) return
 

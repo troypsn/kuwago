@@ -1,10 +1,17 @@
 package com.example.kuwago
 
+import android.app.Dialog
+import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -18,6 +25,9 @@ class HomeFragment : Fragment() {
     private lateinit var tvSmsScannedCount: TextView
     private lateinit var tvSuspiciousCount: TextView
     private lateinit var tvSmishingCount: TextView
+    private lateinit var llSystemStatusButton: View
+    private lateinit var tvSystemStatus: TextView
+    private lateinit var viewStatusDot: View
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,6 +39,9 @@ class HomeFragment : Fragment() {
         tvSmsScannedCount = view.findViewById(R.id.tv_sms_scanned_count)
         tvSuspiciousCount = view.findViewById(R.id.tv_suspicious_count)
         tvSmishingCount = view.findViewById(R.id.tv_smishing_count)
+        llSystemStatusButton = view.findViewById(R.id.ll_system_status_button)
+        tvSystemStatus = view.findViewById(R.id.tv_system_status)
+        viewStatusDot = view.findViewById(R.id.view_status_dot)
         return view
     }
 
@@ -36,6 +49,11 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         context?.let { DetectionRepository.loadIfNeeded(it) }
+
+        updateStatusUI()
+        llSystemStatusButton.setOnClickListener {
+            showChangeStatusDialog()
+        }
 
         // "View All" link navigates to History tab
         view.findViewById<TextView>(R.id.tv_view_all)?.setOnClickListener {
@@ -55,6 +73,101 @@ class HomeFragment : Fragment() {
         DetectionRepository.detections.observe(viewLifecycleOwner) { results ->
             updateDetectionsList(results)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateStatusUI()
+    }
+
+    private fun updateStatusUI() {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val status = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+
+        when (status) {
+            SettingsFragment.STATUS_OFF -> {
+                tvSystemStatus.text = "Status: Off"
+                viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FF4D55"))
+            }
+            SettingsFragment.STATUS_DATA_SAVER -> {
+                tvSystemStatus.text = "Status: Data Saver"
+                viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#F07048"))
+            }
+            else -> {
+                tvSystemStatus.text = "Status: On"
+                viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#26CE6B"))
+            }
+        }
+    }
+
+    private fun showChangeStatusDialog() {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val currentStatus = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+
+        val dialog = Dialog(ctx)
+        dialog.setContentView(R.layout.dialog_change_system_status)
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val displayMetrics = resources.displayMetrics
+            val horizontalMarginPx = (24 * displayMetrics.density).toInt()
+            val maxDialogWidthPx = (360 * displayMetrics.density).toInt()
+            val targetWidth = (displayMetrics.widthPixels - (horizontalMarginPx * 2)).coerceAtMost(maxDialogWidthPx)
+            window.setLayout(targetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        val btnClose = dialog.findViewById<ImageView>(R.id.btn_close_dialog)
+        val btnCancel = dialog.findViewById<Button>(R.id.btn_cancel_status)
+        val optOn = dialog.findViewById<View>(R.id.option_status_on)
+        val optOff = dialog.findViewById<View>(R.id.option_status_off)
+        val optDataSaver = dialog.findViewById<View>(R.id.option_status_data_saver)
+        val checkOn = dialog.findViewById<ImageView>(R.id.iv_check_on)
+        val checkOff = dialog.findViewById<ImageView>(R.id.iv_check_off)
+        val checkDataSaver = dialog.findViewById<ImageView>(R.id.iv_check_data_saver)
+
+        checkOn.visibility = if (currentStatus == SettingsFragment.STATUS_ON) View.VISIBLE else View.GONE
+        checkOff.visibility = if (currentStatus == SettingsFragment.STATUS_OFF) View.VISIBLE else View.GONE
+        checkDataSaver.visibility = if (currentStatus == SettingsFragment.STATUS_DATA_SAVER) View.VISIBLE else View.GONE
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        optOn.setOnClickListener {
+            prefs.edit()
+                .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+                .putBoolean(SettingsFragment.KEY_DATA_SAVER, false)
+                .apply()
+            updateStatusUI()
+            dialog.dismiss()
+        }
+
+        optOff.setOnClickListener {
+            prefs.edit()
+                .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_OFF)
+                .apply()
+            try {
+                val stopVpnIntent = Intent(ctx, KuwagoVpnService::class.java).apply {
+                    action = KuwagoVpnService.ACTION_STOP
+                }
+                ctx.startService(stopVpnIntent)
+            } catch (e: Exception) {
+                // Ignore if service cannot be started
+            }
+            updateStatusUI()
+            dialog.dismiss()
+        }
+
+        optDataSaver.setOnClickListener {
+            prefs.edit()
+                .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_DATA_SAVER)
+                .putBoolean(SettingsFragment.KEY_DATA_SAVER, true)
+                .apply()
+            updateStatusUI()
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun updateDetectionsList(results: List<DetectionResult>) {
