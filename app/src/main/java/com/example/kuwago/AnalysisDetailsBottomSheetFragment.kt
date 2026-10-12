@@ -176,29 +176,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             val updated = liveList.find {
                 it.id == currentRes.id || (it.message == currentRes.message && it.sender == currentRes.sender)
             }
-            if (updated != null && (currentRes.isScanning && !updated.isScanning || updated.cnnScore != currentRes.cnnScore)) {
-                detectionResult = updated
-                setupClassificationSection(view, updated)
-                setupAnalysisAccordions(view, updated)
-                setupCombinedScore(view, updated)
-                setupSecurityActions(view, updated)
-                applyDeveloperMode(view)
-
-                val btnDeep = view.findViewById<ImageView>(R.id.btn_deep_scan)
-                val pbDeep = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
-                val updatedHasDl = updated.cnnScore != null || updated.cnnProb != null
-                if (updatedHasDl) {
-                    btnDeep?.visibility = View.GONE
-                    pbDeep?.visibility = View.GONE
-                } else if (updated.isScanning) {
-                    btnDeep?.visibility = View.GONE
-                    pbDeep?.visibility = View.VISIBLE
-                } else {
-                    pbDeep?.visibility = View.GONE
-                    btnDeep?.visibility = View.VISIBLE
-                    btnDeep?.isEnabled = true
-                    btnDeep?.setOnClickListener { runDeepAnalysis(view, updated) }
-                }
+            if (updated != null && (updated != currentRes || currentRes.isScanning != updated.isScanning || currentRes.cnnScore != updated.cnnScore || currentRes.urlScore != updated.urlScore)) {
+                applyCompletedDlResult(view, updated)
             }
         }
     }
@@ -221,7 +200,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             llAnalysisBreakdown?.visibility = View.VISIBLE
             llCombinedScore?.visibility = View.VISIBLE
         } else {
-            tvLayerMlTitle?.text = "Local Scan"
+            tvLayerMlTitle?.text = "Local Layer"
             tvLayerDlTitle?.text = "Online Scan"
             tvLayerUrlTitle?.text = "URL Scan"
             llAnalysisBreakdown?.visibility = View.GONE
@@ -860,68 +839,24 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun applyCompletedDlResult(view: View, finalResult: DetectionResult) {
-        val tvDlScoreBadge = view.findViewById<TextView>(R.id.tv_dl_score_badge) ?: return
-        val tvDlConfidenceVal = view.findViewById<TextView>(R.id.tv_dl_confidence_val) ?: return
-        val pbDlConfidence = view.findViewById<ProgressBar>(R.id.pb_dl_confidence) ?: return
-        val tvDlClassifiedBadge = view.findViewById<TextView>(R.id.tv_dl_classified_badge) ?: return
-        val llDlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_dl_metrics_container) ?: return
-        val llDlPendingState = view.findViewById<LinearLayout>(R.id.ll_dl_pending_state) ?: return
-        val llDlResultState = view.findViewById<LinearLayout>(R.id.ll_dl_result_state) ?: return
+        detectionResult = finalResult
+
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
         val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)
-
         pbDeepScanLoading?.visibility = View.GONE
-        btnDeepScan?.visibility = View.GONE
-
-        val dlScore = finalResult.cnnScore ?: finalResult.cnnProb ?: 0f
-        val dlColor = getVerdictColor(dlScore)
-        tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
-        tvDlScoreBadge.setTextColor(dlColor)
-        tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
-        tvDlConfidenceVal.setTextColor(dlColor)
-        pbDlConfidence.progress = (dlScore * 100).toInt()
-        pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
-        val dlVerdict = getVerdictText(dlScore)
-        tvDlClassifiedBadge.text = if (dlVerdict == "Safe") "Classified as safe" else "Classified as ${dlVerdict.lowercase()}"
-        tvDlClassifiedBadge.setTextColor(dlColor)
-        TextViewCompat.setCompoundDrawableTintList(tvDlClassifiedBadge, ColorStateList.valueOf(dlColor))
-        populateDlMetrics(llDlMetricsContainer, finalResult, dlScore)
-        llDlPendingState.visibility = View.GONE
-        llDlResultState.visibility = View.VISIBLE
+        val hasDl = finalResult.cnnScore != null || finalResult.cnnProb != null
+        if (hasDl) {
+            btnDeepScan?.visibility = View.GONE
+        } else {
+            btnDeepScan?.visibility = View.VISIBLE
+            btnDeepScan?.isEnabled = true
+        }
 
         setupClassificationSection(view, finalResult)
-
-        val llUrlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_url_metrics_container)
-        if (llUrlMetricsContainer != null) {
-            populateUrlMetrics(llUrlMetricsContainer, finalResult, finalResult.urlScore ?: 0f)
-        }
-        val tvUrlScoreBadge = view.findViewById<TextView>(R.id.tv_url_score_badge)
-        val pbUrlConfidence = view.findViewById<ProgressBar>(R.id.pb_url_confidence)
-        val tvUrlConfidenceVal = view.findViewById<TextView>(R.id.tv_url_confidence_val)
-        val tvUrlClassifiedBadge = view.findViewById<TextView>(R.id.tv_url_classified_badge)
-        if (finalResult.urlFound) {
-            val urlScore = finalResult.urlScore ?: 0f
-            val urlColor = getVerdictColor(urlScore)
-            tvUrlScoreBadge?.text = if (finalResult.urlScore != null) String.format(Locale.US, "%.2f", urlScore) else "–"
-            tvUrlScoreBadge?.setTextColor(urlColor)
-            pbUrlConfidence?.progress = (urlScore * 100).toInt()
-            pbUrlConfidence?.progressTintList = ColorStateList.valueOf(urlColor)
-            tvUrlConfidenceVal?.text = String.format(Locale.US, "%.2f", urlScore)
-            tvUrlConfidenceVal?.setTextColor(urlColor)
-            val vStr = finalResult.urlVerdict?.lowercase()
-            tvUrlClassifiedBadge?.text = when {
-                vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
-                vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
-                else -> "Classified as safe"
-            }
-            tvUrlClassifiedBadge?.setTextColor(urlColor)
-            tvUrlClassifiedBadge?.let {
-                TextViewCompat.setCompoundDrawableTintList(it, ColorStateList.valueOf(urlColor))
-            }
-        }
-
+        setupAnalysisAccordions(view, finalResult)
         setupCombinedScore(view, finalResult)
         setupSecurityActions(view, finalResult)
+        applyDeveloperMode(view)
     }
 
     private fun runDeepAnalysis(view: View, result: DetectionResult) {

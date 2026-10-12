@@ -66,11 +66,9 @@
             android:backgroundTint="#26CE6B" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
@@ -90,14 +88,6 @@
                 android:textColor="#888888"
                 android:textSize="12sp" />
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_check_on"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_shield"
-            android:tint="#26CE6B"
-            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Option: Off -->
@@ -120,11 +110,9 @@
             android:backgroundTint="#FF4D55" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
@@ -144,19 +132,11 @@
                 android:textColor="#888888"
                 android:textSize="12sp" />
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_check_off"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_block"
-            android:tint="#FF4D55"
-            android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Option: Data Saver -->
+    <!-- Option: Local Layer -->
     <LinearLayout
-        android:id="@+id/option_status_data_saver"
+        android:id="@+id/option_status_local_layer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
@@ -174,17 +154,15 @@
             android:backgroundTint="#F07048" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Data Saver"
+                android:text="Local Layer"
                 android:textColor="#FFFFFFFF"
                 android:textSize="15sp"
                 android:fontFamily="@font/sf_pro"
@@ -198,14 +176,6 @@
                 android:textColor="#888888"
                 android:textSize="12sp" />
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_check_data_saver"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_link"
-            android:tint="#F07048"
-            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Cancel Button -->

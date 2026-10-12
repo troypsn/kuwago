@@ -91,7 +91,7 @@ class HomeFragment : Fragment() {
                 viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FF4D55"))
             }
             SettingsFragment.STATUS_DATA_SAVER -> {
-                tvSystemStatus.text = "Status: Data Saver"
+                tvSystemStatus.text = "Status: Local Layer"
                 viewStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#F07048"))
             }
             else -> {
@@ -104,7 +104,6 @@ class HomeFragment : Fragment() {
     private fun showChangeStatusDialog() {
         val ctx = context ?: return
         val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
-        val currentStatus = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
 
         val dialog = Dialog(ctx)
         dialog.setContentView(R.layout.dialog_change_system_status)
@@ -121,14 +120,7 @@ class HomeFragment : Fragment() {
         val btnCancel = dialog.findViewById<Button>(R.id.btn_cancel_status)
         val optOn = dialog.findViewById<View>(R.id.option_status_on)
         val optOff = dialog.findViewById<View>(R.id.option_status_off)
-        val optDataSaver = dialog.findViewById<View>(R.id.option_status_data_saver)
-        val checkOn = dialog.findViewById<ImageView>(R.id.iv_check_on)
-        val checkOff = dialog.findViewById<ImageView>(R.id.iv_check_off)
-        val checkDataSaver = dialog.findViewById<ImageView>(R.id.iv_check_data_saver)
-
-        checkOn.visibility = if (currentStatus == SettingsFragment.STATUS_ON) View.VISIBLE else View.GONE
-        checkOff.visibility = if (currentStatus == SettingsFragment.STATUS_OFF) View.VISIBLE else View.GONE
-        checkDataSaver.visibility = if (currentStatus == SettingsFragment.STATUS_DATA_SAVER) View.VISIBLE else View.GONE
+        val optLocalLayer = dialog.findViewById<View>(R.id.option_status_local_layer)
 
         btnClose.setOnClickListener { dialog.dismiss() }
         btnCancel.setOnClickListener { dialog.dismiss() }
@@ -158,7 +150,7 @@ class HomeFragment : Fragment() {
             dialog.dismiss()
         }
 
-        optDataSaver.setOnClickListener {
+        optLocalLayer.setOnClickListener {
             prefs.edit()
                 .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_DATA_SAVER)
                 .putBoolean(SettingsFragment.KEY_DATA_SAVER, true)

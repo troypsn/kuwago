@@ -105,30 +105,6 @@ class SettingsFragment : Fragment() {
         view.findViewById<View>(R.id.settings_row_terms).setOnClickListener {
             TermsBottomSheetFragment().show(parentFragmentManager, "TermsBottomSheet")
         }
-
-        // Developer Mode Toggle
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val switchDevMode = view.findViewById<SwitchCompat>(R.id.switch_developer_mode)
-        switchDevMode?.isChecked = prefs.getBoolean(KEY_DEVELOPER_MODE, false)
-
-        var isProgrammaticDevChange = false
-        switchDevMode?.setOnCheckedChangeListener { _, isChecked ->
-            if (isProgrammaticDevChange) return@setOnCheckedChangeListener
-            prefs.edit().putBoolean(KEY_DEVELOPER_MODE, isChecked).apply()
-            if (isChecked) {
-                CustomDialogHelper.showInfoDialog(
-                    context = requireContext(),
-                    title = "Developer Mode",
-                    message = "Turning this on will show you extra details specifically made for developers.",
-                    iconRes = R.drawable.ic_brain,
-                    buttonText = "Got it"
-                )
-            }
-        }
-
-        view.findViewById<View>(R.id.settings_row_developer_mode)?.setOnClickListener {
-            switchDevMode?.toggle()
-        }
     }
 
     private fun openSubPage(fragment: Fragment) {
