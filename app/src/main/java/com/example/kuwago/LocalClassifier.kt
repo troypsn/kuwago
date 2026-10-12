@@ -279,8 +279,8 @@ object LocalClassifier {
 
     fun containsShortenedUrl(text: String): Boolean {
         if (text.isBlank()) return false
-        val extracted = extractUrl(text)
-        if (extracted != null && isShortenedUrl(extracted)) return true
+        val urls = extractUrls(text)
+        if (urls.any { isShortenedUrl(it) }) return true
         return URL_SHORTENER_REGEX.matcher(text).find()
     }
 
@@ -314,8 +314,11 @@ object LocalClassifier {
     }
 
     fun classifyWithHeuristics(message: String): DetectionResult {
-        val extractedUrl = extractUrl(message)
-        val hasUrl = !extractedUrl.isNullOrBlank()
+        val extractedUrls = extractUrls(message)
+        val extractedUrl = extractedUrls.firstOrNull()
+        val hasUrl = extractedUrls.isNotEmpty()
+        val extractedEmails = extractEmails(message)
+        val hasEmail = extractedEmails.isNotEmpty()
         val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
 
         val matchedBanks = findMatchedBanks(message)
@@ -334,6 +337,9 @@ object LocalClassifier {
                 isScanning = false,
                 urlFound = true,
                 extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = hasEmail,
+                extractedEmails = extractedEmails,
                 urlScore = 1.0f,
                 urlVerdict = "malicious",
                 urlContributions = listOf("Shortened URL Detected"),
@@ -392,18 +398,7 @@ object LocalClassifier {
             else -> Classification.SAFE
         }
 
-        val triggers = mutableListOf<String>()
-        if (hasUrl) triggers.add("unverified link")
-        if (matchedBanks.isNotEmpty()) triggers.add("financial institution reference (${matchedBanks.joinToString()})")
-        if (matchedUrgency.isNotEmpty()) triggers.add("high-pressure urgency phrasing")
-        if (matchedCtas.isNotEmpty()) triggers.add("action prompts")
-
-        val triggerStr = if (triggers.isNotEmpty()) triggers.joinToString(", ") else "benign text pattern"
-        val explanation = when (classification) {
-            Classification.SMISHING -> "Flagged as Harmful by local security heuristics due to $triggerStr."
-            Classification.SUSPICIOUS -> "Flagged as Suspicious by local security heuristics due to $triggerStr."
-            Classification.SAFE -> "No suspicious patterns detected in message text by local security heuristics."
-        }
+        val explanation = generateHumanReadableExplanation(message, classification)
 
         return DetectionResult(
             sender = "Unknown",
@@ -411,6 +406,14 @@ object LocalClassifier {
             classification = classification,
             probability = finalProb,
             isScanning = false,
+            urlFound = hasUrl,
+            extractedUrl = extractedUrl,
+            extractedUrls = extractedUrls,
+            emailFound = hasEmail,
+            extractedEmails = extractedEmails,
+            urlScore = if (hasUrl) (if (classification == Classification.SMISHING) 0.85f else if (classification == Classification.SUSPICIOUS) 0.55f else 0.05f) else null,
+            urlVerdict = if (hasUrl) (if (classification == Classification.SMISHING) "malicious" else if (classification == Classification.SUSPICIOUS) "suspicious" else "clean") else null,
+            localVerdict = classification.name.lowercase().replaceFirstChar { it.uppercase() },
             overallExplanation = explanation,
             rfProb = finalProb,
             rfRawLogit = 0f,
@@ -468,29 +471,105 @@ object LocalClassifier {
         return count
     }
 
+    private val EMAIL_REGEX = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", RegexOption.IGNORE_CASE)
+    private val SCHEME_URL_REGEX = Regex("https?://[^\\s<>\"']+", RegexOption.IGNORE_CASE)
+    private val WWW_URL_REGEX = Regex("\\bwww\\.[^\\s<>\"']+", RegexOption.IGNORE_CASE)
+    private val DOMAIN_URL_REGEX = Regex("(?<![a-zA-Z0-9@.-])[a-zA-Z0-9](?:[a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}(?:/[^\\s<>\"']*)?", RegexOption.IGNORE_CASE)
+
+    private fun rangesOverlap(r1: IntRange, r2: IntRange): Boolean =
+        maxOf(r1.first, r2.first) <= minOf(r1.last, r2.last)
+
+    private fun cleanExtractedToken(raw: String): String {
+        val trailing = charArrayOf('.', ',', ')', ']', '}', '!', '?', '"', '\'', ';', ':', '>', '<')
+        var token = raw.trim()
+        while (token.isNotEmpty() && token.first() in charArrayOf('(', '[', '{', '<', '"', '\'')) {
+            token = token.substring(1)
+        }
+        while (token.isNotEmpty() && token.last() in trailing) {
+            token = token.substring(0, token.length - 1)
+        }
+        return token.trim()
+    }
+
+    fun extractEmails(text: String): List<String> {
+        if (text.isBlank()) return emptyList()
+        val schemeRanges = SCHEME_URL_REGEX.findAll(text).map { it.range }.toList()
+        return EMAIL_REGEX.findAll(text)
+            .filter { emailMatch ->
+                // Do not extract email if it is part of an http/https URL parameter
+                schemeRanges.none { schemeRange -> rangesOverlap(emailMatch.range, schemeRange) }
+            }
+            .map { cleanExtractedToken(it.value) }
+            .filter { it.contains('@') && it.substringAfter('@').contains('.') }
+            .distinct()
+            .toList()
+    }
+
+    fun hasEmail(text: String): Boolean {
+        return extractEmails(text).isNotEmpty()
+    }
+
+    fun extractUrls(text: String): List<String> {
+        if (text.isBlank()) return emptyList()
+
+        val claimedRanges = mutableListOf<IntRange>()
+        val foundUrls = mutableListOf<String>()
+
+        // 1. Explicit http/https scheme URLs
+        for (match in SCHEME_URL_REGEX.findAll(text)) {
+            val cleaned = cleanExtractedToken(match.value)
+            if (cleaned.isNotBlank()) {
+                claimedRanges.add(match.range)
+                foundUrls.add(cleaned)
+            }
+        }
+
+        // 2. Identify standalone emails and claim their ranges so domains inside emails are NEVER extracted as URLs
+        for (match in EMAIL_REGEX.findAll(text)) {
+            if (claimedRanges.none { rangesOverlap(match.range, it) }) {
+                claimedRanges.add(match.range)
+            }
+        }
+
+        // 3. www-prefixed matches
+        for (match in WWW_URL_REGEX.findAll(text)) {
+            if (claimedRanges.none { rangesOverlap(match.range, it) }) {
+                val cleaned = cleanExtractedToken(match.value)
+                if (cleaned.isNotBlank()) {
+                    claimedRanges.add(match.range)
+                    foundUrls.add(cleaned)
+                }
+            }
+        }
+
+        // 4. Fallback domain matches (e.g. site.com/path)
+        for (match in DOMAIN_URL_REGEX.findAll(text)) {
+            val startIdx = match.range.first
+            if (startIdx > 0 && text[startIdx - 1] == '@') {
+                continue
+            }
+            if (claimedRanges.none { rangesOverlap(match.range, it) }) {
+                val cleaned = cleanExtractedToken(match.value)
+                if (cleaned.isNotBlank()) {
+                    claimedRanges.add(match.range)
+                    foundUrls.add(cleaned)
+                }
+            }
+        }
+
+        return foundUrls.distinct()
+    }
+
     fun extractUrl(text: String): String? {
-        // Priority 1: Explicit scheme match (http:// or https://)
-        val schemeMatch = Regex("https?://\\S+", RegexOption.IGNORE_CASE).find(text)?.value
-        if (schemeMatch != null) {
-            return schemeMatch.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
-        }
-        // Priority 2: www-prefixed match
-        val wwwMatch = Regex("www\\.\\S+", RegexOption.IGNORE_CASE).find(text)?.value
-        if (wwwMatch != null) {
-            return wwwMatch.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
-        }
-        // Priority 3: Fallback domain match (e.g. example.com/path)
-        val domainMatch = Regex("[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/\\S*)?", RegexOption.IGNORE_CASE).find(text)?.value
-        return domainMatch?.trimEnd('.', ',', ')', ']', '!', '?', '"', '\'')
+        return extractUrls(text).firstOrNull()
     }
 
     fun hasUrl(text: String): Boolean {
-        return extractUrl(text) != null
+        return extractUrls(text).isNotEmpty()
     }
 
     fun extractNumericalFeatures(text: String): FloatArray {
-        val extractedUrl = extractUrl(text)
-        val urls = if (extractedUrl != null) listOf(extractedUrl) else emptyList()
+        val urls = extractUrls(text)
         val urlPresent = if (urls.isNotEmpty()) 1.0f else 0.0f
         val urlCount = urls.size.toFloat()
         var hasShortener = 0.0f
@@ -716,8 +795,11 @@ object LocalClassifier {
                 }
             }
 
-            val extractedUrl = extractUrl(message)
-            val hasUrl = !extractedUrl.isNullOrBlank()
+            val extractedUrls = extractUrls(message)
+            val extractedUrl = extractedUrls.firstOrNull()
+            val hasUrl = extractedUrls.isNotEmpty()
+            val extractedEmails = extractEmails(message)
+            val hasEmail = extractedEmails.isNotEmpty()
             val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
 
             val classification = if (isShortened) Classification.SMISHING else when {
@@ -737,6 +819,9 @@ object LocalClassifier {
                 isScanning = false,
                 urlFound = hasUrl || isShortened,
                 extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = hasEmail,
+                extractedEmails = extractedEmails,
                 urlScore = if (isShortened) 1.0f else null,
                 urlVerdict = if (isShortened) "malicious" else null,
                 urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
@@ -757,8 +842,11 @@ object LocalClassifier {
 
     fun generateHumanReadableExplanation(message: String, classification: Classification): String {
         val textLower = message.lowercase()
-        val extractedUrl = extractUrl(message)
+        val extractedUrls = extractUrls(message)
+        val extractedUrl = extractedUrls.firstOrNull()
         val isShortened = containsShortenedUrl(message) || (extractedUrl != null && isShortenedUrl(extractedUrl))
+        val extractedEmails = extractEmails(message)
+        val hasEmail = extractedEmails.isNotEmpty()
 
         if (isShortened) {
             val shortUrlDisplay = extractedUrl ?: "detected short link"
@@ -772,10 +860,17 @@ object LocalClassifier {
 
         val detectedTriggers = mutableListOf<String>()
 
-        val hasUrl = !extractedUrl.isNullOrBlank()
+        val hasUrl = extractedUrls.isNotEmpty()
 
         if (hasUrl) {
-            detectedTriggers.add("an unverified web link")
+            if (extractedUrls.size > 1) {
+                detectedTriggers.add("${extractedUrls.size} unverified web links")
+            } else {
+                detectedTriggers.add("an unverified web link")
+            }
+        }
+        if (hasEmail) {
+            detectedTriggers.add("an email address indicating potential unsolicited correspondence")
         }
         if (hasUrgency) {
             detectedTriggers.add("high-pressure urgency phrasing or reward claims")
@@ -808,7 +903,9 @@ object LocalClassifier {
                 }
             }
             Classification.SAFE -> {
-                if (hasUrl) {
+                if (hasEmail) {
+                    "No immediate high-risk threat patterns were detected by AI models, but the presence of an email address indicates this may be an unsolicited message."
+                } else if (hasUrl) {
                     "No immediate suspicious text patterns were detected in this message by local AI models."
                 } else {
                     "No suspicious patterns, urgency triggers, or malicious links were detected in this message by local AI models."
@@ -816,11 +913,19 @@ object LocalClassifier {
             }
         }
 
-        return if (hasUrl && !baseExplanation.contains("cannot be guaranteed", ignoreCase = true) && !baseExplanation.contains("no online threat scan", ignoreCase = true)) {
-            "$baseExplanation Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
-        } else {
-            baseExplanation
+        var fullExplanation = baseExplanation
+        if (hasUrl && !fullExplanation.contains("cannot be guaranteed", ignoreCase = true) && !fullExplanation.contains("no online threat scan", ignoreCase = true)) {
+            val linkWarning = if (extractedUrls.size > 1) {
+                " Exercise caution: this message contains multiple unverified web links that have not been scanned by online threat intelligence yet, so their safety cannot be guaranteed."
+            } else {
+                " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
+            }
+            fullExplanation += linkWarning
         }
+        if (hasEmail && !fullExplanation.contains("unsolicited", ignoreCase = true)) {
+            fullExplanation += " Notice: This message contains an email address and may be an unsolicited message."
+        }
+        return fullExplanation
     }
 
     fun formatDetailsExplanation(result: DetectionResult): String {

@@ -324,9 +324,12 @@ class HistoryFragment : Fragment() {
                     } ?: Classification.SAFE
 
                     val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
-                    val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
+                    val allUrls = if (urls.isNotEmpty()) urls.map { it.extractedUrl } else LocalClassifier.extractUrls(sms.messageContent)
                     val urlEntity = urls.firstOrNull { it.urlScore != null } ?: urls.firstOrNull()
-                    val firstUrl = urlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val firstUrl = urlEntity?.extractedUrl ?: allUrls.firstOrNull()
+                    val hasUrl = allUrls.isNotEmpty()
+                    val allEmails = LocalClassifier.extractEmails(sms.messageContent)
+                    val hasEmail = allEmails.isNotEmpty()
                     val isMalicious = urlEntity?.isMalicious == 1
                     val urlScore = urlEntity?.urlScore ?: if (isMalicious) 1.0f else null
                     val urlVerdict = urlEntity?.urlVerdict ?: if (urlScore != null) (if (urlScore >= 0.5f) "malicious" else "clean") else null
@@ -350,6 +353,9 @@ class HistoryFragment : Fragment() {
                         cnnProb = analysis?.dlConfidence,
                         urlFound = hasUrl,
                         extractedUrl = firstUrl,
+                        extractedUrls = allUrls,
+                        emailFound = hasEmail,
+                        extractedEmails = allEmails,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
                         localVerdict = localVerdict,

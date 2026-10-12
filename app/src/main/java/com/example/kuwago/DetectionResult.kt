@@ -17,6 +17,9 @@ data class DetectionResult(
     val cnnVerdict: String? = null,
     val urlFound: Boolean = false,
     val extractedUrl: String? = null,
+    val extractedUrls: List<String> = emptyList(),
+    val emailFound: Boolean = false,
+    val extractedEmails: List<String> = emptyList(),
     val urlScore: Float? = null,
     val urlVerdict: String? = null,
     val explanation: String? = null,
@@ -32,6 +35,12 @@ data class DetectionResult(
     val xgbProb: Float = 0f,
     val cnnProb: Float? = null
 ) : Serializable {
+    val urlsArray: Array<String>
+        get() = extractedUrls.toTypedArray()
+
+    val emailsArray: Array<String>
+        get() = extractedEmails.toTypedArray()
+
     fun getEffectiveClassification(): Classification {
         if (classification == Classification.SMISHING && (urlVerdict?.equals("malicious", ignoreCase = true) == true && (explanation?.contains("shorten", ignoreCase = true) == true || overallExplanation?.contains("shorten", ignoreCase = true) == true))) {
             return Classification.SMISHING

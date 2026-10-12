@@ -287,6 +287,8 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
             sender = result.sender,
             hasUrl = result.urlFound,
             extractedUrl = result.extractedUrl,
+            extractedUrls = result.extractedUrls,
+            urls = result.extractedUrls,
             originalVerdict = originalVerdict,
             originalScore = originalScore,
             originalMlScore = originalMlScore,

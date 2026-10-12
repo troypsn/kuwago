@@ -352,4 +352,79 @@ class SmishingDetectorTest {
             )
         }
     }
+
+    @Test
+    fun testDifferentiateEmailFromUrl_singleEmail() {
+        val msg = "Please send your resume to support@kuwago.com for verification."
+        assertTrue("Expected hasEmail to be true", LocalClassifier.hasEmail(msg))
+        assertEquals(listOf("support@kuwago.com"), LocalClassifier.extractEmails(msg))
+        assertFalse("Expected hasUrl to be false when message only contains an email", LocalClassifier.hasUrl(msg))
+        assertEquals(emptyList<String>(), LocalClassifier.extractUrls(msg))
+        assertNull(LocalClassifier.extractUrl(msg))
+    }
+
+    @Test
+    fun testMultipleUrls_storedInArrayOfUrls() {
+        val msg = "Visit https://google.com or check http://kuwago.org/download and www.example.com/test today."
+        assertTrue("Expected hasUrl to be true", LocalClassifier.hasUrl(msg))
+        val urls = LocalClassifier.extractUrls(msg)
+        assertEquals(3, urls.size)
+        assertEquals("https://google.com", urls[0])
+        assertEquals("http://kuwago.org/download", urls[1])
+        assertEquals("www.example.com/test", urls[2])
+        assertFalse(LocalClassifier.hasEmail(msg))
+    }
+
+    @Test
+    fun testDifferentiateEmailsAndMultipleUrlsInSameMessage() {
+        val msg = "Contact security@bank.com.ph or admin@service.org, or visit https://secure.bank.com and bit.ly/promo for info."
+        assertTrue(LocalClassifier.hasEmail(msg))
+        val emails = LocalClassifier.extractEmails(msg)
+        assertEquals(listOf("security@bank.com.ph", "admin@service.org"), emails)
+
+        assertTrue(LocalClassifier.hasUrl(msg))
+        val urls = LocalClassifier.extractUrls(msg)
+        assertEquals(listOf("https://secure.bank.com", "bit.ly/promo"), urls)
+        assertFalse("bank.com.ph or service.org in email should not be treated as standalone URLs", urls.contains("bank.com.ph"))
+        assertFalse("service.org in email should not be treated as standalone URLs", urls.contains("service.org"))
+    }
+
+    @Test
+    fun testEmailDetected_classificationIncludesUnsolicitedRuleBasedNotice() {
+        val msg = "Hello friend, you can reach out to us at deals@promo-hub.ph for exclusive offerings."
+        val result = LocalClassifier.classifyWithHeuristics(msg)
+        assertTrue(result.emailFound)
+        assertEquals(listOf("deals@promo-hub.ph"), result.extractedEmails)
+        assertTrue("Expected rule-based text stating unsolicited message in explanation",
+            result.overallExplanation?.contains("unsolicited", ignoreCase = true) == true
+        )
+    }
+
+    @Test
+    fun testDetectionResult_urlsArrayAndEmailsArrayProperties() {
+        val result = DetectionResult(
+            sender = "Test",
+            message = "Sample",
+            extractedUrls = listOf("https://a.com", "https://b.com"),
+            extractedEmails = listOf("test@a.com")
+        )
+        assertArrayEquals(arrayOf("https://a.com", "https://b.com"), result.urlsArray)
+        assertArrayEquals(arrayOf("test@a.com"), result.emailsArray)
+    }
+
+    @Test
+    fun testSmsScanRequest_includesMultipleUrlsArray() {
+        val urlsList = listOf("https://link1.com", "https://link2.org")
+        val request = com.example.kuwago.network.SmsScanRequest(
+            message = "Check https://link1.com and https://link2.org",
+            hasUrl = true,
+            extractedUrl = "https://link1.com",
+            extractedUrls = urlsList,
+            urls = urlsList
+        )
+        val json = com.google.gson.Gson().toJson(request)
+        assertTrue(json.contains("\"extracted_urls\":[\"https://link1.com\",\"https://link2.org\"]"))
+        assertTrue(json.contains("\"urls\":[\"https://link1.com\",\"https://link2.org\"]"))
+        assertTrue(json.contains("\"extracted_url\":\"https://link1.com\""))
+    }
 }

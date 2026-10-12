@@ -333,6 +333,57 @@
                     android:text="Tap to view full message"
                     android:textColor="#555555"
                     android:textSize="12sp" />
+
+                <!-- Rule-based Email Notice Banner -->
+                <LinearLayout
+                    android:id="@+id/ll_email_unsolicited_warning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_email_unsolicited_banner"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="top"
+                        android:layout_marginTop="2dp"
+                        android:src="@drawable/ic_warning_triangle"
+                        app:tint="#FFA726"
+                        android:contentDescription="Email Warning" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Rule-based Detection"
+                            android:textColor="#FFA726"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:fontFamily="@font/sf_pro" />
+
+                        <TextView
+                            android:id="@+id/tv_email_unsolicited_warning"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="This message contains an email address and may be an unsolicited message."
+                            android:textColor="#D8D8D8"
+                            android:textSize="12sp"
+                            android:lineSpacingExtra="2dp"
+                            android:fontFamily="@font/sf_pro" />
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- SECTION 2: ANALYSIS BREAKDOWN SECTION -->

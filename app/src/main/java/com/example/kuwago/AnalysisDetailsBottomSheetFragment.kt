@@ -212,11 +212,28 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val cardPreview = view.findViewById<LinearLayout>(R.id.card_message_preview) ?: return
         val tvContent = view.findViewById<TextView>(R.id.tv_message_preview_content) ?: return
         val tvHint = view.findViewById<TextView>(R.id.tv_message_expand_hint) ?: return
+        val llEmailWarning = view.findViewById<LinearLayout>(R.id.ll_email_unsolicited_warning)
+        val tvEmailWarning = view.findViewById<TextView>(R.id.tv_email_unsolicited_warning)
 
         tvContent.text = result.message
         tvContent.autoLinkMask = 0
         tvContent.linksClickable = false
         tvContent.movementMethod = null
+
+        val hasEmail = result.emailFound || result.extractedEmails.isNotEmpty() || LocalClassifier.hasEmail(result.message)
+        if (hasEmail) {
+            val emails = if (result.extractedEmails.isNotEmpty()) result.extractedEmails else LocalClassifier.extractEmails(result.message)
+            llEmailWarning?.visibility = View.VISIBLE
+            val emailText = if (emails.isNotEmpty()) {
+                val emailDisplay = if (emails.size == 1) emails.first() else emails.joinToString(", ")
+                "This message contains an email address ($emailDisplay) and may be an unsolicited message."
+            } else {
+                "This message contains an email address and may be an unsolicited message."
+            }
+            tvEmailWarning?.text = emailText
+        } else {
+            llEmailWarning?.visibility = View.GONE
+        }
 
         var isExpanded = false
 
@@ -668,8 +685,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         if (result.urlFound) {
-            // Links found
-            addMetricRow(container, "Links found", "1 detected", true)
+            val urls = if (result.extractedUrls.isNotEmpty()) result.extractedUrls else listOfNotNull(result.extractedUrl)
+            val linkCount = urls.size
+            val linkText = if (linkCount > 1) "$linkCount detected" else "1 detected"
+            addMetricRow(container, "Links found", linkText, true)
+
+            if (linkCount > 1) {
+                addMetricRow(container, "Extracted URLs", urls.joinToString("\n"), false)
+            }
 
             if (result.urlScore != null) {
                 // Threat score from backend
@@ -720,6 +743,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             addMetricRow(container, "Threat score", "N/A", false)
             addMetricRow(container, "Verdict", "Clean", false)
             addMetricRow(container, "Detected by", "None", false)
+        }
+
+        val hasEmailMetric = result.emailFound || result.extractedEmails.isNotEmpty() || LocalClassifier.hasEmail(result.message)
+        if (hasEmailMetric) {
+            val emails = if (result.extractedEmails.isNotEmpty()) result.extractedEmails else LocalClassifier.extractEmails(result.message)
+            addMetricRow(container, "Detected emails", emails.joinToString(", "), false, isOrange = true)
         }
     }
 

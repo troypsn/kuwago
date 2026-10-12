@@ -48,6 +48,9 @@ class SmsReceiver : BroadcastReceiver() {
                             Log.i("SmsReceiver", "Blacklisted sender intercepted (id=$smsId)")
                             SmsNotificationListener.instance?.triggerAggressiveKill("com.google.android.apps.messaging")
                             
+                            val extractedUrls = LocalClassifier.extractUrls(fullBody)
+                            val extractedUrl = extractedUrls.firstOrNull()
+                            val extractedEmails = LocalClassifier.extractEmails(fullBody)
                             val finalResult = DetectionResult(
                                 id = smsId,
                                 sender = sender,
@@ -56,7 +59,12 @@ class SmsReceiver : BroadcastReceiver() {
                                 probability = 1.0f,
                                 isScanning = false,
                                 overallExplanation = "user is blacklisted",
-                                timestamp = firstTimestamp
+                                timestamp = firstTimestamp,
+                                urlFound = extractedUrls.isNotEmpty(),
+                                extractedUrl = extractedUrl,
+                                extractedUrls = extractedUrls,
+                                emailFound = extractedEmails.isNotEmpty(),
+                                extractedEmails = extractedEmails
                             )
                             DetectionRepository.addDetection(context, finalResult)
                             com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(context, finalResult)
@@ -65,8 +73,11 @@ class SmsReceiver : BroadcastReceiver() {
 
                         // Always scan locally first for instant, non-blocking classification
                         val localResult = LocalClassifier.classify(context, fullBody)
-                        val hasUrl = LocalClassifier.hasUrl(fullBody)
-                        val extractedUrl = LocalClassifier.extractUrl(fullBody)
+                        val extractedUrls = LocalClassifier.extractUrls(fullBody)
+                        val extractedUrl = extractedUrls.firstOrNull()
+                        val hasUrl = extractedUrls.isNotEmpty()
+                        val extractedEmails = LocalClassifier.extractEmails(fullBody)
+                        val hasEmail = extractedEmails.isNotEmpty()
                         val explanation = LocalClassifier.generateHumanReadableExplanation(fullBody, localResult.classification)
                         val instantResult = localResult.copy(
                             id = smsId,
@@ -77,6 +88,9 @@ class SmsReceiver : BroadcastReceiver() {
                             isScanning = false,
                             urlFound = hasUrl,
                             extractedUrl = extractedUrl,
+                            extractedUrls = extractedUrls,
+                            emailFound = hasEmail,
+                            extractedEmails = extractedEmails,
                             localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
                             ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
                         )

@@ -72,10 +72,13 @@ object SmishingDetector {
             )
         }
 
-        val hasUrl = LocalClassifier.hasUrl(message)
-        val extractedUrl = LocalClassifier.extractUrl(message)
+        val extractedUrls = LocalClassifier.extractUrls(message)
+        val extractedUrl = extractedUrls.firstOrNull()
+        val hasUrl = extractedUrls.isNotEmpty()
+        val extractedEmails = LocalClassifier.extractEmails(message)
+        val hasEmail = extractedEmails.isNotEmpty()
         val isShortened = LocalClassifier.containsShortenedUrl(message) || (extractedUrl != null && LocalClassifier.isShortenedUrl(extractedUrl))
-        Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl, isShortened=$isShortened")
+        Log.i("SmishingDetector", "URL Pre-Check: hasUrl=$hasUrl, count=${extractedUrls.size}, hasEmail=$hasEmail, isShortened=$isShortened")
 
         val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val allowSave = prefs.getBoolean("help_train_ai", false)
@@ -103,9 +106,11 @@ object SmishingDetector {
                 isScanning = false,
                 cnnProb = null,
                 cnnScore = null,
-                cnnVerdict = skipReason,
                 urlFound = hasUrl || isShortened,
                 extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = hasEmail,
+                extractedEmails = extractedEmails,
                 urlScore = if (isShortened) 1.0f else null,
                 urlVerdict = if (isShortened) "malicious" else null,
                 urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
@@ -165,6 +170,9 @@ object SmishingDetector {
                     cnnVerdict = "Served from cache",
                     urlFound = hasUrl || isShortened,
                     extractedUrl = extractedUrl,
+                    extractedUrls = extractedUrls,
+                    emailFound = hasEmail,
+                    extractedEmails = extractedEmails,
                     urlScore = cachedUrlScore,
                     urlVerdict = cachedUrlVerdict,
                     explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else "Result from local URL cache for host: $normalizedHost",
@@ -185,12 +193,15 @@ object SmishingDetector {
                 // so the backend skips the slow remote URL scan and quickly runs CNN text analysis.
                 val apiHasUrl = if (isShortened) false else hasUrl
                 val apiExtractedUrl = if (isShortened) null else extractedUrl
+                val apiExtractedUrls = if (isShortened) emptyList() else extractedUrls
 
-                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$apiHasUrl, is_shortened=$isShortened, allow_save=$allowSave, auto_report=$autoReport, ml_pred=$mlPrediction)...")
+                Log.i("SmishingDetector", "Sending request to CNN-BiGRU API (has_url=$apiHasUrl, urls_count=${apiExtractedUrls.size}, is_shortened=$isShortened, allow_save=$allowSave, auto_report=$autoReport, ml_pred=$mlPrediction)...")
                 val request = SmsScanRequest(
                     message = message,
                     hasUrl = apiHasUrl,
                     extractedUrl = apiExtractedUrl,
+                    extractedUrls = apiExtractedUrls,
+                    urls = apiExtractedUrls,
                     sender = censoredSenderName,
                     mlPrediction = mlPrediction,
                     mlConfidence = mlConfidence,
@@ -203,7 +214,7 @@ object SmishingDetector {
                 val hasCnnData = response.cnnAnalysis != null
                 val cnnScore = response.cnnAnalysis?.score
                 val cnnVerdict = response.cnnAnalysis?.verdict
-                val url = response.urlAnalysis ?: UrlAnalysis(false, null, null, null, null, null, emptyList())
+                val url = response.urlAnalysis ?: UrlAnalysis()
                 val containsUrl = hasUrl || url.hasUrl || isShortened
 
                 // Derive effective URL score if score is null but verdict is returned (e.g. backend database cache hit)
@@ -323,9 +334,11 @@ object SmishingDetector {
                     probability = finalProb,
                     isScanning = false,
                     cnnScore = cnnScore,
-                    cnnVerdict = cnnVerdict,
                     urlFound = containsUrl,
                     extractedUrl = extractedUrl ?: url.extractedUrl,
+                    extractedUrls = if (extractedUrls.isNotEmpty()) extractedUrls else listOfNotNull(extractedUrl ?: url.extractedUrl),
+                    emailFound = hasEmail,
+                    extractedEmails = extractedEmails,
                     urlScore = effectiveUrlScore,
                     urlVerdict = effectiveUrlVerdict,
                     explanation = effectiveUrlExplanation,
@@ -394,6 +407,9 @@ object SmishingDetector {
                 cnnVerdict = errorVerdict,
                 urlFound = hasUrl || isShortened,
                 extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = hasEmail,
+                extractedEmails = extractedEmails,
                 urlScore = if (isShortened) 1.0f else null,
                 urlVerdict = if (isShortened) "malicious" else null,
                 urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,

@@ -91,27 +91,33 @@ object SmsLocalRepository {
 
         // 3. Build UrlAnalysisEntity list
         val urlEntities = mutableListOf<UrlAnalysisEntity>()
-        val hasUrl = LocalClassifier.hasUrl(result.message) || result.urlFound
-        val extractedUrl = result.extractedUrl ?: LocalClassifier.extractUrl(result.message)
-        if (hasUrl && !extractedUrl.isNullOrBlank()) {
-            val isUrlMaliciousOrSuspicious =
-                (result.urlScore != null && result.urlScore >= 0.5f) ||
-                (result.urlVerdict != null && (result.urlVerdict.equals("malicious", ignoreCase = true) || result.urlVerdict.equals("spam", ignoreCase = true)))
+        val allUrls = if (result.extractedUrls.isNotEmpty()) {
+            result.extractedUrls
+        } else {
+            val single = result.extractedUrl ?: LocalClassifier.extractUrl(result.message)
+            if (single != null) listOf(single) else LocalClassifier.extractUrls(result.message)
+        }
+        for (urlStr in allUrls) {
+            if (urlStr.isNotBlank()) {
+                val isUrlMaliciousOrSuspicious =
+                    (result.urlScore != null && result.urlScore >= 0.5f) ||
+                    (result.urlVerdict != null && (result.urlVerdict.equals("malicious", ignoreCase = true) || result.urlVerdict.equals("spam", ignoreCase = true)))
 
-            val isMalicious = if (isUrlMaliciousOrSuspicious) 1 else 0
-            // Normalize the hostname so the VPN can match it by host at enforcement time
-            val normalizedHost = UrlNormalizer.extractHost(extractedUrl.trim())
-            urlEntities.add(
-                UrlAnalysisEntity(
-                    urlId = UUID.randomUUID().toString(),
-                    smsId = result.id,
-                    extractedUrl = extractedUrl.trim(),
-                    isMalicious = isMalicious,
-                    urlScore = result.urlScore,
-                    urlVerdict = result.urlVerdict,
-                    normalizedHost = normalizedHost
+                val isMalicious = if (isUrlMaliciousOrSuspicious) 1 else 0
+                // Normalize the hostname so the VPN can match it by host at enforcement time
+                val normalizedHost = UrlNormalizer.extractHost(urlStr.trim())
+                urlEntities.add(
+                    UrlAnalysisEntity(
+                        urlId = UUID.randomUUID().toString(),
+                        smsId = result.id,
+                        extractedUrl = urlStr.trim(),
+                        isMalicious = isMalicious,
+                        urlScore = result.urlScore,
+                        urlVerdict = result.urlVerdict,
+                        normalizedHost = normalizedHost
+                    )
                 )
-            )
+            }
         }
 
         // 4. Build FinalDecisionEntity
@@ -186,9 +192,12 @@ object SmsLocalRepository {
                     } ?: Classification.SAFE
 
                     val prob = decision?.finalScore ?: analysis?.mlConfidence ?: 0f
-                    val hasUrl = urls.isNotEmpty() || LocalClassifier.hasUrl(sms.messageContent)
+                    val allUrls = if (urls.isNotEmpty()) urls.map { it.extractedUrl } else LocalClassifier.extractUrls(sms.messageContent)
                     val urlEntity = urls.firstOrNull { it.urlScore != null } ?: urls.firstOrNull()
-                    val firstUrl = urlEntity?.extractedUrl ?: LocalClassifier.extractUrl(sms.messageContent)
+                    val firstUrl = urlEntity?.extractedUrl ?: allUrls.firstOrNull()
+                    val hasUrl = allUrls.isNotEmpty()
+                    val allEmails = LocalClassifier.extractEmails(sms.messageContent)
+                    val hasEmail = allEmails.isNotEmpty()
                     val isMalicious = urlEntity?.isMalicious == 1
                     val urlScore = urlEntity?.urlScore ?: if (isMalicious) 1.0f else null
                     val urlVerdict = urlEntity?.urlVerdict ?: if (urlScore != null) (if (urlScore >= 0.5f) "malicious" else "clean") else null
@@ -212,6 +221,9 @@ object SmsLocalRepository {
                         cnnProb = analysis?.dlConfidence,
                         urlFound = hasUrl,
                         extractedUrl = firstUrl,
+                        extractedUrls = allUrls,
+                        emailFound = hasEmail,
+                        extractedEmails = allEmails,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
                         localVerdict = localVerdict,

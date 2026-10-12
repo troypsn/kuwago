@@ -160,12 +160,20 @@ class SmsNotificationListener : NotificationListenerService() {
             for (delay in longArrayOf(200, 600, 1500, 3000)) {
                 handler.postDelayed({ killAllBlacklistedFromApp(packageName) }, delay)
             }
+            val extractedUrls = LocalClassifier.extractUrls(extractedText)
+            val extractedUrl = extractedUrls.firstOrNull()
+            val extractedEmails = LocalClassifier.extractEmails(extractedText)
             val blacklistedResult = DetectionResult(
                 sender = extractedSender,
                 message = extractedText,
                 classification = Classification.SMISHING,
                 probability = 1.0f,
                 isScanning = false,
+                urlFound = extractedUrls.isNotEmpty(),
+                extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = extractedEmails.isNotEmpty(),
+                extractedEmails = extractedEmails,
                 overallExplanation = "user is blacklisted"
             )
             DetectionRepository.addDetection(this@SmsNotificationListener, blacklistedResult)
@@ -219,8 +227,11 @@ class SmsNotificationListener : NotificationListenerService() {
         // 3. Run the scan
         scope.launch {
             val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
-            val hasUrl = LocalClassifier.hasUrl(messageText)
-            val extractedUrl = LocalClassifier.extractUrl(messageText)
+            val extractedUrls = LocalClassifier.extractUrls(messageText)
+            val extractedUrl = extractedUrls.firstOrNull()
+            val hasUrl = extractedUrls.isNotEmpty()
+            val extractedEmails = LocalClassifier.extractEmails(messageText)
+            val hasEmail = extractedEmails.isNotEmpty()
             val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
             val instantResult = localResult.copy(
                 sender = sender,
@@ -229,6 +240,9 @@ class SmsNotificationListener : NotificationListenerService() {
                 isScanning = false,
                 urlFound = hasUrl,
                 extractedUrl = extractedUrl,
+                extractedUrls = extractedUrls,
+                emailFound = hasEmail,
+                extractedEmails = extractedEmails,
                 localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
                 ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
             )
@@ -388,8 +402,11 @@ class SmsNotificationListener : NotificationListenerService() {
             Log.i("SmsNotifListener", "Running local-only classification (onlineScanMode=$onlineScanMode)")
             localFallback ?: run {
                 val localResult = LocalClassifier.classify(this@SmsNotificationListener, messageText)
-                val hasUrl = LocalClassifier.hasUrl(messageText)
-                val extractedUrl = LocalClassifier.extractUrl(messageText)
+                val extractedUrls = LocalClassifier.extractUrls(messageText)
+                val extractedUrl = extractedUrls.firstOrNull()
+                val hasUrl = extractedUrls.isNotEmpty()
+                val extractedEmails = LocalClassifier.extractEmails(messageText)
+                val hasEmail = extractedEmails.isNotEmpty()
                 val explanation = LocalClassifier.generateHumanReadableExplanation(messageText, localResult.classification)
                 localResult.copy(
                     id = placeholderId,
@@ -400,6 +417,9 @@ class SmsNotificationListener : NotificationListenerService() {
                     isScanning = false,
                     urlFound = hasUrl,
                     extractedUrl = extractedUrl,
+                    extractedUrls = extractedUrls,
+                    emailFound = hasEmail,
+                    extractedEmails = extractedEmails,
                     localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
                     ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
                 )
