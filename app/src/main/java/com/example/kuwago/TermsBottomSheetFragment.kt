@@ -66,20 +66,15 @@ class TermsBottomSheetFragment : BottomSheetDialogFragment() {
 
         if (requireAcceptance) {
             llCheckboxContainer?.visibility = View.VISIBLE
-            btnAgree?.text = getString(R.string.terms_accept_button)
+            btnAgree?.visibility = View.GONE
             btnAgree?.isEnabled = false
-            btnAgree?.setBackgroundResource(R.drawable.bg_onboarding_disabled)
-            btnAgree?.setTextColor(Color.parseColor("#66FFFFFF"))
+            btnAgree?.text = getString(R.string.terms_accept_button)
+            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            btnAgree?.setTextColor(Color.BLACK)
 
             cbAgreeTerms?.setOnCheckedChangeListener { _, isChecked ->
+                btnAgree?.visibility = if (isChecked) View.VISIBLE else View.GONE
                 btnAgree?.isEnabled = isChecked
-                if (isChecked) {
-                    btnAgree?.setBackgroundResource(R.drawable.bg_onboarding_primary)
-                    btnAgree?.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
-                } else {
-                    btnAgree?.setBackgroundResource(R.drawable.bg_onboarding_disabled)
-                    btnAgree?.setTextColor(Color.parseColor("#66FFFFFF"))
-                }
             }
 
             llCheckboxContainer?.setOnClickListener {
@@ -94,10 +89,11 @@ class TermsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         } else {
             llCheckboxContainer?.visibility = View.GONE
+            btnAgree?.visibility = View.VISIBLE
             btnAgree?.text = getString(R.string.terms_close_button)
             btnAgree?.isEnabled = true
-            btnAgree?.setBackgroundResource(R.drawable.bg_onboarding_primary)
-            btnAgree?.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
+            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            btnAgree?.setTextColor(Color.BLACK)
             btnAgree?.setOnClickListener {
                 dismiss()
             }

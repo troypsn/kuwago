@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      API_URL: "https://kwagobackend.onrender.com/"
+      API_URL: "https://kwago-backend.vercel.app/"
       KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
 
     steps:

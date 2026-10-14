@@ -268,18 +268,35 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvReasoningExplanation = view.findViewById<TextView>(R.id.tv_overall_reasoning_explanation)
         val ivReasoningIcon = view.findViewById<ImageView>(R.id.iv_reasoning_icon)
 
+        val ivLayerMlIcon = view.findViewById<ImageView>(R.id.iv_layer_ml_icon)
+        val ivLayerDlIcon = view.findViewById<ImageView>(R.id.iv_layer_dl_icon)
+
+        val prefs = requireContext().getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val isDevMode = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
+
         if (result.isScanning) {
             tvRiskBadge.text = "⏳ Scanning…"
             tvRiskBadge.setTextColor(Color.parseColor("#FFF07048"))
             tvClassificationTitle.text = "Scanning in Progress…"
             tvReasoningExplanation?.text = "Evaluating message threat and verifying link reputations..."
             ivReasoningIcon?.setColorFilter(Color.parseColor("#FFF07048"))
-            tvMlSummaryVerdict.text = "Scanning…"
-            tvMlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
-            tvDlSummaryVerdict.text = "Scanning…"
-            tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
-            tvUrlSummaryVerdict.text = "Scanning…"
-            tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+            if (isDevMode) {
+                tvMlSummaryVerdict.text = "Scanning…"
+                tvMlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                tvDlSummaryVerdict.text = "Scanning…"
+                tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                tvUrlSummaryVerdict.text = "Scanning…"
+                tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                ivLayerMlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
+                ivLayerDlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
+            } else {
+                tvMlSummaryVerdict.text = "Pending"
+                tvMlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
+                tvDlSummaryVerdict.text = "Pending"
+                tvDlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
+                ivLayerMlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
+                ivLayerDlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
+            }
         } else {
             val isSenderBlacklisted = context?.let { BlacklistRepository.isBlacklisted(it, result.sender) } ?: false
             val isTextBlacklisted = result.message.length < 50 && (context?.let { BlacklistRepository.isBlacklisted(it, result.message) } ?: false)
@@ -335,9 +352,6 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 }
             }
 
-            val prefs = requireContext().getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
-            val isDevMode = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
-
             if (isDevMode) {
                 // Developer Mode: show technical per-layer verdicts and confidence scores
                 val mlProb = if (result.rfProb > 0f || result.xgbProb > 0f) {
@@ -347,6 +361,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 }
                 tvMlSummaryVerdict.text = getVerdictText(mlProb)
                 tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb))
+                ivLayerMlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
 
                 val dlProb = result.cnnScore ?: result.cnnProb ?: 0f
                 if (result.cnnScore != null || result.cnnProb != null) {
@@ -356,6 +371,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     tvDlSummaryVerdict.text = "Pending"
                     tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
                 }
+                ivLayerDlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
 
                 if (result.urlFound) {
                     if (result.urlScore != null) {
@@ -382,11 +398,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 // Regular User Interface (Non-developer):
                 // Avoid putting safe, harmful, and smishing labels for individual layers.
                 // The main text is the only indicator showing the classification result.
-                // Each layer indicator shows strictly 'Scanned' (Green) or 'Pending' (Gray).
+                // Dark gray (#777777) indicates completed/scanned, and lighter (#E0E0E0) indicates pending scan.
 
-                // Local Layer: always scanned once message analysis starts
+                // Local Layer: scanned
                 tvMlSummaryVerdict.text = "Scanned"
-                tvMlSummaryVerdict.setTextColor(Color.parseColor("#26CE6B"))
+                tvMlSummaryVerdict.setTextColor(Color.parseColor("#777777"))
+                ivLayerMlIcon?.setColorFilter(Color.parseColor("#777777"))
 
                 // Online Scan: combines DL and URL threat intelligence
                 val isDeepScanning = DeepScanManager.isScanning(result)
@@ -396,10 +413,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
                 if (isOnlineScanned) {
                     tvDlSummaryVerdict.text = "Scanned"
-                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#26CE6B"))
+                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#777777"))
+                    ivLayerDlIcon?.setColorFilter(Color.parseColor("#777777"))
                 } else {
                     tvDlSummaryVerdict.text = "Pending"
-                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
+                    ivLayerDlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
                 }
             }
         }
@@ -951,8 +970,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                         context = requireContext(),
                         title = "URL Threat Reputation Cached",
                         message = "The threat analysis for $host was successfully retrieved from the cloud and saved to your device's URL protection cache.",
-                        iconRes = R.drawable.ic_shield,
-                        iconTint = android.graphics.Color.parseColor("#60A5FA"),
+                        iconRes = 0,
                         buttonText = "OK"
                     )
                 }

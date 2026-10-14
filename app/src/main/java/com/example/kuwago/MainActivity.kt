@@ -229,8 +229,7 @@ class MainActivity : AppCompatActivity() {
                                 "so even if you accidentally tap a link in a message, the connection " +
                                 "will be stopped before your browser opens it.\n\n" +
                                 "You can enable or disable URL Shield anytime in Settings → Security.",
-                        iconRes = R.drawable.ic_shield,
-                        iconTint = android.graphics.Color.parseColor("#4ADE80"),
+                        iconRes = 0,
                         confirmText = "Enable URL Shield",
                         confirmBg = R.drawable.bg_red_button,
                         cancelText = "Maybe Later",
@@ -255,8 +254,7 @@ class MainActivity : AppCompatActivity() {
             title = "Cloud Threat Cache Updated",
             message = "Kuwago successfully fetched $recordsText from the cloud.\n\n" +
                     "These pre-analyzed reputations are now cached on your device to immediately identify known scam links and keep URL Shield up to date.",
-            iconRes = R.drawable.ic_shield,
-            iconTint = android.graphics.Color.parseColor("#60A5FA"),
+            iconRes = 0,
             buttonText = "OK"
         )
     }

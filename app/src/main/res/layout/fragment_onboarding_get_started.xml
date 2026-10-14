@@ -87,11 +87,12 @@
             android:textSize="13sp" />
     </LinearLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_get_started"
         android:layout_width="match_parent"
         android:layout_height="54dp"
-        android:background="@drawable/bg_onboarding_disabled"
+        app:cornerRadius="24dp"
+        app:backgroundTint="#26FFFFFF"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_get_started"
         android:textAllCaps="false"

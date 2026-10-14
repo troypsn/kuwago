@@ -146,11 +146,16 @@ object CustomDialogHelper {
         tvTitle.text = title
         tvMessage.text = message
 
-        ivIcon.setImageResource(iconRes)
-        if (iconTint != null) {
-            ivIcon.setColorFilter(iconTint)
+        if (iconRes != 0) {
+            ivIcon.visibility = View.VISIBLE
+            ivIcon.setImageResource(iconRes)
+            if (iconTint != null) {
+                ivIcon.setColorFilter(iconTint)
+            } else {
+                ivIcon.clearColorFilter()
+            }
         } else {
-            ivIcon.clearColorFilter()
+            ivIcon.visibility = View.GONE
         }
 
         btnClose.setOnClickListener {

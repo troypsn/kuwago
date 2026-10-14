@@ -242,13 +242,14 @@
         android:padding="16dp"
         android:background="@color/background_primary">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_agree_terms"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:background="@drawable/bg_onboarding_primary"
+            app:cornerRadius="24dp"
+            app:backgroundTint="@color/white"
             android:fontFamily="@font/sf_pro"
-            android:text="@string/terms_agree_button"
+            android:text="@string/terms_accept_button"
             android:textAllCaps="false"
             android:textColor="@color/black"
             android:textSize="16sp"

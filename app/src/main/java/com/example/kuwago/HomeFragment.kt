@@ -130,6 +130,7 @@ class HomeFragment : Fragment() {
                 .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
                 .putBoolean(SettingsFragment.KEY_DATA_SAVER, false)
                 .apply()
+            BackgroundNotificationManager.showIfAllowed(ctx)
             updateStatusUI()
             dialog.dismiss()
         }
@@ -138,6 +139,7 @@ class HomeFragment : Fragment() {
             prefs.edit()
                 .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_OFF)
                 .apply()
+            BackgroundNotificationManager.dismiss(ctx)
             try {
                 val stopVpnIntent = Intent(ctx, KuwagoVpnService::class.java).apply {
                     action = KuwagoVpnService.ACTION_STOP
@@ -155,6 +157,7 @@ class HomeFragment : Fragment() {
                 .putString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_DATA_SAVER)
                 .putBoolean(SettingsFragment.KEY_DATA_SAVER, true)
                 .apply()
+            BackgroundNotificationManager.showIfAllowed(ctx)
             updateStatusUI()
             dialog.dismiss()
         }

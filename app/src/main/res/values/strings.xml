@@ -191,6 +191,14 @@
     <string name="notif_scanning_title">Scanning message…</string>
     <string name="notif_scanning_text">Kuwago is checking this message for threats.</string>
 
+    <!-- Background Scanning Bar Notification -->
+    <string name="notif_background_scanning_title">Kuwago is scanning messages</string>
+    <string name="notif_background_scanning_subtext">Real-time message protection is active</string>
+    <string name="notif_background_scanning_active">● Protection active</string>
+    <string name="notif_background_scanning_body">Real-time SMS and message protection is running in the background. Incoming messages are automatically scanned for smishing threats and phishing links.</string>
+    <string name="notif_background_scanning_action">Tap to open Kuwago dashboard →</string>
+
+
     <!-- Result Notifications -->
     <string name="notif_result_safe_title">Message verified safe ✓</string>
     <string name="notif_result_safe_text">Message from %1$s passed Kuwago\'s scan.</string>
@@ -301,8 +309,8 @@
     <string name="onboarding_layer_4_desc">Dynamic weighted combination: Safe, Suspicious, or Harmful</string>
 
     <!-- Terms and Conditions -->
-    <string name="onboarding_terms_notice">I agree to Kuwago\'s &lt;u&gt;&lt;font color=\"#4ECCA3\"&gt;Terms &amp;amp; Conditions&lt;/font&gt;&lt;/u&gt;</string>
-    <string name="terms_checkbox_agree">I have read and agree to the Terms &amp;amp; Conditions</string>
+    <string name="onboarding_terms_notice">I agree to Kuwago\'s &lt;u&gt;&lt;font color=\"#4ECCA3\"&gt;Terms &amp; Conditions&lt;/font&gt;&lt;/u&gt;</string>
+    <string name="terms_checkbox_agree">I have read and agree to the Terms &amp; Conditions</string>
     <string name="terms_accept_button">Accept</string>
     <string name="settings_terms_title">Terms &amp; Conditions</string>
     <string name="settings_terms_desc">Review Kuwago\'s usage terms, privacy policy, and security disclaimer</string>

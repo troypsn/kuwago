@@ -97,49 +97,6 @@
                     android:textSize="50sp"
                     android:textStyle="bold" />
 
-                <!-- Reasoning Summary Card -->
-                <LinearLayout
-                    android:id="@+id/ll_reasoning_summary_card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_inner_card_borderless"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:id="@+id/iv_reasoning_icon"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_shield" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="Reasoning Summary"
-                            android:textColor="#FFFFFF"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tv_overall_reasoning_explanation"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:lineSpacingExtra="3dp"
-                        android:text="No suspicious patterns or malicious links detected."
-                        android:textColor="#CCCCCC"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
                 <!-- Hidden large percentage header (percentage score is de-emphasized to technical details at bottom) -->
                 <TextView
                     android:id="@+id/tv_total_percentage"
@@ -176,6 +133,7 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id="@+id/iv_layer_ml_icon"
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:background="@drawable/bg_inner_card"
@@ -213,6 +171,7 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id="@+id/iv_layer_dl_icon"
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:background="@drawable/bg_inner_card"
@@ -250,6 +209,7 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id="@+id/iv_layer_url_icon"
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:background="@drawable/bg_inner_card"
@@ -293,6 +253,49 @@
                     android:text="9:38 AM • May 18, 2026"
                     android:textColor="#888888"
                     android:textSize="13sp" />
+
+                <!-- Reasoning Summary Card (Under date and time, without background) -->
+                <LinearLayout
+                    android:id="@+id/ll_reasoning_summary_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/iv_reasoning_icon"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_shield" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Reasoning Summary"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_overall_reasoning_explanation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="3dp"
+                        android:text="No suspicious patterns or malicious links detected."
+                        android:textColor="#CCCCCC"
+                        android:textSize="13sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- SECTION: MESSAGE PREVIEW SECTION -->

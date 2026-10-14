@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
@@ -46,6 +47,7 @@ class SmsNotificationListener : NotificationListenerService() {
         instance = this
         DetectionRepository.loadIfNeeded(this)
         Log.i("SmsNotifListener", "=== NOTIFICATION LISTENER CONNECTED & ACTIVE ===")
+        BackgroundNotificationManager.showIfAllowed(this)
     }
 
     override fun onListenerDisconnected() {
@@ -445,14 +447,18 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
+
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_SCANNING)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_kuwago_notif)
+            .setLargeIcon(kuwagoBitmap)
             .setContentTitle(getString(R.string.notif_scanning_title))
             .setContentText(getString(R.string.notif_scanning_text))
             .setSubText(sender)
             .setOngoing(true)
             .setProgress(0, 0, true)          // indeterminate progress bar
             .setContentIntent(pi)
+            .setGroup("kuwago_scan_job_group")
             .setAutoCancel(false)
             .build()
 
@@ -477,12 +483,16 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
+
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_kuwago_notif)
+            .setLargeIcon(kuwagoBitmap)
             .setContentTitle(getString(R.string.notif_result_safe_title))
             .setContentText(getString(R.string.notif_result_safe_text, sender))
             .setContentIntent(pi)
             .setAutoCancel(true)
+            .setGroup("kuwago_message_results_group")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .build()
@@ -510,13 +520,17 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
+
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_kuwago_notif)
+            .setLargeIcon(kuwagoBitmap)
             .setContentTitle("✓ ${captured.title}")          // Kuwago-branded safe badge
             .setContentText(captured.text)
             .setSubText(getString(R.string.notif_result_safe_title))
             .setContentIntent(tapIntent)
             .setAutoCancel(true)
+            .setGroup("kuwago_message_results_group")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setCategory(Notification.CATEGORY_MESSAGE)
@@ -536,17 +550,14 @@ class SmsNotificationListener : NotificationListenerService() {
         classification: Classification,
         confidencePct: String
     ) {
-        val (title, body, icon) = when (classification) {
-            Classification.SUSPICIOUS -> Triple(
-                getString(R.string.notif_result_suspicious_title),
-                getString(R.string.notif_result_suspicious_text, sender),
-                R.drawable.ic_notification
-            )
-            Classification.SMISHING -> Triple(
-                getString(R.string.notif_result_smishing_title),
-                getString(R.string.notif_result_smishing_text, sender),
-                R.drawable.ic_notification
-            )
+        val title = when (classification) {
+            Classification.SUSPICIOUS -> getString(R.string.notif_result_suspicious_title)
+            Classification.SMISHING -> getString(R.string.notif_result_smishing_title)
+            else -> return
+        }
+        val body = when (classification) {
+            Classification.SUSPICIOUS -> getString(R.string.notif_result_suspicious_text, sender)
+            Classification.SMISHING -> getString(R.string.notif_result_smishing_text, sender)
             else -> return
         }
 
@@ -561,13 +572,17 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
+
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
-            .setSmallIcon(icon)
+            .setSmallIcon(R.drawable.ic_kuwago_notif)
+            .setLargeIcon(kuwagoBitmap)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(pi)
             .setAutoCancel(true)
+            .setGroup("kuwago_message_results_group")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .build()

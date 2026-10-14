@@ -109,8 +109,7 @@ class SettingsVpnShieldFragment : Fragment() {
                     context = requireContext(),
                     title = "Turn off URL Shield?",
                     message = "Are you sure you want to turn off \"URL Shield\"?",
-                    iconRes = R.drawable.ic_warning_triangle,
-                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    iconRes = 0,
                     confirmText = "Turn Off",
                     confirmBg = R.drawable.bg_red_button,
                     cancelText = "Cancel",
@@ -206,8 +205,7 @@ class SettingsVpnShieldFragment : Fragment() {
                             context = requireContext(),
                             title = "Cloud Threat Cache Updated",
                             message = "Successfully fetched $recordsText from the cloud.\n\nYour URL Shield blocking cache is now up to date with the latest known scam links.",
-                            iconRes = R.drawable.ic_shield,
-                            iconTint = android.graphics.Color.parseColor("#60A5FA"),
+                            iconRes = 0,
                             buttonText = "OK"
                         )
                     }
