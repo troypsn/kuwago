@@ -2,78 +2,38 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_notif_card"
+    android:background="@android:color/transparent"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
-    <!-- Top Row: Logo, Title, Active Badge -->
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/tv_notif_title_expanded"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/notif_background_active_title"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
-        <ImageView
-            android:id="@+id/iv_notif_logo_expanded"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:adjustViewBounds="true"
-            android:scaleType="fitCenter"
-            android:src="@drawable/kuwago_notif_logo"
-            android:contentDescription="@string/app_name" />
+    <TextView
+        android:id="@+id/tv_notif_status_expanded"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="● Status: On"
+        android:textSize="12sp" />
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tv_notif_title_expanded"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/notif_background_scanning_title"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_notif_status_expanded"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/notif_background_scanning_active"
-                android:textColor="@color/teal_300"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- Expanded Body Text -->
     <TextView
         android:id="@+id/tv_notif_body_expanded"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/notif_background_scanning_body"
-        android:textColor="#B0B0B0"
-        android:textSize="12sp"
-        android:lineSpacingExtra="2dp" />
-
-    <!-- Action Prompt -->
-    <TextView
-        android:id="@+id/tv_notif_action_expanded"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/notif_background_scanning_action"
-        android:textColor="@color/teal_300"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:lineSpacingExtra="2dp"
+        android:text="@string/notif_background_scanning_body"
+        android:textSize="12sp" />
 
 </LinearLayout>

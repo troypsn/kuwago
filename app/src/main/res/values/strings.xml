@@ -192,6 +192,7 @@
     <string name="notif_scanning_text">Kuwago is checking this message for threats.</string>
 
     <!-- Background Scanning Bar Notification -->
+    <string name="notif_background_active_title">Kuwago is active</string>
     <string name="notif_background_scanning_title">Kuwago is scanning messages</string>
     <string name="notif_background_scanning_subtext">Real-time message protection is active</string>
     <string name="notif_background_scanning_active">● Protection active</string>

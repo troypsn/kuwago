@@ -4,11 +4,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.os.Build
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.text.HtmlCompat
 
 object BackgroundNotificationManager {
 
@@ -37,7 +36,7 @@ object BackgroundNotificationManager {
 
     /**
      * Shows the ongoing background scanning notification if onboarding is complete,
-     * system protection is turned ON, and the app is not currently in the foreground.
+     * system protection is turned ON (or Local Layer), and the app is not currently in the foreground.
      */
     fun showIfAllowed(context: Context) {
         val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
@@ -57,7 +56,7 @@ object BackgroundNotificationManager {
     }
 
     /**
-     * Immediately builds and posts the background scanning notification bar.
+     * Immediately builds and posts the background status notification bar.
      */
     fun show(context: Context) {
         try {
@@ -65,6 +64,39 @@ object BackgroundNotificationManager {
 
             // Ensure notification channel exists
             NotificationHelper.createAllNotificationChannels(context)
+
+            val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            val systemStatus = prefs.getString(SettingsFragment.KEY_SYSTEM_STATUS, SettingsFragment.STATUS_ON)
+
+            val titleText = if (systemStatus == SettingsFragment.STATUS_OFF) {
+                "Kuwago is inactive"
+            } else {
+                "Kuwago is active"
+            }
+
+            val dotColor = when (systemStatus) {
+                SettingsFragment.STATUS_DATA_SAVER -> "#F07048"
+                SettingsFragment.STATUS_OFF -> "#FF4D55"
+                else -> "#26CE6B"
+            }
+
+            val statusLabel = when (systemStatus) {
+                SettingsFragment.STATUS_DATA_SAVER -> "Status: Local Layer"
+                SettingsFragment.STATUS_OFF -> "Status: Off"
+                else -> "Status: On"
+            }
+
+            val statusHtml = "<font color='$dotColor'>●</font> $statusLabel"
+            val statusFormatted = HtmlCompat.fromHtml(
+                statusHtml,
+                HtmlCompat.FROM_HTML_MODE_LEGACY
+            )
+
+            val bodyText = if (systemStatus == SettingsFragment.STATUS_DATA_SAVER) {
+                "Local layer message protection is running in the background. Incoming messages are checked using on-device ML."
+            } else {
+                context.getString(R.string.notif_background_scanning_body)
+            }
 
             val tapIntent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -76,30 +108,23 @@ object BackgroundNotificationManager {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Collapsed (minimized) RemoteViews - compact single bar with Kuwago logo
+            // Collapsed (minimized) RemoteViews - clean single line layout, no background, no extra logo
             val collapsedViews = RemoteViews(context.packageName, R.layout.notification_scanning_collapsed).apply {
-                setImageViewResource(R.id.iv_notif_logo_collapsed, R.drawable.kuwago_notif_logo)
-                setTextViewText(R.id.tv_notif_title_collapsed, context.getString(R.string.notif_background_scanning_title))
-                setTextViewText(R.id.tv_notif_subtext_collapsed, context.getString(R.string.notif_background_scanning_subtext))
-                setTextViewText(R.id.tv_notif_badge_collapsed, context.getString(R.string.notif_background_scanning_active))
+                setTextViewText(R.id.tv_notif_title_collapsed, titleText)
+                setTextViewText(R.id.tv_notif_status_collapsed, statusFormatted)
             }
 
-            // Expanded RemoteViews - detailed card with Kuwago logo, description, and status
+            // Expanded RemoteViews - clean layout, no background, no extra logo
             val expandedViews = RemoteViews(context.packageName, R.layout.notification_scanning_expanded).apply {
-                setImageViewResource(R.id.iv_notif_logo_expanded, R.drawable.kuwago_notif_logo)
-                setTextViewText(R.id.tv_notif_title_expanded, context.getString(R.string.notif_background_scanning_title))
-                setTextViewText(R.id.tv_notif_status_expanded, context.getString(R.string.notif_background_scanning_active))
-                setTextViewText(R.id.tv_notif_body_expanded, context.getString(R.string.notif_background_scanning_body))
-                setTextViewText(R.id.tv_notif_action_expanded, context.getString(R.string.notif_background_scanning_action))
+                setTextViewText(R.id.tv_notif_title_expanded, titleText)
+                setTextViewText(R.id.tv_notif_status_expanded, statusFormatted)
+                setTextViewText(R.id.tv_notif_body_expanded, bodyText)
             }
-
-            val kuwagoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.kuwagoicon)
 
             val builder = NotificationCompat.Builder(context, SettingsFragment.CHANNEL_SCANNING)
                 .setSmallIcon(R.drawable.ic_kuwago_notif)
-                .setLargeIcon(kuwagoBitmap)
-                .setContentTitle(context.getString(R.string.notif_background_scanning_title))
-                .setContentText(context.getString(R.string.notif_background_scanning_subtext))
+                .setContentTitle(titleText)
+                .setContentText(statusFormatted)
                 .setCustomContentView(collapsedViews)
                 .setCustomBigContentView(expandedViews)
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
@@ -111,22 +136,22 @@ object BackgroundNotificationManager {
                 .setContentIntent(pi)
 
             nm.notify(NOTIF_ID_BACKGROUND_SCANNING, builder.build())
-            Log.d(TAG, "Ongoing background scanning notification posted.")
+            Log.d(TAG, "Ongoing background status notification posted ($statusLabel).")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to post ongoing background scanning notification", e)
+            Log.e(TAG, "Failed to post ongoing background status notification", e)
         }
     }
 
     /**
-     * Dismisses the background scanning notification bar.
+     * Dismisses the background notification bar.
      */
     fun dismiss(context: Context) {
         try {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             nm?.cancel(NOTIF_ID_BACKGROUND_SCANNING)
-            Log.d(TAG, "Ongoing background scanning notification dismissed.")
+            Log.d(TAG, "Ongoing background status notification dismissed.")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to dismiss background scanning notification", e)
+            Log.e(TAG, "Failed to dismiss background status notification", e)
         }
     }
 }
