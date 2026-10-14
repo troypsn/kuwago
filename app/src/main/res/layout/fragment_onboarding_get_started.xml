@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
@@ -54,30 +55,47 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <LinearLayout
+        android:id="@+id/ll_onboarding_terms_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="14dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_onboarding_agree"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:buttonTint="@color/teal_300" />
+
+        <TextView
+            android:id="@+id/tv_terms_notice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/sf_pro"
+            android:lineSpacingExtra="2dp"
+            android:text="@string/onboarding_terms_notice"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+    </LinearLayout>
+
     <Button
         android:id="@+id/btn_get_started"
         android:layout_width="match_parent"
         android:layout_height="54dp"
-        android:background="@drawable/bg_onboarding_primary"
+        android:background="@drawable/bg_onboarding_disabled"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_get_started"
         android:textAllCaps="false"
-        android:textColor="@color/black"
+        android:textColor="#66FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tv_terms_notice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:fontFamily="@font/sf_pro"
-        android:gravity="center"
-        android:padding="6dp"
-        android:text="@string/onboarding_terms_notice"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
 </LinearLayout>

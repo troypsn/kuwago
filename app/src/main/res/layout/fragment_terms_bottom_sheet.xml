@@ -200,6 +200,38 @@
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
+            <!-- Checkbox row inside scrollable content: user must scroll down to reach it -->
+            <LinearLayout
+                android:id="@+id/ll_terms_checkbox_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/bg_inner_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cb_agree_terms"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:buttonTint="@color/teal_300" />
+
+                <TextView
+                    android:id="@+id/tv_terms_checkbox_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/sf_pro"
+                    android:text="@string/terms_checkbox_agree"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

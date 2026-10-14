@@ -161,6 +161,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     btnRun?.text = "Run Deep Analysis"
                 }
             }
+            setupClassificationSection(view, current)
+            applyDeveloperMode(view)
         }
 
         setupClassificationSection(view, result)
@@ -190,6 +192,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvLayerMlTitle = view.findViewById<TextView>(R.id.tv_layer_ml_title)
         val tvLayerDlTitle = view.findViewById<TextView>(R.id.tv_layer_dl_title)
         val tvLayerUrlTitle = view.findViewById<TextView>(R.id.tv_layer_url_title)
+        val llLayerUrlCol = view.findViewById<View>(R.id.ll_layer_url_col)
         val llAnalysisBreakdown = view.findViewById<View>(R.id.ll_analysis_breakdown_section)
         val llCombinedScore = view.findViewById<View>(R.id.ll_combined_score_card)
 
@@ -197,12 +200,13 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             tvLayerMlTitle?.text = "ML Layer"
             tvLayerDlTitle?.text = "DL Layer"
             tvLayerUrlTitle?.text = "URL Scan"
+            llLayerUrlCol?.visibility = View.VISIBLE
             llAnalysisBreakdown?.visibility = View.VISIBLE
             llCombinedScore?.visibility = View.VISIBLE
         } else {
             tvLayerMlTitle?.text = "Local Layer"
             tvLayerDlTitle?.text = "Online Scan"
-            tvLayerUrlTitle?.text = "URL Scan"
+            llLayerUrlCol?.visibility = View.GONE
             llAnalysisBreakdown?.visibility = View.GONE
             llCombinedScore?.visibility = View.GONE
         }
@@ -331,44 +335,72 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 }
             }
 
-            // Layer summaries
-            val mlProb = if (result.rfProb > 0f || result.xgbProb > 0f) {
-                0.75f * result.rfProb + 0.25f * result.xgbProb
-            } else {
-                result.probability
-            }
-            tvMlSummaryVerdict.text = getVerdictText(mlProb)
-            tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb))
+            val prefs = requireContext().getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            val isDevMode = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
 
-            val dlProb = result.cnnScore ?: result.cnnProb ?: 0f
-            if (result.cnnScore != null || result.cnnProb != null) {
-                tvDlSummaryVerdict.text = getVerdictText(dlProb)
-                tvDlSummaryVerdict.setTextColor(getVerdictColor(dlProb))
-            } else {
-                tvDlSummaryVerdict.text = "Pending"
-                tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
-            }
-
-            if (result.urlFound) {
-                if (result.urlScore != null) {
-                    val urlProb = result.urlScore!!
-                    val verdictStr = result.urlVerdict?.lowercase()
-                    tvUrlSummaryVerdict.text = when {
-                        verdictStr == "malicious" || verdictStr == "smishing" || verdictStr == "spam" -> "Malicious"
-                        verdictStr == "suspicious" || (urlProb >= LocalClassifier.suspiciousThreshold && urlProb < LocalClassifier.smishingThreshold) -> "Suspicious"
-                        verdictStr == "clean" || verdictStr == "benign" || verdictStr == "safe" -> "Clean"
-                        urlProb >= LocalClassifier.smishingThreshold -> "Malicious"
-                        urlProb >= LocalClassifier.suspiciousThreshold -> "Suspicious"
-                        else -> "Clean"
-                    }
-                    tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
+            if (isDevMode) {
+                // Developer Mode: show technical per-layer verdicts and confidence scores
+                val mlProb = if (result.rfProb > 0f || result.xgbProb > 0f) {
+                    0.75f * result.rfProb + 0.25f * result.xgbProb
                 } else {
-                    tvUrlSummaryVerdict.text = "Pending"
+                    result.probability
+                }
+                tvMlSummaryVerdict.text = getVerdictText(mlProb)
+                tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb))
+
+                val dlProb = result.cnnScore ?: result.cnnProb ?: 0f
+                if (result.cnnScore != null || result.cnnProb != null) {
+                    tvDlSummaryVerdict.text = getVerdictText(dlProb)
+                    tvDlSummaryVerdict.setTextColor(getVerdictColor(dlProb))
+                } else {
+                    tvDlSummaryVerdict.text = "Pending"
+                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                }
+
+                if (result.urlFound) {
+                    if (result.urlScore != null) {
+                        val urlProb = result.urlScore!!
+                        val verdictStr = result.urlVerdict?.lowercase()
+                        tvUrlSummaryVerdict.text = when {
+                            verdictStr == "malicious" || verdictStr == "smishing" || verdictStr == "spam" -> "Malicious"
+                            verdictStr == "suspicious" || (urlProb >= LocalClassifier.suspiciousThreshold && urlProb < LocalClassifier.smishingThreshold) -> "Suspicious"
+                            verdictStr == "clean" || verdictStr == "benign" || verdictStr == "safe" -> "Clean"
+                            urlProb >= LocalClassifier.smishingThreshold -> "Malicious"
+                            urlProb >= LocalClassifier.suspiciousThreshold -> "Suspicious"
+                            else -> "Clean"
+                        }
+                        tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
+                    } else {
+                        tvUrlSummaryVerdict.text = "Pending"
+                        tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                    }
+                } else {
+                    tvUrlSummaryVerdict.text = "No Link"
                     tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
                 }
             } else {
-                tvUrlSummaryVerdict.text = "No Link"
-                tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                // Regular User Interface (Non-developer):
+                // Avoid putting safe, harmful, and smishing labels for individual layers.
+                // The main text is the only indicator showing the classification result.
+                // Each layer indicator shows strictly 'Scanned' (Green) or 'Pending' (Gray).
+
+                // Local Layer: always scanned once message analysis starts
+                tvMlSummaryVerdict.text = "Scanned"
+                tvMlSummaryVerdict.setTextColor(Color.parseColor("#26CE6B"))
+
+                // Online Scan: combines DL and URL threat intelligence
+                val isDeepScanning = DeepScanManager.isScanning(result)
+                val isOnlineScanned = (result.cnnScore != null || result.cnnProb != null) &&
+                        (!result.urlFound || result.urlScore != null) &&
+                        !isDeepScanning
+
+                if (isOnlineScanned) {
+                    tvDlSummaryVerdict.text = "Scanned"
+                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#26CE6B"))
+                } else {
+                    tvDlSummaryVerdict.text = "Pending"
+                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                }
             }
         }
 

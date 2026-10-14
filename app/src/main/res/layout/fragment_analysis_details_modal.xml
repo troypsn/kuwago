@@ -168,6 +168,7 @@
 
                     <!-- ML Layer -->
                     <LinearLayout
+                        android:id="@+id/ll_layer_ml_col"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -204,6 +205,7 @@
 
                     <!-- DL Layer -->
                     <LinearLayout
+                        android:id="@+id/ll_layer_dl_col"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -240,6 +242,7 @@
 
                     <!-- URL Scan Layer -->
                     <LinearLayout
+                        android:id="@+id/ll_layer_url_col"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
