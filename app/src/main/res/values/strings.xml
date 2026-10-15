@@ -241,13 +241,13 @@
     <string name="vpn_shield_status_inactive">Inactive — phishing sites are not blocked</string>
 
     <!-- Warning banner on the settings sub-page -->
-    <string name="vpn_shield_warning">URL Shield requires Android\'s VPN permission to intercept DNS queries. You will see a system consent dialog the first time you enable it. Kuwago does NOT inspect your internet browsing content.</string>
+    <string name="vpn_shield_warning">Requires Android\'s VPN permission to block malicious domains. Kuwago never inspects your browsing content.</string>
 
     <!-- Main body description on settings sub-page -->
-    <string name="settings_vpn_shield_body">URL Shield monitors DNS queries on your device to block access to websites identified as phishing threats by Kuwago. If you open a malicious link, the connection is stopped immediately before the page can load.</string>
+    <string name="settings_vpn_shield_body">Blocks scam and phishing links before malicious pages can load on your device.</string>
 
     <!-- Privacy clarification on settings sub-page -->
-    <string name="vpn_shield_privacy_note">🔒 Privacy note: URL Shield does not log your browsing history and does not send any data to Kuwago\'s servers. All blocking decisions are made locally, using only scan results already stored on your device. Non-DNS traffic (web pages, images, videos) passes through your normal network connection completely unaffected.</string>
+    <string name="vpn_shield_privacy_note">🔒 Privacy note: All blocking happens locally on your device. URL Shield never tracks or logs your browsing history.</string>
 
     <!-- VpnBlockedActivity detail text (placeholder %1$s = hostname) -->
     <string name="vpn_blocked_detail">This domain (%1$s) was previously identified as a phishing destination by Kuwago\'s scanner. The connection was blocked to protect your device and personal information.</string>

@@ -230,8 +230,8 @@ class MainActivity : AppCompatActivity() {
                                 "will be stopped before your browser opens it.\n\n" +
                                 "You can enable or disable URL Shield anytime in Settings → Security.",
                         iconRes = 0,
-                        confirmText = "Enable URL Shield",
-                        confirmBg = R.drawable.bg_red_button,
+                        confirmText = "Yes, Turn On URL Shield",
+                        confirmBg = R.drawable.bg_scan_button,
                         cancelText = "Maybe Later",
                         cancelBg = R.drawable.bg_dark_button,
                         onConfirm = {
