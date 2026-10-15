@@ -27,8 +27,35 @@ class SettingsAppVersionFragment : Fragment() {
         var isProgrammaticDevChange = false
         switchDevMode?.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticDevChange) return@setOnCheckedChangeListener
-            prefs.edit().putBoolean(SettingsFragment.KEY_DEVELOPER_MODE, isChecked).apply()
-            if (isChecked) {
+            if (!isChecked) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Warning",
+                    message = "You are about to turn off Developer Mode.",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        prefs.edit().putBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false).apply()
+                    },
+                    onCancel = {
+                        isProgrammaticDevChange = true
+                        switchDevMode.isChecked = true
+                        isProgrammaticDevChange = false
+                    },
+                    onDismiss = {
+                        if (prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)) {
+                            isProgrammaticDevChange = true
+                            switchDevMode.isChecked = true
+                            isProgrammaticDevChange = false
+                        }
+                    }
+                )
+            } else {
+                prefs.edit().putBoolean(SettingsFragment.KEY_DEVELOPER_MODE, true).apply()
                 CustomDialogHelper.showInfoDialog(
                     context = requireContext(),
                     title = "Developer Mode",

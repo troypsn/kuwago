@@ -29,8 +29,8 @@ class SettingsRealtimeScanFragment : Fragment() {
             if (!isChecked) {
                 CustomDialogHelper.showConfirmDialog(
                     context = requireContext(),
-                    title = "Turn off Auto-Block?",
-                    message = "Are you sure you want to turn off \"Auto-Block\"?",
+                    title = "Warning",
+                    message = "You are about to turn off Auto-Block.",
                     iconRes = R.drawable.ic_warning_triangle,
                     iconTint = android.graphics.Color.parseColor("#F07048"),
                     confirmText = "Turn Off",

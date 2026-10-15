@@ -81,9 +81,39 @@ class SettingsOnlineScanFragment : Fragment() {
         }
 
         // Setup Data Saver Switch
-        switchDataSaver.isChecked = prefs.getBoolean(SettingsFragment.KEY_DATA_SAVER, false)
+        var isProgrammaticChange = false
         switchDataSaver.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(SettingsFragment.KEY_DATA_SAVER, isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Warning",
+                    message = "You are about to turn off Data Saver.",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        prefs.edit().putBoolean(SettingsFragment.KEY_DATA_SAVER, false).apply()
+                    },
+                    onCancel = {
+                        isProgrammaticChange = true
+                        switchDataSaver.isChecked = true
+                        isProgrammaticChange = false
+                    },
+                    onDismiss = {
+                        if (prefs.getBoolean(SettingsFragment.KEY_DATA_SAVER, false)) {
+                            isProgrammaticChange = true
+                            switchDataSaver.isChecked = true
+                            isProgrammaticChange = false
+                        }
+                    }
+                )
+            } else {
+                prefs.edit().putBoolean(SettingsFragment.KEY_DATA_SAVER, true).apply()
+            }
         }
 
         return view

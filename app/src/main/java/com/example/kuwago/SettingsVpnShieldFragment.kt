@@ -107,9 +107,10 @@ class SettingsVpnShieldFragment : Fragment() {
             } else {
                 CustomDialogHelper.showConfirmDialog(
                     context = requireContext(),
-                    title = "Turn off URL Shield?",
-                    message = "Are you sure you want to turn off \"URL Shield\"?",
-                    iconRes = 0,
+                    title = "Warning",
+                    message = "You are about to turn off URL Shield.",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
                     confirmText = "Turn Off",
                     confirmBg = R.drawable.bg_red_button,
                     cancelText = "Cancel",

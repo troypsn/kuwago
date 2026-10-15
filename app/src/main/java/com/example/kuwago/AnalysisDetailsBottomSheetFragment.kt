@@ -204,8 +204,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             llAnalysisBreakdown?.visibility = View.VISIBLE
             llCombinedScore?.visibility = View.VISIBLE
         } else {
-            tvLayerMlTitle?.text = "Local Layer"
-            tvLayerDlTitle?.text = "Online Scan"
+            tvLayerMlTitle?.text = "On-Device Scan"
+            tvLayerDlTitle?.text = "Cloud Scan"
             llLayerUrlCol?.visibility = View.GONE
             llAnalysisBreakdown?.visibility = View.GONE
             llCombinedScore?.visibility = View.GONE

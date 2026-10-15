@@ -44,11 +44,47 @@ class SettingsAutoBlacklistFragment : Fragment() {
                 prefs.getBoolean("auto_blacklist", false)
         switchAutoBlacklist.isChecked = isEnabled
 
+        var isProgrammaticChange = false
         switchAutoBlacklist.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit()
-                .putBoolean(SettingsFragment.KEY_AUTO_BLACKLIST_ENABLED, isChecked)
-                .putBoolean("auto_blacklist", isChecked)
-                .apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Warning",
+                    message = "You are about to turn off Auto-Blacklist.",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        prefs.edit()
+                            .putBoolean(SettingsFragment.KEY_AUTO_BLACKLIST_ENABLED, false)
+                            .putBoolean("auto_blacklist", false)
+                            .apply()
+                    },
+                    onCancel = {
+                        isProgrammaticChange = true
+                        switchAutoBlacklist.isChecked = true
+                        isProgrammaticChange = false
+                    },
+                    onDismiss = {
+                        val stillEnabled = prefs.getBoolean(SettingsFragment.KEY_AUTO_BLACKLIST_ENABLED, false) ||
+                                prefs.getBoolean("auto_blacklist", false)
+                        if (stillEnabled) {
+                            isProgrammaticChange = true
+                            switchAutoBlacklist.isChecked = true
+                            isProgrammaticChange = false
+                        }
+                    }
+                )
+            } else {
+                prefs.edit()
+                    .putBoolean(SettingsFragment.KEY_AUTO_BLACKLIST_ENABLED, true)
+                    .putBoolean("auto_blacklist", true)
+                    .apply()
+            }
         }
 
         // Setup Spinner

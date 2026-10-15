@@ -66,87 +66,171 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- ML Chip -->
+        <!-- User Mode Chips (Local, Online) -->
         <LinearLayout
-            android:id="@+id/chip_ml"
+            android:id="@+id/container_user_chips"
             android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_chip_unselected"
+            android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:orientation="horizontal">
 
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="4dp"
-                android:src="@drawable/ic_ml"
-                android:contentDescription="ML"
-                app:tint="#888888" />
-
-            <TextView
+            <!-- Local Chip -->
+            <LinearLayout
+                android:id="@+id/chip_local"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ML"
-                android:textColor="#888888"
-                android:textSize="10sp"
-                android:fontFamily="@font/sf_pro" />
+                android:layout_height="24dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_chip_local"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_ml"
+                    android:contentDescription="Local"
+                    app:tint="#888888" />
+
+                <TextView
+                    android:id="@+id/tv_chip_local"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Local"
+                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:fontFamily="@font/sf_pro" />
+            </LinearLayout>
+
+            <!-- Online Chip -->
+            <LinearLayout
+                android:id="@+id/chip_online"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_chip_online"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_brain"
+                    android:contentDescription="Online"
+                    app:tint="#888888" />
+
+                <TextView
+                    android:id="@+id/tv_chip_online"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Online"
+                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:fontFamily="@font/sf_pro" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- DL Chip -->
+        <!-- Developer Mode Chips (ML, DL, URL) -->
         <LinearLayout
-            android:id="@+id/chip_dl"
+            android:id="@+id/container_dev_chips"
             android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_chip_unselected"
+            android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:visibility="gone">
 
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="4dp"
-                android:src="@drawable/ic_brain"
-                android:contentDescription="DL"
-                app:tint="#888888" />
-
-            <TextView
+            <!-- ML Chip -->
+            <LinearLayout
+                android:id="@+id/chip_ml"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DL"
-                android:textColor="#888888"
-                android:textSize="10sp"
-                android:fontFamily="@font/sf_pro" />
-        </LinearLayout>
+                android:layout_height="24dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
 
-        <!-- URL Chip -->
-        <LinearLayout
-            android:id="@+id/chip_url"
-            android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:background="@drawable/bg_chip_unselected"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+                <ImageView
+                    android:id="@+id/icon_chip_ml"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_ml"
+                    android:contentDescription="ML"
+                    app:tint="#888888" />
 
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="4dp"
-                android:src="@drawable/ic_link"
-                android:contentDescription="URL"
-                app:tint="#888888" />
+                <TextView
+                    android:id="@+id/tv_chip_ml"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ML"
+                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:fontFamily="@font/sf_pro" />
+            </LinearLayout>
 
-            <TextView
+            <!-- DL Chip -->
+            <LinearLayout
+                android:id="@+id/chip_dl"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="URL"
-                android:textColor="#888888"
-                android:textSize="10sp"
-                android:fontFamily="@font/sf_pro" />
+                android:layout_height="24dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_chip_dl"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_brain"
+                    android:contentDescription="DL"
+                    app:tint="#888888" />
+
+                <TextView
+                    android:id="@+id/tv_chip_dl"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DL"
+                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:fontFamily="@font/sf_pro" />
+            </LinearLayout>
+
+            <!-- URL Chip -->
+            <LinearLayout
+                android:id="@+id/chip_url"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <ImageView
+                    android:id="@+id/icon_chip_url"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_link"
+                    android:contentDescription="URL"
+                    app:tint="#888888" />
+
+                <TextView
+                    android:id="@+id/tv_chip_url"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="URL"
+                    android:textColor="#888888"
+                    android:textSize="10sp"
+                    android:fontFamily="@font/sf_pro" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Spacer -->

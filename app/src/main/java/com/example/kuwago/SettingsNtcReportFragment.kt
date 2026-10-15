@@ -22,8 +22,39 @@ class SettingsNtcReportFragment : Fragment() {
         val switchNtc = view.findViewById<SwitchCompat>(R.id.switch_ntc_report)
         switchNtc.isChecked = prefs.getBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, false)
 
+        var isProgrammaticChange = false
         switchNtc.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, isChecked).apply()
+            if (isProgrammaticChange) return@setOnCheckedChangeListener
+            if (!isChecked) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Warning",
+                    message = "You are about to turn off Auto-Report to NTC.",
+                    iconRes = R.drawable.ic_warning_triangle,
+                    iconTint = android.graphics.Color.parseColor("#F07048"),
+                    confirmText = "Turn Off",
+                    confirmBg = R.drawable.bg_red_button,
+                    cancelText = "Cancel",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        prefs.edit().putBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, false).apply()
+                    },
+                    onCancel = {
+                        isProgrammaticChange = true
+                        switchNtc.isChecked = true
+                        isProgrammaticChange = false
+                    },
+                    onDismiss = {
+                        if (prefs.getBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, false)) {
+                            isProgrammaticChange = true
+                            switchNtc.isChecked = true
+                            isProgrammaticChange = false
+                        }
+                    }
+                )
+            } else {
+                prefs.edit().putBoolean(SettingsFragment.KEY_AUTO_REPORT_NTC, true).apply()
+            }
         }
 
         return view

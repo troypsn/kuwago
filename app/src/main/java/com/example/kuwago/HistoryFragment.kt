@@ -157,6 +157,9 @@ class HistoryFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         syncPermissionState()
+        if (::smsAdapter.isInitialized) {
+            smsAdapter.notifyDataSetChanged()
+        }
     }
 
     override fun onDestroy() {
@@ -592,6 +595,10 @@ class SmsHistoryAdapter(
         val statusBadge: TextView = view.findViewById(R.id.history_status)
         val progressBar: ProgressBar = view.findViewById(R.id.history_progress)
         val timeText: TextView = view.findViewById(R.id.history_time)
+        val containerUserChips: LinearLayout = view.findViewById(R.id.container_user_chips)
+        val containerDevChips: LinearLayout = view.findViewById(R.id.container_dev_chips)
+        val chipLocal: LinearLayout = view.findViewById(R.id.chip_local)
+        val chipOnline: LinearLayout = view.findViewById(R.id.chip_online)
         val chipMl: LinearLayout = view.findViewById(R.id.chip_ml)
         val chipDl: LinearLayout = view.findViewById(R.id.chip_dl)
         val chipUrl: LinearLayout = view.findViewById(R.id.chip_url)
@@ -624,10 +631,6 @@ class SmsHistoryAdapter(
             holder.statusBadge.text = "Scanning…"
             holder.statusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#334155"))
             holder.statusBadge.setTextColor(Color.parseColor("#94A3B8"))
-
-            bindChip(holder.chipMl, scanned = false)
-            bindChip(holder.chipDl, scanned = false)
-            bindChip(holder.chipUrl, scanned = false)
         } else {
             holder.progressBar.visibility = View.GONE
             holder.statusBadge.visibility = View.VISIBLE
@@ -642,24 +645,65 @@ class SmsHistoryAdapter(
             }
             holder.statusBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, bgColor))
             holder.statusBadge.setTextColor(ContextCompat.getColor(context, textColor))
+        }
 
-            // ML chip — always scanned (local model always runs)
-            bindChip(holder.chipMl, scanned = true)
+        val prefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val isDevMode = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
 
-            // DL chip — scanned if cnnProb or cnnScore is present
-            val dlScanned = item.cnnProb != null || item.cnnScore != null
-            bindChip(holder.chipDl, scanned = dlScanned)
+        if (isDevMode) {
+            holder.containerDevChips.visibility = View.VISIBLE
+            holder.containerUserChips.visibility = View.GONE
 
-            // URL chip — relevant only if a URL was found and scanned
-            val urlScanned = item.urlFound && item.urlScore != null
-            bindChip(holder.chipUrl, scanned = urlScanned)
+            if (item.isScanning) {
+                bindChip(holder.chipMl, scanned = false)
+                bindChip(holder.chipDl, scanned = false)
+                bindChip(holder.chipUrl, scanned = false)
+            } else {
+                // ML chip — always scanned (local model always runs)
+                bindChip(holder.chipMl, scanned = true)
+
+                // DL chip — scanned if cnnProb or cnnScore is present
+                val dlScanned = item.cnnProb != null || item.cnnScore != null
+                bindChip(holder.chipDl, scanned = dlScanned)
+
+                // URL chip — relevant only if a URL was found and scanned
+                val urlScanned = item.urlFound && item.urlScore != null
+                bindChip(holder.chipUrl, scanned = urlScanned)
+            }
+        } else {
+            holder.containerDevChips.visibility = View.GONE
+            holder.containerUserChips.visibility = View.VISIBLE
+
+            if (item.isScanning) {
+                bindChip(holder.chipLocal, scanned = false)
+                bindChip(holder.chipOnline, scanned = false)
+            } else {
+                // Local scan — always scanned once complete
+                bindChip(holder.chipLocal, scanned = true)
+
+                // Online scan — scanned if deep learning or URL scan was performed
+                val isDeepScanning = DeepScanManager.isScanning(item)
+                val onlineScanned = !isDeepScanning && (item.cnnScore != null || item.cnnProb != null || (item.urlFound && item.urlScore != null))
+                bindChip(holder.chipOnline, scanned = onlineScanned)
+            }
         }
     }
 
-    /** Lights up a chip (white icon + text) if scanned, dims it if pending */
+    /** Lights up a chip (white icon + text + active border) if scanned, dims it if pending */
     private fun bindChip(chip: LinearLayout, scanned: Boolean) {
         val alpha = if (scanned) 1.0f else 0.35f
         chip.alpha = alpha
+        val bg = if (scanned) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected
+        chip.setBackgroundResource(bg)
+        val tintColor = if (scanned) Color.WHITE else Color.parseColor("#888888")
+        for (i in 0 until chip.childCount) {
+            val child = chip.getChildAt(i)
+            if (child is ImageView) {
+                child.setColorFilter(tintColor)
+            } else if (child is TextView) {
+                child.setTextColor(tintColor)
+            }
+        }
     }
 
     override fun getItemCount() = items.size

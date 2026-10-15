@@ -29,8 +29,8 @@ class SettingsTrainAiFragment : Fragment() {
             if (!isChecked) {
                 CustomDialogHelper.showConfirmDialog(
                     context = requireContext(),
-                    title = "Turn off Train AI?",
-                    message = "Are you sure you want to turn off \"Help Train AI\"?",
+                    title = "Warning",
+                    message = "You are about to turn off Help Train AI.",
                     iconRes = R.drawable.ic_warning_triangle,
                     iconTint = android.graphics.Color.parseColor("#F07048"),
                     confirmText = "Turn Off",

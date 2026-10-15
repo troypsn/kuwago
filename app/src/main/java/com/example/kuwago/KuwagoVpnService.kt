@@ -422,11 +422,8 @@ class KuwagoVpnService : VpnService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val kuwagoBitmap = android.graphics.BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
-
         return NotificationCompat.Builder(this, SettingsFragment.CHANNEL_VPN_ONGOING)
             .setSmallIcon(R.drawable.ic_kuwago_notif)
-            .setLargeIcon(kuwagoBitmap)
             .setContentTitle("Kuwago URL Shield Active")
             .setContentText("Monitoring DNS to block phishing sites")
             .setContentIntent(pi)

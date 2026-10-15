@@ -480,11 +480,8 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
-
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
             .setSmallIcon(R.drawable.ic_kuwago_notif)
-            .setLargeIcon(kuwagoBitmap)
             .setContentTitle(getString(R.string.notif_result_safe_title))
             .setContentText(getString(R.string.notif_result_safe_text, sender))
             .setContentIntent(pi)
@@ -517,11 +514,8 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
-
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
             .setSmallIcon(R.drawable.ic_kuwago_notif)
-            .setLargeIcon(kuwagoBitmap)
             .setContentTitle("✓ ${captured.title}")          // Kuwago-branded safe badge
             .setContentText(captured.text)
             .setSubText(getString(R.string.notif_result_safe_title))
@@ -569,11 +563,8 @@ class SmsNotificationListener : NotificationListenerService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val kuwagoBitmap = BitmapFactory.decodeResource(resources, R.drawable.kuwagoicon)
-
         val notif = NotificationCompat.Builder(this, SettingsFragment.CHANNEL_RESULT)
             .setSmallIcon(R.drawable.ic_kuwago_notif)
-            .setLargeIcon(kuwagoBitmap)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
