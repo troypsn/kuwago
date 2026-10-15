@@ -115,39 +115,23 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
             result = result
         )
 
-        // Issue type selection
-        val optionFalsePositive = view.findViewById<LinearLayout>(R.id.option_false_positive)
-        val optionFalseNegative = view.findViewById<LinearLayout>(R.id.option_false_negative)
-        val tvError = view.findViewById<TextView>(R.id.tv_report_error)
-
-        // Set initial unselected appearance
-        setOptionUnselected(optionFalsePositive)
-        setOptionUnselected(optionFalseNegative)
-
-        // Pre-select based on original verdict
+        // Issue explanation text box (automatically determines opposite classification)
         val originalVerdict = result.getClassificationLabel()
-        if (originalVerdict == "Harmful" || originalVerdict == "Suspicious") {
-            // App said harmful/suspicious → user thinks it's a false positive (was actually safe)
-            selectedReportType = "false_positive"
-            setOptionSelected(optionFalsePositive)
+        val isSafe = result.classification == Classification.SAFE
+
+        val tvTarget = view.findViewById<TextView>(R.id.tv_misclassification_target)
+        val tvDetail = view.findViewById<TextView>(R.id.tv_misclassification_detail)
+
+        if (isSafe) {
+            // App said safe -> user reports it should be harmful / smishing
+            selectedReportType = "false_negative"
+            tvTarget?.text = "Suggested Classification: Harmful / Smishing"
+            tvDetail?.text = "The classification that you got is inconsistent with the message content. This message was classified as Safe, but is supposed to be Harmful / Smishing."
         } else {
-            // App said safe → user thinks it's a false negative (was actually harmful)
-            selectedReportType = "false_negative"
-            setOptionSelected(optionFalseNegative)
-        }
-
-        optionFalsePositive.setOnClickListener {
+            // App said harmful or suspicious -> user reports it should be safe
             selectedReportType = "false_positive"
-            setOptionSelected(optionFalsePositive)
-            setOptionUnselected(optionFalseNegative)
-            tvError.visibility = View.GONE
-        }
-
-        optionFalseNegative.setOnClickListener {
-            selectedReportType = "false_negative"
-            setOptionSelected(optionFalseNegative)
-            setOptionUnselected(optionFalsePositive)
-            tvError.visibility = View.GONE
+            tvTarget?.text = "Suggested Classification: Safe"
+            tvDetail?.text = "The classification that you got is inconsistent with the message content. This message was classified as $originalVerdict, but is supposed to be Safe."
         }
 
         val etComment = view.findViewById<EditText>(R.id.et_user_comment)
@@ -156,12 +140,26 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         btnSubmit.setOnClickListener {
             if (isSubmitting) return@setOnClickListener
 
-            val reportType = selectedReportType
-            if (reportType == null) {
-                tvError.visibility = View.VISIBLE
+            val isCloudScanned = result.cnnScore != null || result.cnnProb != null
+            if (!isCloudScanned) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Run Cloud Scan?",
+                    message = "Scan the message for a more accurate threat assessment before submitting your report.",
+                    iconRes = R.drawable.ic_brain,
+                    iconTint = Color.parseColor("#4B5FE4"),
+                    confirmText = "Yes, Run Scan",
+                    confirmBg = R.drawable.bg_scan_button,
+                    cancelText = "No, Cancel Report",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        dismiss()
+                    }
+                )
                 return@setOnClickListener
             }
-            tvError.visibility = View.GONE
+
+            val reportType = selectedReportType ?: if (result.classification == Classification.SAFE) "false_negative" else "false_positive"
 
             val ctx = requireContext()
             if (!isNetworkAvailable(ctx)) {
@@ -371,28 +369,6 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         // Animate transition
         screenForm.visibility = View.GONE
         screenSuccess.visibility = View.VISIBLE
-    }
-
-    private fun setOptionSelected(layout: LinearLayout) {
-        layout.setBackgroundResource(R.drawable.bg_option_selected)
-        for (i in 0 until layout.childCount) {
-            val child = layout.getChildAt(i)
-            if (child is TextView) {
-                if (i == 0) child.setTextColor(Color.parseColor("#26CE6B"))
-                else child.setTextColor(Color.parseColor("#4CAF80"))
-            }
-        }
-    }
-
-    private fun setOptionUnselected(layout: LinearLayout) {
-        layout.setBackgroundResource(R.drawable.bg_layer_card)
-        for (i in 0 until layout.childCount) {
-            val child = layout.getChildAt(i)
-            if (child is TextView) {
-                if (i == 0) child.setTextColor(Color.parseColor("#CCCCCC"))
-                else child.setTextColor(Color.parseColor("#888888"))
-            }
-        }
     }
 
     /**

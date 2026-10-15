@@ -235,85 +235,39 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="Issue"
+                    android:text="Issue Description"
                     android:textColor="#CCCCCC"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <!-- What did we get wrong -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="What did we get wrong?"
-                    android:textColor="#AAAAAA"
-                    android:textSize="12sp" />
-
-                <!-- Issue type selection -->
+                <!-- Misclassification Explanation Text Box -->
                 <LinearLayout
+                    android:id="@+id/box_misclassification_explanation"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:orientation="horizontal">
+                    android:background="@drawable/bg_layer_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
 
-                    <!-- False Positive option -->
-                    <LinearLayout
-                        android:id="@+id/option_false_positive"
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tv_misclassification_target"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_layer_card"
-                        android:orientation="vertical"
-                        android:padding="12dp"
-                        android:clickable="true"
-                        android:focusable="true">
+                        android:text="Suggested Classification: Harmful"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Flagged as Harmful"
-                            android:textColor="#CCCCCC"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="But it's actually safe"
-                            android:textColor="#888888"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <!-- False Negative option -->
-                    <LinearLayout
-                        android:id="@+id/option_false_negative"
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tv_misclassification_detail"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_layer_card"
-                        android:orientation="vertical"
-                        android:padding="12dp"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Flagged as Safe"
-                            android:textColor="#CCCCCC"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="But it's actually harmful"
-                            android:textColor="#888888"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingMultiplier="1.3"
+                        android:text="The classification that you got is inconsistent with the message content. This message was classified as Safe, but is supposed to be Harmful / Smishing."
+                        android:textColor="#AAAAAA"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Your comments -->

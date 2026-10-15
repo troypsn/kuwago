@@ -1029,6 +1029,32 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
         btnReport.setOnClickListener {
             val currentResult = detectionResult ?: result
+            val isDeepScanning = DeepScanManager.isScanning(currentResult)
+            val isCloudScanned = (currentResult.cnnScore != null || currentResult.cnnProb != null) && !isDeepScanning
+
+            if (isDeepScanning) {
+                Toast.makeText(requireContext(), "Cloud scan is currently in progress. Please wait…", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (!isCloudScanned) {
+                CustomDialogHelper.showConfirmDialog(
+                    context = requireContext(),
+                    title = "Run Cloud Scan?",
+                    message = "Scan the message for a more accurate threat assessment before submitting your report.",
+                    iconRes = R.drawable.ic_brain,
+                    iconTint = android.graphics.Color.parseColor("#4B5FE4"),
+                    confirmText = "Yes, Run Scan",
+                    confirmBg = R.drawable.bg_scan_button,
+                    cancelText = "No, Cancel Report",
+                    cancelBg = R.drawable.bg_dark_button,
+                    onConfirm = {
+                        runDeepAnalysis(view, currentResult)
+                    }
+                )
+                return@setOnClickListener
+            }
+
             val reportSheet = ReportMisclassificationBottomSheetFragment.newInstance(currentResult)
             reportSheet.show(parentFragmentManager, "ReportMisclassificationBottomSheetFragment")
         }

@@ -689,12 +689,11 @@ class SmsHistoryAdapter(
         }
     }
 
-    /** Lights up a chip (white icon + text + active border) if scanned, dims it if pending */
+    /** Lights up a chip (white icon + text) if scanned, dims it if pending */
     private fun bindChip(chip: LinearLayout, scanned: Boolean) {
         val alpha = if (scanned) 1.0f else 0.35f
         chip.alpha = alpha
-        val bg = if (scanned) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected
-        chip.setBackgroundResource(bg)
+        chip.setBackgroundResource(R.drawable.bg_chip_unselected)
         val tintColor = if (scanned) Color.WHITE else Color.parseColor("#888888")
         for (i in 0 until chip.childCount) {
             val child = chip.getChildAt(i)

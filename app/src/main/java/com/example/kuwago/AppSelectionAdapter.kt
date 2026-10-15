@@ -46,41 +46,9 @@ class AppSelectionAdapter(
         holder.switchScan.setOnCheckedChangeListener(null)
         holder.switchScan.isChecked = app.isEnabled
 
-        var isProgrammaticChange = false
         holder.switchScan.setOnCheckedChangeListener { _, isChecked ->
-            if (isProgrammaticChange) return@setOnCheckedChangeListener
-            if (!isChecked) {
-                CustomDialogHelper.showConfirmDialog(
-                    context = holder.itemView.context,
-                    title = "Warning",
-                    message = "You are about to turn off ${app.appName}.",
-                    iconRes = R.drawable.ic_warning_triangle,
-                    iconTint = android.graphics.Color.parseColor("#F07048"),
-                    confirmText = "Turn Off",
-                    confirmBg = R.drawable.bg_red_button,
-                    cancelText = "Cancel",
-                    cancelBg = R.drawable.bg_dark_button,
-                    onConfirm = {
-                        app.isEnabled = false
-                        onToggleChanged(app, false)
-                    },
-                    onCancel = {
-                        isProgrammaticChange = true
-                        holder.switchScan.isChecked = true
-                        isProgrammaticChange = false
-                    },
-                    onDismiss = {
-                        if (app.isEnabled) {
-                            isProgrammaticChange = true
-                            holder.switchScan.isChecked = true
-                            isProgrammaticChange = false
-                        }
-                    }
-                )
-            } else {
-                app.isEnabled = true
-                onToggleChanged(app, true)
-            }
+            app.isEnabled = isChecked
+            onToggleChanged(app, isChecked)
         }
 
         holder.itemView.setOnClickListener {

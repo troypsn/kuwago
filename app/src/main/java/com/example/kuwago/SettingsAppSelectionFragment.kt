@@ -256,30 +256,11 @@ class SettingsAppSelectionFragment : Fragment() {
     }
 
     private fun handleToggleAll() {
-        val context = context ?: return
         val visibleList = adapter.getFilteredList()
         if (visibleList.isEmpty()) return
 
         val shouldEnableAll = visibleList.any { !it.isEnabled }
-
-        if (!shouldEnableAll) {
-            CustomDialogHelper.showConfirmDialog(
-                context = context,
-                title = "Warning",
-                message = "You are about to turn off all apps.",
-                iconRes = R.drawable.ic_warning_triangle,
-                iconTint = android.graphics.Color.parseColor("#F07048"),
-                confirmText = "Turn Off",
-                confirmBg = R.drawable.bg_red_button,
-                cancelText = "Cancel",
-                cancelBg = R.drawable.bg_dark_button,
-                onConfirm = {
-                    performToggleAll(visibleList, false)
-                }
-            )
-        } else {
-            performToggleAll(visibleList, true)
-        }
+        performToggleAll(visibleList, shouldEnableAll)
     }
 
     private fun performToggleAll(visibleList: List<InstalledAppInfo>, shouldEnableAll: Boolean) {
