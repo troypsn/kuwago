@@ -233,7 +233,9 @@ object LocalClassifier {
         "agad", "ngayon", "mawala", "deadline", "huling araw", "expir",
         "panalo", "manalo", "libreng", "libre", "premyo", "reward",
         "kunin", "i-click", "i-verify", "i-update", "i-confirm",
-        "mag-claim", "i-redeem", "i-activate", "mag-log", "mag-login"
+        "mag-claim", "i-redeem", "i-activate", "mag-log", "mag-login",
+        "urgent", "immediately", "immediate", "locked", "lock", "suspended",
+        "freeze", "frozen", "deactivated", "compromised", "unauthorized", "action required"
     )
     const val SHORTENED_URL_REASONING =
         "The URL is hidden behind a URL shortening process which hides the website intentions, destination, and other possible information, commonly used to conceal malicious links."
@@ -840,7 +842,27 @@ object LocalClassifier {
         }
     }
 
-    fun generateHumanReadableExplanation(message: String, classification: Classification): String {
+    fun isGenericBroadExplanation(text: String?): Boolean {
+        if (text.isNullOrBlank()) return true
+        val trimmed = text.trim()
+        val genericTemplates = listOf(
+            "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams.",
+            "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams.",
+            "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying.",
+            "This message exhibits characteristics of unsolicited or promotional SMS content. Exercise caution before opening links or replying.",
+            "No suspicious patterns, urgency triggers, or malicious web links were detected in this message.",
+            "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
+        )
+        return genericTemplates.any { trimmed.equals(it, ignoreCase = true) }
+    }
+
+    fun generateHumanReadableExplanation(
+        message: String,
+        classification: Classification,
+        urlVerdict: String? = null,
+        urlScore: Float? = null,
+        isCloudScanned: Boolean = false
+    ): String {
         val textLower = message.lowercase()
         val extractedUrls = extractUrls(message)
         val extractedUrl = extractedUrls.firstOrNull()
@@ -853,6 +875,8 @@ object LocalClassifier {
             return "Flagged as Harmful: This message contains a shortened URL ($shortUrlDisplay). $SHORTENED_URL_REASONING"
         }
 
+        val isUrlMalicious = urlVerdict?.equals("malicious", ignoreCase = true) == true || (urlScore ?: 0f) >= 0.5f
+        val isUrlClean = urlVerdict?.equals("clean", ignoreCase = true) == true || (urlScore != null && urlScore < 0.2f)
         val hasCta = CTA_PHRASES.any { textLower.contains(it) }
         val hasBank = PH_BANKS.any { textLower.contains(it) }
         val hasTelco = PH_TELCOS.any { textLower.contains(it) }
@@ -863,7 +887,9 @@ object LocalClassifier {
         val hasUrl = extractedUrls.isNotEmpty()
 
         if (hasUrl) {
-            if (extractedUrls.size > 1) {
+            if (isUrlMalicious) {
+                detectedTriggers.add("a web link flagged as malicious by threat intelligence")
+            } else if (extractedUrls.size > 1) {
                 detectedTriggers.add("${extractedUrls.size} unverified web links")
             } else {
                 detectedTriggers.add("an unverified web link")
@@ -885,47 +911,59 @@ object LocalClassifier {
             detectedTriggers.add("action-oriented prompt keywords (e.g. click, verify, claim)")
         }
 
+        val prefix = if (isCloudScanned) "Comprehensive AI and threat analysis" else "Local AI models"
+
         val baseExplanation = when (classification) {
             Classification.SMISHING -> {
                 if (detectedTriggers.isNotEmpty()) {
-                    "Local AI models flagged this message as Harmful because it contains " +
+                    "$prefix flagged this message as Harmful because it contains " +
                             detectedTriggers.joinToString(", ") + "."
                 } else {
-                    "Local AI models flagged this message as Harmful due to detected scam patterns in text structure and vocabulary."
+                    "$prefix flagged this message as Harmful due to detected scam patterns in text structure and vocabulary."
                 }
             }
             Classification.SUSPICIOUS -> {
                 if (detectedTriggers.isNotEmpty()) {
-                    "Local AI models flagged this message as Suspicious because it contains " +
+                    "$prefix flagged this message as Suspicious because it contains " +
                             detectedTriggers.joinToString(", ") + "."
                 } else {
-                    "Local AI models flagged this message as Suspicious due to promotional or unsolicited text characteristics."
+                    "$prefix flagged this message as Suspicious due to promotional or unsolicited text characteristics."
                 }
             }
             Classification.SAFE -> {
                 if (hasEmail) {
                     "No immediate high-risk threat patterns were detected by AI models, but the presence of an email address indicates this may be an unsolicited message."
+                } else if (hasUrl && isUrlClean) {
+                    "No suspicious patterns were detected in this message, and the web link was verified as safe."
                 } else if (hasUrl) {
                     "No immediate suspicious text patterns were detected in this message by local AI models."
                 } else {
-                    "No suspicious patterns, urgency triggers, or malicious links were detected in this message by local AI models."
+                    "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
                 }
             }
         }
 
         var fullExplanation = baseExplanation
-        if (hasUrl && !fullExplanation.contains("cannot be guaranteed", ignoreCase = true) && !fullExplanation.contains("no online threat scan", ignoreCase = true)) {
-            val linkWarning = if (extractedUrls.size > 1) {
-                " Exercise caution: this message contains multiple unverified web links that have not been scanned by online threat intelligence yet, so their safety cannot be guaranteed."
-            } else {
-                " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
+        if (hasUrl) {
+            if (isUrlMalicious && !fullExplanation.contains("malicious", ignoreCase = true)) {
+                fullExplanation += " Warning: This link was flagged as malicious by threat intelligence. Do not open it."
+            } else if (!isUrlMalicious && !isUrlClean && !fullExplanation.contains("cannot be guaranteed", ignoreCase = true) && !fullExplanation.contains("no online threat scan", ignoreCase = true)) {
+                val linkWarning = if (extractedUrls.size > 1) {
+                    " Exercise caution: this message contains multiple unverified web links that have not been scanned by online threat intelligence yet, so their safety cannot be guaranteed."
+                } else {
+                    " Exercise caution: this message contains an unverified web link that has not been scanned by online threat intelligence yet, so its safety cannot be guaranteed."
+                }
+                fullExplanation += linkWarning
             }
-            fullExplanation += linkWarning
         }
         if (hasEmail && !fullExplanation.contains("unsolicited", ignoreCase = true)) {
             fullExplanation += " Notice: This message contains an email address and may be an unsolicited message."
         }
         return fullExplanation
+    }
+
+    fun generateHumanReadableExplanation(message: String, classification: Classification): String {
+        return generateHumanReadableExplanation(message, classification, null, null, false)
     }
 
     fun formatDetailsExplanation(result: DetectionResult): String {

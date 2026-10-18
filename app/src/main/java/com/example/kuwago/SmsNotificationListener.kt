@@ -427,9 +427,25 @@ class SmsNotificationListener : NotificationListenerService() {
                 )
             }
         } else {
-            SmishingDetector.analyze(
+            val analyzed = SmishingDetector.analyze(
                 this@SmsNotificationListener, messageText, sender, isManual = false
-            ).copy(id = placeholderId, sender = sender, timestamp = timestamp, isScanning = false)
+            )
+            val resolvedOverall = if (!analyzed.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(analyzed.overallExplanation)) {
+                analyzed.overallExplanation
+            } else if (!localFallback?.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(localFallback.overallExplanation)) {
+                localFallback.overallExplanation
+            } else {
+                analyzed.overallExplanation ?: localFallback?.overallExplanation
+            }
+            val resolvedExp = if (!analyzed.explanation.isNullOrBlank()) analyzed.explanation else localFallback?.explanation
+            analyzed.copy(
+                id = placeholderId,
+                sender = sender,
+                timestamp = timestamp,
+                isScanning = false,
+                overallExplanation = resolvedOverall,
+                explanation = resolvedExp
+            )
         }
     }
 

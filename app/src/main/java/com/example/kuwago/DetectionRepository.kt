@@ -30,7 +30,25 @@ object DetectionRepository {
 
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             SmsLocalRepository.getAllDetectionsLiveData(ctx).observeForever { dbResults ->
-                val list = dbResults.take(MAX_DETECTIONS)
+                val current = _detections.value.orEmpty()
+                val mergedList = dbResults.map { dbItem ->
+                    val existing = current.find { it.id == dbItem.id || (it.message == dbItem.message && it.sender == dbItem.sender) }
+                    if (existing != null) {
+                        val preferredOverall = if (!existing.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(existing.overallExplanation)) {
+                            existing.overallExplanation
+                        } else {
+                            dbItem.overallExplanation
+                        }
+                        val preferredExplanation = if (!existing.explanation.isNullOrBlank()) existing.explanation else dbItem.explanation
+                        dbItem.copy(
+                            overallExplanation = preferredOverall,
+                            explanation = preferredExplanation
+                        )
+                    } else {
+                        dbItem
+                    }
+                }
+                val list = mergedList.take(MAX_DETECTIONS)
                 _detections.postValue(list)
             }
         }
@@ -40,7 +58,20 @@ object DetectionRepository {
         val current = _detections.value.orEmpty().toMutableList()
         val index = current.indexOfFirst { it.id == result.id || (it.message == result.message && it.sender == result.sender) }
         if (index != -1) {
-            current[index] = result
+            val existing = current[index]
+            val resolvedOverall = if (!result.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(result.overallExplanation)) {
+                result.overallExplanation
+            } else if (!existing.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(existing.overallExplanation)) {
+                existing.overallExplanation
+            } else {
+                result.overallExplanation ?: existing.overallExplanation
+            }
+            val resolvedExp = if (!result.explanation.isNullOrBlank()) result.explanation else existing.explanation
+            val merged = result.copy(
+                overallExplanation = resolvedOverall,
+                explanation = resolvedExp
+            )
+            current[index] = merged
         } else {
             current.add(0, result)
         }

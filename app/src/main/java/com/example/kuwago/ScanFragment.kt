@@ -153,9 +153,24 @@ class ScanFragment : Fragment() {
                 try {
                     val deepResult = withContext(Dispatchers.IO) {
                         val analyzed = SmishingDetector.analyze(ctx, messageText, sender, isManual = true)
-                            .copy(id = localResult.id, isScanning = false)
-                        com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(ctx, analyzed)
-                        analyzed
+                        val resolvedOverall = if (!analyzed.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(analyzed.overallExplanation)) {
+                            analyzed.overallExplanation
+                        } else if (!localResult.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(localResult.overallExplanation)) {
+                            localResult.overallExplanation
+                        } else {
+                            analyzed.overallExplanation ?: localResult.overallExplanation
+                        }
+                        val resolvedExp = if (!analyzed.explanation.isNullOrBlank()) analyzed.explanation else localResult.explanation
+                        val finalized = analyzed.copy(
+                            id = localResult.id,
+                            sender = sender,
+                            message = messageText,
+                            isScanning = false,
+                            overallExplanation = resolvedOverall,
+                            explanation = resolvedExp
+                        )
+                        com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(ctx, finalized)
+                        finalized
                     }
                     withContext(Dispatchers.Main) {
                         DetectionRepository.updateDetection(ctx, deepResult)

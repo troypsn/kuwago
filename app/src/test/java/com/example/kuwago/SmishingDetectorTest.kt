@@ -427,4 +427,37 @@ class SmishingDetectorTest {
         assertTrue(json.contains("\"urls\":[\"https://link1.com\",\"https://link2.org\"]"))
         assertTrue(json.contains("\"extracted_url\":\"https://link1.com\""))
     }
+
+    @Test
+    fun testIsGenericBroadExplanation_identifiesTemplatesCorrectly() {
+        val broadScam = "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
+        val broadSuspicious = "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
+        val broadSafe = "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
+
+        assertTrue(LocalClassifier.isGenericBroadExplanation(broadScam))
+        assertTrue(LocalClassifier.isGenericBroadExplanation(broadSuspicious))
+        assertTrue(LocalClassifier.isGenericBroadExplanation(broadSafe))
+        assertTrue(LocalClassifier.isGenericBroadExplanation(null))
+        assertTrue(LocalClassifier.isGenericBroadExplanation(""))
+
+        val detailedExplanation = "Local AI models flagged this message as Harmful because it contains high-pressure urgency phrasing or reward claims, references to financial institutions or e-wallet services."
+        assertFalse(LocalClassifier.isGenericBroadExplanation(detailedExplanation))
+    }
+
+    @Test
+    fun testGenerateHumanReadableExplanation_capturesMessagePerspectiveTriggers() {
+        val message = "URGENT BDO ALERT: Your account is locked! Click https://bdo-security.xyz now to verify."
+        val explanation = LocalClassifier.generateHumanReadableExplanation(
+            message = message,
+            classification = Classification.SMISHING,
+            urlVerdict = "malicious",
+            urlScore = 0.9f,
+            isCloudScanned = true
+        )
+
+        assertTrue("Explanation should mention financial institutions", explanation.contains("financial institutions", ignoreCase = true))
+        assertTrue("Explanation should mention urgency", explanation.contains("urgency", ignoreCase = true))
+        assertTrue("Explanation should mention malicious link", explanation.contains("malicious", ignoreCase = true))
+        assertFalse("Detailed explanation should not be flagged as generic", LocalClassifier.isGenericBroadExplanation(explanation))
+    }
 }

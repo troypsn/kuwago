@@ -80,7 +80,21 @@ object DeepScanManager {
 
             try {
                 val scanResult = SmishingDetector.analyze(appContext, result.message, result.sender, isManual = true)
-                val finalResult = scanResult.copy(id = result.id, sender = result.sender, timestamp = result.timestamp)
+                val resolvedOverall = if (!scanResult.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(scanResult.overallExplanation)) {
+                    scanResult.overallExplanation
+                } else if (!result.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(result.overallExplanation)) {
+                    result.overallExplanation
+                } else {
+                    scanResult.overallExplanation ?: result.overallExplanation
+                }
+                val resolvedExp = if (!scanResult.explanation.isNullOrBlank()) scanResult.explanation else result.explanation
+                val finalResult = scanResult.copy(
+                    id = result.id,
+                    sender = result.sender,
+                    timestamp = result.timestamp,
+                    overallExplanation = resolvedOverall,
+                    explanation = resolvedExp
+                )
 
                 val hasAnalysisData = finalResult.cnnScore != null || finalResult.cnnProb != null || (finalResult.urlFound && finalResult.urlScore != null)
                 if (hasAnalysisData) {

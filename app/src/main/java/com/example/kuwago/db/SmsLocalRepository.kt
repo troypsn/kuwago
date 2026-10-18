@@ -86,7 +86,9 @@ object SmsLocalRepository {
             mlPrediction = result.localVerdict ?: result.classification.name,
             mlConfidence = mlScore,
             dlPrediction = result.cnnVerdict,
-            dlConfidence = result.cnnScore ?: result.cnnProb
+            dlConfidence = result.cnnScore ?: result.cnnProb,
+            overallExplanation = result.overallExplanation,
+            explanation = result.explanation
         )
 
         // 3. Build UrlAnalysisEntity list
@@ -208,6 +210,20 @@ object SmsLocalRepository {
                     val rfRawLogit = localClass.rfRawLogit
                     val localVerdict = analysis?.mlPrediction ?: localClass.localVerdict
 
+                    val isShortened = LocalClassifier.containsShortenedUrl(sms.messageContent) || (firstUrl != null && LocalClassifier.isShortenedUrl(firstUrl))
+                    val resolvedExplanation = analysis?.explanation ?: (if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else null)
+                    val resolvedOverallExplanation = if (!analysis?.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(analysis.overallExplanation)) {
+                        analysis.overallExplanation
+                    } else {
+                        LocalClassifier.generateHumanReadableExplanation(
+                            message = sms.messageContent,
+                            classification = classification,
+                            urlVerdict = urlVerdict,
+                            urlScore = urlScore,
+                            isCloudScanned = analysis?.dlConfidence != null
+                        )
+                    }
+
                     val rawResult = DetectionResult(
                         id = sms.smsId,
                         sender = sms.senderNumber,
@@ -226,6 +242,8 @@ object SmsLocalRepository {
                         extractedEmails = allEmails,
                         urlScore = urlScore,
                         urlVerdict = urlVerdict,
+                        explanation = resolvedExplanation,
+                        overallExplanation = resolvedOverallExplanation,
                         localVerdict = localVerdict,
                         rfProb = rfProb,
                         rfRawLogit = rfRawLogit,

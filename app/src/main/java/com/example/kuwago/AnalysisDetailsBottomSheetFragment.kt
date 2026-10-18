@@ -178,8 +178,22 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             val updated = liveList.find {
                 it.id == currentRes.id || (it.message == currentRes.message && it.sender == currentRes.sender)
             }
-            if (updated != null && (updated != currentRes || currentRes.isScanning != updated.isScanning || currentRes.cnnScore != updated.cnnScore || currentRes.urlScore != updated.urlScore)) {
-                applyCompletedDlResult(view, updated)
+            if (updated != null) {
+                val preferredOverall = if (!updated.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(updated.overallExplanation)) {
+                    updated.overallExplanation
+                } else if (!currentRes.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(currentRes.overallExplanation)) {
+                    currentRes.overallExplanation
+                } else {
+                    updated.overallExplanation ?: currentRes.overallExplanation
+                }
+                val preferredExp = if (!updated.explanation.isNullOrBlank()) updated.explanation else currentRes.explanation
+                val merged = updated.copy(
+                    overallExplanation = preferredOverall,
+                    explanation = preferredExp
+                )
+                if (merged != currentRes || currentRes.isScanning != merged.isScanning || currentRes.cnnScore != merged.cnnScore || currentRes.urlScore != merged.urlScore) {
+                    applyCompletedDlResult(view, merged)
+                }
             }
         }
     }
@@ -306,13 +320,17 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             var reasoningText = if (isBlacklisted) {
                 "user is blacklisted"
             } else {
-                result.overallExplanation ?: result.explanation ?: when {
-                    result.urlFound && result.urlScore == null ->
-                        "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
-                    effectiveClassification == Classification.SMISHING -> "This message contains suspicious phrasing, financial triggers, or an unverified link typically used in Harmful SMS scams."
-                    effectiveClassification == Classification.SUSPICIOUS -> "This message exhibits characteristics of unsolicited or promotional content. Exercise caution before acting on links or replying."
-                    effectiveClassification == Classification.SAFE -> "No suspicious patterns, urgency triggers, or malicious links were detected in this message."
-                    else -> ""
+                val candidate = result.overallExplanation ?: result.explanation
+                if (!candidate.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(candidate)) {
+                    candidate
+                } else {
+                    LocalClassifier.generateHumanReadableExplanation(
+                        message = result.message,
+                        classification = effectiveClassification,
+                        urlVerdict = result.urlVerdict,
+                        urlScore = result.urlScore,
+                        isCloudScanned = result.cnnScore != null || result.cnnProb != null
+                    )
                 }
             }
 
@@ -919,7 +937,19 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun applyCompletedDlResult(view: View, finalResult: DetectionResult) {
-        detectionResult = finalResult
+        val preferredOverall = if (!finalResult.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(finalResult.overallExplanation)) {
+            finalResult.overallExplanation
+        } else if (!detectionResult?.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(detectionResult?.overallExplanation)) {
+            detectionResult?.overallExplanation
+        } else {
+            finalResult.overallExplanation ?: detectionResult?.overallExplanation
+        }
+        val preferredExp = if (!finalResult.explanation.isNullOrBlank()) finalResult.explanation else detectionResult?.explanation
+        val mergedResult = finalResult.copy(
+            overallExplanation = preferredOverall,
+            explanation = preferredExp
+        )
+        detectionResult = mergedResult
 
         val btnDeepScan = view.findViewById<ImageView>(R.id.btn_deep_scan)
         val pbDeepScanLoading = view.findViewById<ProgressBar>(R.id.pb_deep_scan_loading)

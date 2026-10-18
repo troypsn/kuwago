@@ -64,7 +64,13 @@ data class AnalysisResultEntity(
     val dlPrediction: String?,
 
     @ColumnInfo(name = "dl_confidence")
-    val dlConfidence: Float?
+    val dlConfidence: Float?,
+
+    @ColumnInfo(name = "overall_explanation")
+    val overallExplanation: String? = null,
+
+    @ColumnInfo(name = "explanation")
+    val explanation: String? = null
 )
 
 @Entity(

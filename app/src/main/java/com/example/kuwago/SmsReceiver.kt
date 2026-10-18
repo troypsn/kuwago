@@ -108,11 +108,22 @@ class SmsReceiver : BroadcastReceiver() {
 
                         if (onlineScanMode == SettingsFragment.MODE_AUTOMATIC && CustomDialogHelper.isNetworkAvailable(context)) {
                             try {
-                                val deepResult = SmishingDetector.analyze(context, fullBody, sender, isManual = false).copy(
+                                val analyzed = SmishingDetector.analyze(context, fullBody, sender, isManual = false)
+                                val resolvedOverall = if (!analyzed.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(analyzed.overallExplanation)) {
+                                    analyzed.overallExplanation
+                                } else if (!instantResult.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(instantResult.overallExplanation)) {
+                                    instantResult.overallExplanation
+                                } else {
+                                    analyzed.overallExplanation ?: instantResult.overallExplanation
+                                }
+                                val resolvedExp = if (!analyzed.explanation.isNullOrBlank()) analyzed.explanation else instantResult.explanation
+                                val deepResult = analyzed.copy(
                                     id = smsId,
                                     sender = sender,
                                     timestamp = firstTimestamp,
-                                    isScanning = false
+                                    isScanning = false,
+                                    overallExplanation = resolvedOverall,
+                                    explanation = resolvedExp
                                 )
                                 finalResult = deepResult
                                 DetectionRepository.updateDetection(context, deepResult)

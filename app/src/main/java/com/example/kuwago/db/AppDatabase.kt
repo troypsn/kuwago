@@ -14,7 +14,7 @@ import net.sqlcipher.database.SupportFactory
         FinalDecisionEntity::class,
         NotificationEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +26,13 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE analysis_result ADD COLUMN overall_explanation TEXT")
+                db.execSQL("ALTER TABLE analysis_result ADD COLUMN explanation TEXT")
+            }
+        }
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -43,6 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "kuwago_encrypted.db"
             )
                 .openHelperFactory(factory)
+                .addMigrations(MIGRATION_3_4)
                 .fallbackToDestructiveMigration(true)
                 .build()
         }

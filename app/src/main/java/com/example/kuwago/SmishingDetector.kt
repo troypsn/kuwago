@@ -308,19 +308,16 @@ object SmishingDetector {
 
                 var explanationText = if (isShortened) {
                     "Flagged as Harmful: This message contains a shortened URL (${extractedUrl ?: "short link"}). ${LocalClassifier.SHORTENED_URL_REASONING}"
+                } else if (!response.overallExplanation.isNullOrBlank() && !LocalClassifier.isGenericBroadExplanation(response.overallExplanation)) {
+                    response.overallExplanation
                 } else {
-                    response.overallExplanation ?: when {
-                        effectiveUrlVerdict?.lowercase() == "malicious" || (effectiveUrlScore ?: 0f) >= 0.5f ->
-                            "This message contains an unverified web link that was flagged as malicious by security threat intelligence."
-                        effectiveUrlScore == null && containsUrl ->
-                            "This message contains an unverified web link, but no online threat scan result is available yet. Exercise caution as its safety cannot be guaranteed without verification."
-                        classification == Classification.SMISHING ->
-                            "This message uses urgent call-to-action language, prize promises, or financial triggers typically associated with SMS scams."
-                        classification == Classification.SUSPICIOUS ->
-                            "This message exhibits characteristics of unsolicited or promotional SMS content. Exercise caution before opening links or replying."
-                        else ->
-                            "No suspicious patterns, urgency triggers, or malicious web links were detected in this message."
-                    }
+                    LocalClassifier.generateHumanReadableExplanation(
+                        message = message,
+                        classification = classification,
+                        urlVerdict = effectiveUrlVerdict,
+                        urlScore = effectiveUrlScore,
+                        isCloudScanned = hasCnnData
+                    )
                 }
 
                 if (containsUrl && !isShortened && effectiveUrlScore == null && !explanationText.contains("cannot be guaranteed", ignoreCase = true) && !explanationText.contains("no online threat scan", ignoreCase = true)) {
