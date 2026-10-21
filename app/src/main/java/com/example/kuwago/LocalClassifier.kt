@@ -696,7 +696,7 @@ object LocalClassifier {
             val textInputTensor = OnnxTensor.createTensor(
                 envLocal,
                 arrayOf(prep),
-                longArrayOf(1L, 1L)
+                longArrayOf(1L)
             )
             val textTfidf = textInputTensor.use { tensor ->
                 val inputs = mapOf("text_input" to tensor)
