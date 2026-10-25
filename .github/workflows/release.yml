@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - test_mobsf
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -104,6 +106,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release and Upload Assets
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
