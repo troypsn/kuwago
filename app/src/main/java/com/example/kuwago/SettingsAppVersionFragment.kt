@@ -19,7 +19,7 @@ class SettingsAppVersionFragment : Fragment() {
             TermsBottomSheetFragment().show(parentFragmentManager, "TermsBottomSheet")
         }
 
-        // Developer Mode Toggle
+        // Advanced Mode Toggle
         val prefs = requireContext().getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
         val switchDevMode = view.findViewById<SwitchCompat>(R.id.switch_developer_mode)
         switchDevMode?.isChecked = prefs.getBoolean(SettingsFragment.KEY_DEVELOPER_MODE, false)
@@ -31,7 +31,7 @@ class SettingsAppVersionFragment : Fragment() {
                 CustomDialogHelper.showConfirmDialog(
                     context = requireContext(),
                     title = "Warning",
-                    message = "You are about to turn off Developer Mode.",
+                    message = "You are about to turn off Advanced Mode.",
                     iconRes = R.drawable.ic_warning_triangle,
                     iconTint = android.graphics.Color.parseColor("#F07048"),
                     confirmText = "Turn Off",
@@ -58,8 +58,8 @@ class SettingsAppVersionFragment : Fragment() {
                 prefs.edit().putBoolean(SettingsFragment.KEY_DEVELOPER_MODE, true).apply()
                 CustomDialogHelper.showInfoDialog(
                     context = requireContext(),
-                    title = "Developer Mode",
-                    message = "Turning this on will show you extra details specifically made for developers.",
+                    title = "Advanced Mode",
+                    message = "Turning this on will show you extra details specifically made for advanced users.",
                     iconRes = R.drawable.ic_brain,
                     buttonText = "Got it"
                 )

@@ -1,24 +1,32 @@
 {
   "description": "Kuwago Ensemble and Layer Scoring Weights Configuration",
   "local_ml": {
-    "rf_weight": 0.75,
-    "xgb_weight": 0.25
+    "rf_weight": 0.50,
+    "xgb_weight": 0.50,
+    "suspicious_threshold": 0.40,
+    "smishing_threshold": 0.70
   },
   "no_url_weights": {
-    "dl_weight": 0.50,
-    "ml_weight": 0.50
+    "dl_weight": 0.333,
+    "ml_weight": 0.667,
+    "suspicious_threshold": 0.50,
+    "smishing_threshold": 0.75
   },
   "with_url_weights": {
-    "dl_weight": 0.50,
-    "ml_weight": 0.25,
-    "url_weight": 0.25
+    "dl_weight": 0.20,
+    "ml_weight": 0.60,
+    "url_weight": 0.20,
+    "suspicious_threshold": 0.50,
+    "smishing_threshold": 0.75
   },
   "url_only_weights": {
-    "url_weight": 0.50,
-    "ml_weight": 0.50
+    "url_weight": 1.00,
+    "ml_weight": 0.00,
+    "suspicious_threshold": 0.50,
+    "smishing_threshold": 0.75
   },
   "thresholds": {
-    "suspicious_threshold": 0.65,
-    "smishing_threshold": 0.85
+    "suspicious_threshold": 0.40,
+    "smishing_threshold": 0.70
   }
 }

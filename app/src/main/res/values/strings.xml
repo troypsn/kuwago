@@ -320,7 +320,7 @@
     <string name="terms_agree_button">I Understand &amp; Agree</string>
     <string name="terms_close_button">Close</string>
 
-    <!-- Developer Mode -->
-    <string name="settings_developer_mode_title">Developer Mode</string>
-    <string name="settings_developer_mode_desc">Turning this on will show you extra details specifically made for developers</string>
+    <!-- Advanced Mode -->
+    <string name="settings_developer_mode_title">Advanced Mode</string>
+    <string name="settings_developer_mode_desc">Turning this on will show you extra details specifically made for advanced users</string>
 </resources>

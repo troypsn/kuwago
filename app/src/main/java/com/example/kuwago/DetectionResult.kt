@@ -41,14 +41,27 @@ data class DetectionResult(
     val emailsArray: Array<String>
         get() = extractedEmails.toTypedArray()
 
+    fun getEffectiveThresholds(): Pair<Float, Float> {
+        val dlScore = cnnScore ?: cnnProb
+        val hasDl = dlScore != null
+        val hasUrl = urlFound && urlScore != null
+        return when {
+            hasDl && hasUrl -> Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
+            hasDl -> Pair(LocalClassifier.noUrlSuspiciousThreshold, LocalClassifier.noUrlSmishingThreshold)
+            hasUrl -> Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
+            else -> Pair(LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
+        }
+    }
+
     fun getEffectiveClassification(): Classification {
         if (classification == Classification.SMISHING && (urlVerdict?.equals("malicious", ignoreCase = true) == true && (explanation?.contains("shorten", ignoreCase = true) == true || overallExplanation?.contains("shorten", ignoreCase = true) == true))) {
             return Classification.SMISHING
         }
         val score = calculateEnsembleScore()
+        val (suspiciousThresh, smishingThresh) = getEffectiveThresholds()
         return when {
-            score >= LocalClassifier.smishingThreshold -> Classification.SMISHING
-            score >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+            score >= smishingThresh -> Classification.SMISHING
+            score >= suspiciousThresh -> Classification.SUSPICIOUS
             else -> Classification.SAFE
         }
     }

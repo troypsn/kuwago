@@ -21,24 +21,43 @@ object LocalClassifier {
     private const val TOTAL_FEATURES_COUNT = 1521
 
     // Default configuration weights (loaded dynamically from JSON)
-    var rfWeight = 0.75f
-    var xgbWeight = 0.25f
+    // ML layer only (no online scan): 50% RF / 50% XGB
+    var rfWeight = 0.50f
+    var xgbWeight = 0.50f
 
-    // Weights when NO URL is present (DL 50% + Local ML 50%)
-    var noUrlDlWeight = 0.50f
-    var noUrlMlWeight = 0.50f
+    // Weights when NO URL is present (DL 33.3% + Local ML 66.7%)
+    var noUrlDlWeight = 0.333f
+    var noUrlMlWeight = 0.667f
 
-    // Weights when URL is present (DL 50% + ML 25% + URL 25%)
-    var withUrlDlWeight = 0.50f
-    var withUrlMlWeight = 0.25f
-    var withUrlUrlWeight = 0.25f
+    // Weights when URL is present (DL 20% + ML 60% + URL 20%)
+    var withUrlDlWeight = 0.20f
+    var withUrlMlWeight = 0.60f
+    var withUrlUrlWeight = 0.20f
 
     // Weights when only URL + ML (fallback if DL not available)
     var urlOnlyUrlWeight = 0.50f
     var urlOnlyMlWeight = 0.50f
 
-    var suspiciousThreshold = 0.65f
-    var smishingThreshold = 0.85f
+    // ML layer thresholds (no online scan): 0.40 suspicious, 0.70 harmful
+    var mlSuspiciousThreshold = 0.40f
+    var mlSmishingThreshold = 0.70f
+
+    // Online scan with URL thresholds: 0.50 suspicious, 0.75 harmful
+    var withUrlSuspiciousThreshold = 0.50f
+    var withUrlSmishingThreshold = 0.75f
+
+    // Online scan text-only (no URL) thresholds: 0.50 suspicious, 0.75 harmful
+    var noUrlSuspiciousThreshold = 0.50f
+    var noUrlSmishingThreshold = 0.75f
+
+    // Global threshold aliases for backwards compatibility
+    var suspiciousThreshold: Float
+        get() = mlSuspiciousThreshold
+        set(value) { mlSuspiciousThreshold = value }
+
+    var smishingThreshold: Float
+        get() = mlSmishingThreshold
+        set(value) { mlSmishingThreshold = value }
 
     // Aliases for compatibility
     var localWeight: Float
@@ -132,18 +151,26 @@ object LocalClassifier {
                 val localMlObj = json.getJSONObject("local_ml")
                 rfWeight = localMlObj.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
                 xgbWeight = localMlObj.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
+                mlSuspiciousThreshold = localMlObj.optDouble("suspicious_threshold", mlSuspiciousThreshold.toDouble()).toFloat()
+                mlSmishingThreshold = localMlObj.optDouble("smishing_threshold", mlSmishingThreshold.toDouble()).toFloat()
             } else {
                 rfWeight = json.optDouble("rf_weight", rfWeight.toDouble()).toFloat()
                 xgbWeight = json.optDouble("xgb_weight", xgbWeight.toDouble()).toFloat()
+                mlSuspiciousThreshold = json.optDouble("suspicious_threshold", mlSuspiciousThreshold.toDouble()).toFloat()
+                mlSmishingThreshold = json.optDouble("smishing_threshold", mlSmishingThreshold.toDouble()).toFloat()
             }
 
             if (json.has("no_url_weights")) {
                 val noUrlObj = json.getJSONObject("no_url_weights")
                 noUrlDlWeight = noUrlObj.optDouble("dl_weight", noUrlDlWeight.toDouble()).toFloat()
                 noUrlMlWeight = noUrlObj.optDouble("ml_weight", noUrlMlWeight.toDouble()).toFloat()
+                noUrlSuspiciousThreshold = noUrlObj.optDouble("suspicious_threshold", noUrlSuspiciousThreshold.toDouble()).toFloat()
+                noUrlSmishingThreshold = noUrlObj.optDouble("smishing_threshold", noUrlSmishingThreshold.toDouble()).toFloat()
             } else {
-                noUrlDlWeight = json.optDouble("cnn_weight", json.optDouble("dl_weight", noUrlDlWeight.toDouble())).toFloat()
-                noUrlMlWeight = json.optDouble("local_weight", json.optDouble("ml_weight", noUrlMlWeight.toDouble())).toFloat()
+                noUrlDlWeight = json.optDouble("no_url_dl_weight", json.optDouble("cnn_weight", json.optDouble("dl_weight", noUrlDlWeight.toDouble()))).toFloat()
+                noUrlMlWeight = json.optDouble("no_url_ml_weight", json.optDouble("local_weight", json.optDouble("ml_weight", noUrlMlWeight.toDouble()))).toFloat()
+                noUrlSuspiciousThreshold = json.optDouble("no_url_suspicious_threshold", noUrlSuspiciousThreshold.toDouble()).toFloat()
+                noUrlSmishingThreshold = json.optDouble("no_url_smishing_threshold", noUrlSmishingThreshold.toDouble()).toFloat()
             }
 
             if (json.has("with_url_weights")) {
@@ -151,10 +178,14 @@ object LocalClassifier {
                 withUrlDlWeight = withUrlObj.optDouble("dl_weight", withUrlDlWeight.toDouble()).toFloat()
                 withUrlMlWeight = withUrlObj.optDouble("ml_weight", withUrlMlWeight.toDouble()).toFloat()
                 withUrlUrlWeight = withUrlObj.optDouble("url_weight", withUrlUrlWeight.toDouble()).toFloat()
+                withUrlSuspiciousThreshold = withUrlObj.optDouble("suspicious_threshold", withUrlSuspiciousThreshold.toDouble()).toFloat()
+                withUrlSmishingThreshold = withUrlObj.optDouble("smishing_threshold", withUrlSmishingThreshold.toDouble()).toFloat()
             } else {
                 withUrlDlWeight = json.optDouble("with_url_dl_weight", withUrlDlWeight.toDouble()).toFloat()
                 withUrlMlWeight = json.optDouble("with_url_ml_weight", withUrlMlWeight.toDouble()).toFloat()
                 withUrlUrlWeight = json.optDouble("with_url_url_weight", withUrlUrlWeight.toDouble()).toFloat()
+                withUrlSuspiciousThreshold = json.optDouble("with_url_suspicious_threshold", withUrlSuspiciousThreshold.toDouble()).toFloat()
+                withUrlSmishingThreshold = json.optDouble("with_url_smishing_threshold", withUrlSmishingThreshold.toDouble()).toFloat()
             }
 
             if (json.has("url_only_weights")) {
@@ -165,11 +196,8 @@ object LocalClassifier {
 
             if (json.has("thresholds")) {
                 val threshObj = json.getJSONObject("thresholds")
-                suspiciousThreshold = threshObj.optDouble("suspicious_threshold", suspiciousThreshold.toDouble()).toFloat()
-                smishingThreshold = threshObj.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
-            } else {
-                suspiciousThreshold = json.optDouble("suspicious_threshold", json.optDouble("threshold", suspiciousThreshold.toDouble())).toFloat()
-                smishingThreshold = json.optDouble("smishing_threshold", smishingThreshold.toDouble()).toFloat()
+                mlSuspiciousThreshold = threshObj.optDouble("suspicious_threshold", mlSuspiciousThreshold.toDouble()).toFloat()
+                mlSmishingThreshold = threshObj.optDouble("smishing_threshold", mlSmishingThreshold.toDouble()).toFloat()
             }
         } catch (e: Exception) {
             // Ignore and use defaults
@@ -982,13 +1010,13 @@ object LocalClassifier {
         val urlVerdictStr = result.urlVerdict ?: "N/A"
 
         val withUrlDlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlDlWeight * 100)
-        val withUrlUrlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlUrlWeight * 100)
         val withUrlMlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlMlWeight * 100)
+        val withUrlUrlPct = String.format(java.util.Locale.US, "%.0f%%", withUrlUrlWeight * 100)
 
-        val noUrlDlPct = String.format(java.util.Locale.US, "%.0f%%", noUrlDlWeight * 100)
-        val noUrlMlPct = String.format(java.util.Locale.US, "%.0f%%", noUrlMlWeight * 100)
+        val noUrlDlPct = String.format(java.util.Locale.US, "%.1f%%", noUrlDlWeight * 100)
+        val noUrlMlPct = String.format(java.util.Locale.US, "%.1f%%", noUrlMlWeight * 100)
 
-        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble ($withUrlDlPct CNN + $withUrlUrlPct URL + $withUrlMlPct Local)" else "Ensemble ($noUrlDlPct CNN + $noUrlMlPct Local)"
+        val formulaHeader = result.ensembleFormula ?: if (hasUrl) "Ensemble ($withUrlDlPct DL + $withUrlMlPct ML + $withUrlUrlPct URL)" else "Ensemble ($noUrlDlPct DL + $noUrlMlPct ML)"
 
         return if (hasUrl) {
             "Ensemble Calculation Breakdown:\n" +

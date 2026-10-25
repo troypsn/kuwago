@@ -36,10 +36,21 @@ class SmishingDetectorTest {
      * Heuristic tests must pin these to known values so results are reproducible.
      */
     private fun resetThresholds() {
-        LocalClassifier.suspiciousThreshold = 0.50f
-        LocalClassifier.smishingThreshold  = 0.85f
-        LocalClassifier.rfWeight           = 0.75f
-        LocalClassifier.xgbWeight          = 0.25f
+        LocalClassifier.mlSuspiciousThreshold      = 0.40f
+        LocalClassifier.mlSmishingThreshold        = 0.70f
+        LocalClassifier.withUrlSuspiciousThreshold = 0.50f
+        LocalClassifier.withUrlSmishingThreshold   = 0.75f
+        LocalClassifier.noUrlSuspiciousThreshold   = 0.50f
+        LocalClassifier.noUrlSmishingThreshold     = 0.75f
+        LocalClassifier.rfWeight                   = 0.50f
+        LocalClassifier.xgbWeight                  = 0.50f
+        LocalClassifier.noUrlDlWeight              = 0.333f
+        LocalClassifier.noUrlMlWeight              = 0.667f
+        LocalClassifier.withUrlDlWeight            = 0.20f
+        LocalClassifier.withUrlMlWeight            = 0.60f
+        LocalClassifier.withUrlUrlWeight           = 0.20f
+        LocalClassifier.urlOnlyUrlWeight           = 0.50f
+        LocalClassifier.urlOnlyMlWeight            = 0.50f
     }
 
     // ==========================================
@@ -459,5 +470,125 @@ class SmishingDetectorTest {
         assertTrue("Explanation should mention urgency", explanation.contains("urgency", ignoreCase = true))
         assertTrue("Explanation should mention malicious link", explanation.contains("malicious", ignoreCase = true))
         assertFalse("Detailed explanation should not be flagged as generic", LocalClassifier.isGenericBroadExplanation(explanation))
+    }
+
+    @Test
+    fun testEnsembleWeightsAndThresholdsForEveryCase() {
+        resetThresholds()
+
+        // 1. ML layer only (no online scan): 50% RF / 50% XGB ; 0.40 suspicious, 0.70 harmful
+        assertEquals(0.50f, LocalClassifier.rfWeight, 0.001f)
+        assertEquals(0.50f, LocalClassifier.xgbWeight, 0.001f)
+        assertEquals(0.40f, LocalClassifier.mlSuspiciousThreshold, 0.001f)
+        assertEquals(0.70f, LocalClassifier.mlSmishingThreshold, 0.001f)
+
+        val mlSuspiciousResult = DetectionResult(
+            sender = "Unknown",
+            message = "Test ML only",
+            rfProb = 0.50f,
+            xgbProb = 0.30f // 50% * 0.50 + 50% * 0.30 = 0.40
+        )
+        assertEquals(0.40f, mlSuspiciousResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SUSPICIOUS, mlSuspiciousResult.getEffectiveClassification())
+
+        val mlHarmfulResult = DetectionResult(
+            sender = "Unknown",
+            message = "Test ML harmful",
+            rfProb = 0.80f,
+            xgbProb = 0.60f // 50% * 0.80 + 50% * 0.60 = 0.70
+        )
+        assertEquals(0.70f, mlHarmfulResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SMISHING, mlHarmfulResult.getEffectiveClassification())
+
+        val mlSafeResult = DetectionResult(
+            sender = "Unknown",
+            message = "Test ML safe",
+            rfProb = 0.30f,
+            xgbProb = 0.30f // 50% * 0.30 + 50% * 0.30 = 0.30 (< 0.40)
+        )
+        assertEquals(0.30f, mlSafeResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SAFE, mlSafeResult.getEffectiveClassification())
+
+        // 2. Text with URL: 20% DL / 60% ML / 20% URL, Final threshold 0.50 suspicious, 0.75 harmful
+        assertEquals(0.20f, LocalClassifier.withUrlDlWeight, 0.001f)
+        assertEquals(0.60f, LocalClassifier.withUrlMlWeight, 0.001f)
+        assertEquals(0.20f, LocalClassifier.withUrlUrlWeight, 0.001f)
+        assertEquals(0.50f, LocalClassifier.withUrlSuspiciousThreshold, 0.001f)
+        assertEquals(0.75f, LocalClassifier.withUrlSmishingThreshold, 0.001f)
+
+        val withUrlSuspiciousResult = DetectionResult(
+            sender = "Unknown",
+            message = "Visit http://test.com",
+            urlFound = true,
+            cnnScore = 0.50f,
+            urlScore = 0.50f,
+            rfProb = 0.50f,
+            xgbProb = 0.50f // ML = 0.50. Ensemble = 0.20*0.5 + 0.60*0.5 + 0.20*0.5 = 0.50
+        )
+        assertEquals(0.50f, withUrlSuspiciousResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SUSPICIOUS, withUrlSuspiciousResult.getEffectiveClassification())
+
+        val withUrlHarmfulResult = DetectionResult(
+            sender = "Unknown",
+            message = "Visit http://test.com",
+            urlFound = true,
+            cnnScore = 0.75f,
+            urlScore = 0.75f,
+            rfProb = 0.75f,
+            xgbProb = 0.75f // Ensemble = 0.20*0.75 + 0.60*0.75 + 0.20*0.75 = 0.75
+        )
+        assertEquals(0.75f, withUrlHarmfulResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SMISHING, withUrlHarmfulResult.getEffectiveClassification())
+
+        val withUrlSafeResult = DetectionResult(
+            sender = "Unknown",
+            message = "Visit http://test.com",
+            urlFound = true,
+            cnnScore = 0.40f,
+            urlScore = 0.40f,
+            rfProb = 0.40f,
+            xgbProb = 0.40f // Ensemble = 0.40 (< 0.50)
+        )
+        assertEquals(0.40f, withUrlSafeResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SAFE, withUrlSafeResult.getEffectiveClassification())
+
+        // 3. Text-only message without URLs: 33.3% DL / 66.7% ML; threshold 0.50 suspicious, 0.75 harmful
+        assertEquals(0.333f, LocalClassifier.noUrlDlWeight, 0.001f)
+        assertEquals(0.667f, LocalClassifier.noUrlMlWeight, 0.001f)
+        assertEquals(0.50f, LocalClassifier.noUrlSuspiciousThreshold, 0.001f)
+        assertEquals(0.75f, LocalClassifier.noUrlSmishingThreshold, 0.001f)
+
+        val noUrlSuspiciousResult = DetectionResult(
+            sender = "Unknown",
+            message = "Plain text only",
+            urlFound = false,
+            cnnScore = 0.50f,
+            rfProb = 0.50f,
+            xgbProb = 0.50f // ML = 0.50. Ensemble = 0.333*0.5 + 0.667*0.5 = 0.50
+        )
+        assertEquals(0.50f, noUrlSuspiciousResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SUSPICIOUS, noUrlSuspiciousResult.getEffectiveClassification())
+
+        val noUrlHarmfulResult = DetectionResult(
+            sender = "Unknown",
+            message = "Plain text only",
+            urlFound = false,
+            cnnScore = 0.75f,
+            rfProb = 0.75f,
+            xgbProb = 0.75f // Ensemble = 0.333*0.75 + 0.667*0.75 = 0.75
+        )
+        assertEquals(0.75f, noUrlHarmfulResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SMISHING, noUrlHarmfulResult.getEffectiveClassification())
+
+        val noUrlSafeResult = DetectionResult(
+            sender = "Unknown",
+            message = "Plain text only",
+            urlFound = false,
+            cnnScore = 0.45f,
+            rfProb = 0.45f,
+            xgbProb = 0.45f // Ensemble = 0.45 (< 0.50)
+        )
+        assertEquals(0.45f, noUrlSafeResult.calculateEnsembleScore(), 0.001f)
+        assertEquals(Classification.SAFE, noUrlSafeResult.getEffectiveClassification())
     }
 }

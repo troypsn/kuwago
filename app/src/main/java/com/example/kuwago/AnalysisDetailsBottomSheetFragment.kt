@@ -373,18 +373,19 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             if (isDevMode) {
                 // Developer Mode: show technical per-layer verdicts and confidence scores
                 val mlProb = if (result.rfProb > 0f || result.xgbProb > 0f) {
-                    0.75f * result.rfProb + 0.25f * result.xgbProb
+                    LocalClassifier.rfWeight * result.rfProb + LocalClassifier.xgbWeight * result.xgbProb
                 } else {
                     result.probability
                 }
-                tvMlSummaryVerdict.text = getVerdictText(mlProb)
-                tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb))
+                tvMlSummaryVerdict.text = getVerdictText(mlProb, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
+                tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold))
                 ivLayerMlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
 
                 val dlProb = result.cnnScore ?: result.cnnProb ?: 0f
                 if (result.cnnScore != null || result.cnnProb != null) {
-                    tvDlSummaryVerdict.text = getVerdictText(dlProb)
-                    tvDlSummaryVerdict.setTextColor(getVerdictColor(dlProb))
+                    val (dlSusp, dlSmish) = if (result.urlFound) Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold) else Pair(LocalClassifier.noUrlSuspiciousThreshold, LocalClassifier.noUrlSmishingThreshold)
+                    tvDlSummaryVerdict.text = getVerdictText(dlProb, dlSusp, dlSmish)
+                    tvDlSummaryVerdict.setTextColor(getVerdictColor(dlProb, dlSusp, dlSmish))
                 } else {
                     tvDlSummaryVerdict.text = "Pending"
                     tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
@@ -397,13 +398,13 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                         val verdictStr = result.urlVerdict?.lowercase()
                         tvUrlSummaryVerdict.text = when {
                             verdictStr == "malicious" || verdictStr == "smishing" || verdictStr == "spam" -> "Malicious"
-                            verdictStr == "suspicious" || (urlProb >= LocalClassifier.suspiciousThreshold && urlProb < LocalClassifier.smishingThreshold) -> "Suspicious"
+                            verdictStr == "suspicious" || (urlProb >= LocalClassifier.withUrlSuspiciousThreshold && urlProb < LocalClassifier.withUrlSmishingThreshold) -> "Suspicious"
                             verdictStr == "clean" || verdictStr == "benign" || verdictStr == "safe" -> "Clean"
-                            urlProb >= LocalClassifier.smishingThreshold -> "Malicious"
-                            urlProb >= LocalClassifier.suspiciousThreshold -> "Suspicious"
+                            urlProb >= LocalClassifier.withUrlSmishingThreshold -> "Malicious"
+                            urlProb >= LocalClassifier.withUrlSuspiciousThreshold -> "Suspicious"
                             else -> "Clean"
                         }
-                        tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb))
+                        tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb, LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold))
                     } else {
                         tvUrlSummaryVerdict.text = "Pending"
                         tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
@@ -447,18 +448,18 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         tvScannedDate.text = sdf.format(Date(safeTimestamp))
     }
 
-    private fun getVerdictText(prob: Float): String {
+    private fun getVerdictText(prob: Float, suspiciousThresh: Float = LocalClassifier.suspiciousThreshold, smishingThresh: Float = LocalClassifier.smishingThreshold): String {
         return when {
-            prob >= LocalClassifier.smishingThreshold -> "Harmful"
-            prob >= LocalClassifier.suspiciousThreshold -> "Suspicious"
+            prob >= smishingThresh -> "Harmful"
+            prob >= suspiciousThresh -> "Suspicious"
             else -> "Safe"
         }
     }
 
-    private fun getVerdictColor(prob: Float): Int {
+    private fun getVerdictColor(prob: Float, suspiciousThresh: Float = LocalClassifier.suspiciousThreshold, smishingThresh: Float = LocalClassifier.smishingThreshold): Int {
         return when {
-            prob >= LocalClassifier.smishingThreshold -> Color.parseColor("#FF4D55")
-            prob >= LocalClassifier.suspiciousThreshold -> Color.parseColor("#FFF07048")
+            prob >= smishingThresh -> Color.parseColor("#FF4D55")
+            prob >= suspiciousThresh -> Color.parseColor("#FFF07048")
             else -> Color.parseColor("#26CE6B")
         }
     }
@@ -475,17 +476,17 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val llMlMetricsContainer = view.findViewById<LinearLayout>(R.id.ll_ml_metrics_container)
 
         val mlScore = if (result.rfProb > 0f || result.xgbProb > 0f) {
-            0.75f * result.rfProb + 0.25f * result.xgbProb
+            LocalClassifier.rfWeight * result.rfProb + LocalClassifier.xgbWeight * result.xgbProb
         } else result.probability
 
-        val mlColor = getVerdictColor(mlScore)
+        val mlColor = getVerdictColor(mlScore, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
         tvMlScoreBadge.text = String.format(Locale.US, "%.2f", mlScore)
         tvMlScoreBadge.setTextColor(mlColor)
         tvMlConfidenceVal.text = String.format(Locale.US, "%.2f", mlScore)
         tvMlConfidenceVal.setTextColor(mlColor)
         pbMlConfidence.progress = (mlScore * 100).toInt()
         pbMlConfidence.progressTintList = ColorStateList.valueOf(mlColor)
-        val mlVerdict = getVerdictText(mlScore)
+        val mlVerdict = getVerdictText(mlScore, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
         tvMlClassifiedBadge.text = if (mlVerdict == "Safe") "Classified as safe" else "Classified as ${mlVerdict.lowercase()}"
         tvMlClassifiedBadge.setTextColor(mlColor)
         TextViewCompat.setCompoundDrawableTintList(tvMlClassifiedBadge, ColorStateList.valueOf(mlColor))
@@ -519,14 +520,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val dlScore = result.cnnScore ?: result.cnnProb ?: 0f
 
         if (hasDlData) {
-            val dlColor = getVerdictColor(dlScore)
+            val (dlSusp, dlSmish) = if (result.urlFound) Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold) else Pair(LocalClassifier.noUrlSuspiciousThreshold, LocalClassifier.noUrlSmishingThreshold)
+            val dlColor = getVerdictColor(dlScore, dlSusp, dlSmish)
             tvDlScoreBadge.text = String.format(Locale.US, "%.2f", dlScore)
             tvDlScoreBadge.setTextColor(dlColor)
             tvDlConfidenceVal.text = String.format(Locale.US, "%.2f", dlScore)
             tvDlConfidenceVal.setTextColor(dlColor)
             pbDlConfidence.progress = (dlScore * 100).toInt()
             pbDlConfidence.progressTintList = ColorStateList.valueOf(dlColor)
-            val dlVerdict = getVerdictText(dlScore)
+            val dlVerdict = getVerdictText(dlScore, dlSusp, dlSmish)
             tvDlClassifiedBadge.text = if (dlVerdict == "Safe") "Classified as safe" else "Classified as ${dlVerdict.lowercase()}"
             tvDlClassifiedBadge.setTextColor(dlColor)
             TextViewCompat.setCompoundDrawableTintList(tvDlClassifiedBadge, ColorStateList.valueOf(dlColor))
@@ -594,7 +596,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(Color.parseColor("#888888")))
         } else {
             val urlScore = result.urlScore
-            val urlColor = getVerdictColor(urlScore)
+            val urlColor = getVerdictColor(urlScore, LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
             tvUrlScoreBadge.text = String.format(Locale.US, "%.2f", urlScore)
             tvUrlScoreBadge.setTextColor(urlColor)
             tvUrlConfidenceVal.text = String.format(Locale.US, "%.2f", urlScore)
@@ -603,8 +605,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             pbUrlConfidence.progressTintList = ColorStateList.valueOf(urlColor)
             val vStr = result.urlVerdict?.lowercase()
             tvUrlClassifiedBadge.text = when {
-                vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.smishingThreshold -> "Classified as malicious link"
-                vStr == "suspicious" || urlScore >= LocalClassifier.suspiciousThreshold -> "Classified as suspicious link"
+                vStr == "malicious" || vStr == "smishing" || vStr == "spam" || urlScore >= LocalClassifier.withUrlSmishingThreshold -> "Classified as malicious link"
+                vStr == "suspicious" || urlScore >= LocalClassifier.withUrlSuspiciousThreshold -> "Classified as suspicious link"
                 else -> "Classified as safe"
             }
             tvUrlClassifiedBadge.setTextColor(urlColor)
@@ -637,10 +639,10 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val charCount = msg.length
 
         // Real Model sub-scores (Random Forest & XGBoost without weight percentages)
-        val isRfAlert = result.rfProb >= LocalClassifier.smishingThreshold
-        val isRfOrange = result.rfProb >= LocalClassifier.suspiciousThreshold && !isRfAlert
-        val isXgbAlert = result.xgbProb >= LocalClassifier.smishingThreshold
-        val isXgbOrange = result.xgbProb >= LocalClassifier.suspiciousThreshold && !isXgbAlert
+        val isRfAlert = result.rfProb >= LocalClassifier.mlSmishingThreshold
+        val isRfOrange = result.rfProb >= LocalClassifier.mlSuspiciousThreshold && !isRfAlert
+        val isXgbAlert = result.xgbProb >= LocalClassifier.mlSmishingThreshold
+        val isXgbOrange = result.xgbProb >= LocalClassifier.mlSuspiciousThreshold && !isXgbAlert
 
         addMetricRow(
             container,
@@ -717,8 +719,9 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
     private fun populateDlMetrics(container: LinearLayout, result: DetectionResult, score: Float) {
         container.removeAllViews()
 
-        val isAlert = score >= LocalClassifier.smishingThreshold
-        val isOrange = score >= LocalClassifier.suspiciousThreshold && !isAlert
+        val (dlSusp, dlSmish) = if (result.urlFound) Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold) else Pair(LocalClassifier.noUrlSuspiciousThreshold, LocalClassifier.noUrlSmishingThreshold)
+        val isAlert = score >= dlSmish
+        val isOrange = score >= dlSusp && !isAlert
 
         addMetricRow(
             container,
@@ -728,12 +731,12 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             isOrange = isOrange
         )
 
-        val verdictText = result.cnnVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(score)
+        val verdictText = result.cnnVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(score, dlSusp, dlSmish)
         addMetricRow(container, "Model verdict", verdictText, isAlert = isAlert, isOrange = isOrange)
 
         val semanticAnalysis = when {
-            score >= LocalClassifier.smishingThreshold -> "Harmful language & syntax patterns"
-            score >= LocalClassifier.suspiciousThreshold -> "Promotional / high-urgency syntax"
+            score >= dlSmish -> "Harmful language & syntax patterns"
+            score >= dlSusp -> "Promotional / high-urgency syntax"
             else -> "Benign / safe conversational syntax"
         }
         addMetricRow(container, "Semantic analysis", semanticAnalysis, isAlert = isAlert, isOrange = isOrange)
@@ -766,15 +769,15 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             if (result.urlScore != null) {
                 // Threat score from backend
                 val scoreStr = String.format(Locale.US, "%.2f", result.urlScore)
-                val isRedScore = result.urlScore >= LocalClassifier.smishingThreshold
-                val isOrangeScore = result.urlScore >= LocalClassifier.suspiciousThreshold && result.urlScore < LocalClassifier.smishingThreshold
+                val isRedScore = result.urlScore >= LocalClassifier.withUrlSmishingThreshold
+                val isOrangeScore = result.urlScore >= LocalClassifier.withUrlSuspiciousThreshold && result.urlScore < LocalClassifier.withUrlSmishingThreshold
                 addMetricRow(container, "Threat score", scoreStr, isAlert = isRedScore, isOrange = isOrangeScore)
 
                 // Verdict from backend
                 val verdictRaw = result.urlVerdict?.lowercase()
-                val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(result.urlScore)
-                val isMaliciousVerdict = verdictRaw == "malicious" || verdictRaw == "smishing" || verdictRaw == "spam" || result.urlScore >= LocalClassifier.smishingThreshold
-                val isSuspiciousVerdict = verdictRaw == "suspicious" || (result.urlScore >= LocalClassifier.suspiciousThreshold && result.urlScore < LocalClassifier.smishingThreshold)
+                val verdictStr = result.urlVerdict?.replaceFirstChar { it.uppercase() } ?: getVerdictText(result.urlScore, LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
+                val isMaliciousVerdict = verdictRaw == "malicious" || verdictRaw == "smishing" || verdictRaw == "spam" || result.urlScore >= LocalClassifier.withUrlSmishingThreshold
+                val isSuspiciousVerdict = verdictRaw == "suspicious" || (result.urlScore >= LocalClassifier.withUrlSuspiciousThreshold && result.urlScore < LocalClassifier.withUrlSmishingThreshold)
                 addMetricRow(container, "Verdict", verdictStr, isAlert = isMaliciousVerdict, isOrange = isSuspiciousVerdict)
             } else {
                 addMetricRow(container, "Threat score", "Pending", false, isOrange = true)
@@ -877,8 +880,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val withUrlMlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.withUrlMlWeight * 100)
         val withUrlUrlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.withUrlUrlWeight * 100)
 
-        val noUrlDlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.noUrlDlWeight * 100)
-        val noUrlMlPctStr = String.format(Locale.US, "%.0f%%", LocalClassifier.noUrlMlWeight * 100)
+        val noUrlDlPctStr = String.format(Locale.US, "%.1f%%", LocalClassifier.noUrlDlWeight * 100)
+        val noUrlMlPctStr = String.format(Locale.US, "%.1f%%", LocalClassifier.noUrlMlWeight * 100)
 
         if (containsUrl && urlScore != null) {
             addBreakdownLine(llCombinedBreakdown, "ML Layer", "$withUrlMlPctStr • " + String.format(Locale.US, "%.2f", mlScore))

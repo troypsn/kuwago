@@ -116,7 +116,7 @@ object SmishingDetector {
                 urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
                 explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else null,
                 localVerdict = if (isShortened) "Harmful" else localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (75% RF + 25% XGB)"
+                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)} RF + ${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)} XGB)"
             )
         }
 
@@ -148,11 +148,15 @@ object SmishingDetector {
                                        else if (cachedReputation == Classification.SUSPICIOUS) "suspicious"
                                        else "clean"
                 val localScore = localResult.probability
-                val finalProb = if (isShortened) maxOf((0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore), 0.95f)
-                                else (0.50f * localScore) + (0.25f * cachedUrlScore) + (0.25f * localScore)
+                val mlW = LocalClassifier.urlOnlyMlWeight
+                val urlW = LocalClassifier.urlOnlyUrlWeight
+                val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
+                val urlPct = String.format(java.util.Locale.US, "%.0f%%", urlW * 100)
+                val finalProb = if (isShortened) maxOf((mlW * localScore) + (urlW * cachedUrlScore), 0.95f)
+                                else (mlW * localScore) + (urlW * cachedUrlScore)
                 val classification = if (isShortened) Classification.SMISHING else when {
-                    finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
-                    finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+                    finalProb >= LocalClassifier.withUrlSmishingThreshold -> Classification.SMISHING
+                    finalProb >= LocalClassifier.withUrlSuspiciousThreshold -> Classification.SUSPICIOUS
                     else -> Classification.SAFE
                 }
                 val explanation = if (isShortened) {
@@ -179,7 +183,7 @@ object SmishingDetector {
                     overallExplanation = explanation,
                     urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
                     localVerdict = if (isShortened) "Harmful" else localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                    ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Cached URL" else "Cache hit: 75% Local + 25% Cached URL",
+                    ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Cached URL" else "Cache hit: $mlPct Local + $urlPct Cached URL",
                     rfProb = localResult.rfProb,
                     rfRawLogit = localResult.rfRawLogit,
                     xgbProb = localResult.xgbProb,
@@ -274,8 +278,8 @@ object SmishingDetector {
                     } else {
                         val dlW = LocalClassifier.noUrlDlWeight
                         val mlW = LocalClassifier.noUrlMlWeight
-                        val dlPct = String.format(java.util.Locale.US, "%.0f%%", dlW * 100)
-                        val mlPct = String.format(java.util.Locale.US, "%.0f%%", mlW * 100)
+                        val dlPct = String.format(java.util.Locale.US, "%.1f%%", dlW * 100)
+                        val mlPct = String.format(java.util.Locale.US, "%.1f%%", mlW * 100)
                         val score = (dlW * cnnScore) + (mlW * localScore)
                         val formula = if (containsUrl) "Weighted Ensemble: $dlPct CNN + $mlPct Local (URL scan pending)" else "Weighted Ensemble: $dlPct CNN + $mlPct Local"
                         Pair(score, formula)
@@ -298,9 +302,20 @@ object SmishingDetector {
                     }
                 }
 
+                val (suspThresh, smishThresh) = when {
+                    hasCnnData && cnnScore != null && containsUrl && effectiveUrlScore != null ->
+                        Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
+                    hasCnnData && cnnScore != null ->
+                        Pair(LocalClassifier.noUrlSuspiciousThreshold, LocalClassifier.noUrlSmishingThreshold)
+                    containsUrl && effectiveUrlScore != null ->
+                        Pair(LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
+                    else ->
+                        Pair(LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
+                }
+
                 val classification = if (isShortened) Classification.SMISHING else when {
-                    finalProb >= LocalClassifier.smishingThreshold -> Classification.SMISHING
-                    finalProb >= LocalClassifier.suspiciousThreshold -> Classification.SUSPICIOUS
+                    finalProb >= smishThresh -> Classification.SMISHING
+                    finalProb >= suspThresh -> Classification.SUSPICIOUS
                     else -> Classification.SAFE
                 }
 
@@ -412,7 +427,7 @@ object SmishingDetector {
                 urlContributions = if (isShortened) listOf("Shortened URL Detected") else null,
                 explanation = if (isShortened) LocalClassifier.SHORTENED_URL_REASONING else null,
                 localVerdict = if (isShortened) "Harmful" else localOnly.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (75% RF + 25% XGB)"
+                ensembleFormula = if (isShortened) "Rule-based: Shortened URL (Harmful) + Local ML" else "Local ML Model (${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)} RF + ${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)} XGB)"
             )
         }
     }

@@ -76,7 +76,7 @@
             android:textSize="14sp"
             android:lineSpacingMultiplier="1.5" />
 
-        <!-- Developer Mode Toggle Card -->
+        <!-- Advanced Mode Toggle Card -->
         <LinearLayout
             android:id="@+id/settings_row_developer_mode"
             android:layout_width="match_parent"

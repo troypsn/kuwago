@@ -246,7 +246,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 emailFound = hasEmail,
                 extractedEmails = extractedEmails,
                 localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                ensembleFormula = "Local ML Model (${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)} RF + ${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)} XGB)"
             )
 
             DetectionRepository.addDetection(this@SmsNotificationListener, instantResult)
@@ -333,7 +333,7 @@ class SmsNotificationListener : NotificationListenerService() {
                 urlFound = hasUrl,
                 extractedUrl = extractedUrl,
                 localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                ensembleFormula = "Local ML Model (${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)} RF + ${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)} XGB)"
             )
 
             DetectionRepository.addDetection(this@SmsNotificationListener, instantResult)
@@ -423,7 +423,7 @@ class SmsNotificationListener : NotificationListenerService() {
                     emailFound = hasEmail,
                     extractedEmails = extractedEmails,
                     localVerdict = localResult.classification.name.lowercase().replaceFirstChar { it.uppercase() },
-                    ensembleFormula = "Local ML Model (75% RF + 25% XGB)"
+                    ensembleFormula = "Local ML Model (${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.rfWeight * 100)} RF + ${String.format(java.util.Locale.US, "%.0f%%", LocalClassifier.xgbWeight * 100)} XGB)"
                 )
             }
         } else {
