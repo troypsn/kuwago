@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.kuwago"
-        minSdk = 24
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -38,7 +38,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = false
+        }
         release {
+            isDebuggable = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

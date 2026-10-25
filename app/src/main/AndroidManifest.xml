@@ -29,7 +29,8 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/kuwago"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.Mykotlinapp">
         <activity
             android:name=".SplashActivity"
