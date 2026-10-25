@@ -33,11 +33,68 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Start MobSF Container (Background)
+        run: |
+          docker run -d --name mobsf \
+            -p 8000:8000 \
+            -e MOBSF_API_KEY="mobsf-ci-key" \
+            opensecurity/mobile-security-framework-mobsf:latest
+
       - name: Run Unit Tests
         run: ./gradlew test
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+
+      - name: Wait for MobSF Container
+        run: |
+          echo "Waiting for MobSF to be ready..."
+          timeout 120s bash -c 'until curl -s http://localhost:8000/api/v1/docs > /dev/null; do sleep 3; done'
+          echo "MobSF is operational!"
+
+      - name: Run MobSF Static Analysis on APK
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          API_KEY="mobsf-ci-key"
+
+          echo "1. Uploading APK to MobSF..."
+          UPLOAD_RESP=$(curl -s -F "file=@$APK_PATH" -H "Authorization: $API_KEY" http://localhost:8000/api/v1/upload)
+          HASH=$(echo "$UPLOAD_RESP" | jq -r '.hash')
+
+          if [ -z "$HASH" ] || [ "$HASH" = "null" ]; then
+            echo "MobSF upload failed: $UPLOAD_RESP"
+            exit 1
+          fi
+          echo "APK Uploaded successfully. Hash: $HASH"
+
+          echo "2. Scanning APK..."
+          curl -s -X POST http://localhost:8000/api/v1/scan \
+            -H "Authorization: $API_KEY" \
+            --data "hash=$HASH" > /dev/null
+
+          echo "3. Exporting JSON & PDF reports..."
+          curl -s -X POST http://localhost:8000/api/v1/report_json \
+            -H "Authorization: $API_KEY" \
+            --data "hash=$HASH" -o mobsf-report.json
+
+          curl -s -X POST http://localhost:8000/api/v1/download_pdf \
+            -H "Authorization: $API_KEY" \
+            --data "hash=$HASH" -o mobsf-report.pdf
+
+          SCORE=$(jq -r '.security_score // "N/A"' mobsf-report.json)
+          echo "=========================================="
+          echo " MobSF Security Score: $SCORE / 100"
+          echo "=========================================="
+
+      - name: Upload MobSF Reports as Workflow Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobsf-security-reports
+          path: |
+            mobsf-report.pdf
+            mobsf-report.json
+          if-no-files-found: warn
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
@@ -46,7 +103,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Create GitHub Release and Upload APK
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
@@ -56,9 +113,11 @@ jobs:
             
             ### Artifacts
             * **Debug APK**: `app-debug.apk` (Signed with debug key, ready to download and install directly on Android devices for testing)
+            * **Security Report**: `mobsf-report.pdf` (Automated MobSF SAST security audit report)
           draft: false
           prerelease: false
           files: |
             app/build/outputs/apk/debug/app-debug.apk
+            mobsf-report.pdf
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
