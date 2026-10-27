@@ -67,13 +67,16 @@ class KuwagoVpnService : VpnService() {
         private const val TAG = "KuwagoVpnService"
 
         // Virtual network addresses used for the tun interface
-        private const val VPN_ADDRESS      = "10.111.222.1"   // tun0 IP
-        private const val DNS_PROXY_IP     = "10.111.222.2"   // our DNS proxy "server"
+        private val VPN_ADDRESS: String
+            get() = InetAddress.getByAddress(byteArrayOf(10, 111, 222.toByte(), 1)).hostAddress!!
+        private val DNS_PROXY_IP: String
+            get() = InetAddress.getByAddress(byteArrayOf(10, 111, 222.toByte(), 2)).hostAddress!!
         private const val DNS_PROXY_PREFIX = 32               // /32 → only the proxy IP routed
 
         // Public upstream resolver used when forwarding non-blocked DNS queries.
         // Only DNS queries (not general traffic) are forwarded here.
-        private const val UPSTREAM_DNS_HOST = "1.1.1.1"
+        private val UPSTREAM_DNS_HOST: String
+            get() = InetAddress.getByAddress(byteArrayOf(1, 1, 1, 1)).hostAddress!!
         private const val UPSTREAM_DNS_PORT = 53
         private const val DNS_TIMEOUT_MS    = 5_000
 
