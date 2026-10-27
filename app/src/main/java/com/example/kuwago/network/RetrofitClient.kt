@@ -30,9 +30,9 @@ object RetrofitClient {
         .addInterceptor { chain ->
             val original = chain.request()
             val requestBuilder = original.newBuilder()
-            val token = BuildConfig.KWAGO_API_KEY
-            if (token.isNotEmpty()) {
-                requestBuilder.header("Authorization", "Bearer $token")
+            val credential = BuildConfig.BACKEND_CREDENTIAL
+            if (credential.isNotEmpty()) {
+                requestBuilder.header("Authorization", "Bearer $credential")
             }
             chain.proceed(requestBuilder.build())
         }

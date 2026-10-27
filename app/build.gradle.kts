@@ -34,16 +34,34 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField("String", "API_URL", "\"$apiUrl\"")
-        buildConfigField("String", "KWAGO_API_KEY", "\"$kwagoApiKey\"")
+        buildConfigField("String", "BACKEND_CREDENTIAL", "\"$kwagoApiKey\"")
+    }
+
+    val releaseKeystoreFile = file("release.keystore")
+    signingConfigs {
+        if (releaseKeystoreFile.exists()) {
+            create("release") {
+                storeFile = releaseKeystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "kuwago_release_store_pass"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "kuwago_release"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "kuwago_release_key_pass"
+            }
+        }
     }
 
     buildTypes {
         debug {
             isDebuggable = false
+            if (releaseKeystoreFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
             isDebuggable = false
             isMinifyEnabled = false
+            if (releaseKeystoreFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

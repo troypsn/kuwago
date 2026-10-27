@@ -45,7 +45,19 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test
 
-      - name: Build Debug APK
+      - name: Generate Release Signing Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore app/release.keystore \
+            -alias kuwago_release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass kuwago_release_store_pass \
+            -keypass kuwago_release_key_pass \
+            -dname "CN=Kuwago Security, OU=Mobile, O=Kuwago, L=Manila, S=NCR, C=PH"
+
+      - name: Build Signed APK
         run: ./gradlew assembleDebug
 
       - name: Wait for MobSF Container
