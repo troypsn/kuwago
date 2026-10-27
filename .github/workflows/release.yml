@@ -42,20 +42,21 @@ jobs:
             -e MOBSF_API_KEY="mobsf-ci-key" \
             opensecurity/mobile-security-framework-mobsf:latest
 
-      - name: Run Unit Tests
-        run: ./gradlew test
-
       - name: Generate Release Signing Keystore
         run: |
           keytool -genkeypair -v \
+            -storetype PKCS12 \
             -keystore app/release.keystore \
             -alias kuwago_release \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass kuwago_release_store_pass \
-            -keypass kuwago_release_key_pass \
+            -storepass kuwago_release_pass \
+            -keypass kuwago_release_pass \
             -dname "CN=Kuwago Security, OU=Mobile, O=Kuwago, L=Manila, S=NCR, C=PH"
+
+      - name: Run Unit Tests
+        run: ./gradlew test
 
       - name: Build Signed APK
         run: ./gradlew assembleDebug

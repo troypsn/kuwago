@@ -42,9 +42,9 @@ android {
         if (releaseKeystoreFile.exists()) {
             create("release") {
                 storeFile = releaseKeystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "kuwago_release_store_pass"
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "kuwago_release_pass"
                 keyAlias = System.getenv("KEY_ALIAS") ?: "kuwago_release"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "kuwago_release_key_pass"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "kuwago_release_pass"
             }
         }
     }
