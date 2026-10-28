@@ -11,14 +11,14 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-val rawApiUrl: String = System.getenv("API_URL")
-    ?: localProperties.getProperty("API_URL")
-    ?: "https://kwagobackend.onrender.com/"
+val rawApiUrl: String = System.getenv("API_URL")?.ifEmpty { null }
+    ?: localProperties.getProperty("API_URL")?.ifEmpty { null }
+    ?: "https://kwago-backend.vercel.app/"
 val apiUrl: String = if (rawApiUrl.endsWith("/")) rawApiUrl else "$rawApiUrl/"
 
-val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")
-    ?: localProperties.getProperty("KWAGO_API_KEY")
-    ?: ""
+val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")?.ifEmpty { null }
+    ?: localProperties.getProperty("KWAGO_API_KEY")?.ifEmpty { null }
+    ?: "773881c32e8fabf37030ae54fce3e60585f3ead8b2d69fd15a1fa749093c3c3d"
 
 android {
     namespace = "com.example.kuwago"
