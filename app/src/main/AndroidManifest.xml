@@ -68,10 +68,15 @@
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter android:priority="999">
+            <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+
+        <!-- Remove Jetpack ProfileInstaller receiver injected by AndroidX to avoid exported DUMP receiver warning -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
 
         <service
             android:name=".SmsNotificationListener"

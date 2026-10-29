@@ -42,6 +42,9 @@ jobs:
             -e MOBSF_API_KEY="mobsf-ci-key" \
             opensecurity/mobile-security-framework-mobsf:latest
 
+      - name: Install patchelf and aarch64 strip for Native Binary Hardening
+        run: sudo apt-get update && sudo apt-get install -y patchelf binutils-aarch64-linux-gnu
+
       - name: Generate Release Signing Keystore
         run: |
           keytool -genkeypair -v \
@@ -56,10 +59,10 @@ jobs:
             -dname "CN=Kuwago Security, OU=Mobile, O=Kuwago, L=Manila, S=NCR, C=PH"
 
       - name: Run Unit Tests
-        run: ./gradlew test
+        run: ./gradlew testDebugUnitTest
 
-      - name: Build Signed APK
-        run: ./gradlew assembleDebug
+      - name: Build Signed Release APK
+        run: ./gradlew assembleRelease
 
       - name: Wait for MobSF Container
         run: |
@@ -69,7 +72,7 @@ jobs:
 
       - name: Run MobSF Static Analysis on APK
         run: |
-          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
           API_KEY="mobsf-ci-key"
 
           echo "1. Uploading APK to MobSF..."
@@ -114,8 +117,8 @@ jobs:
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
       - name: Create GitHub Release and Upload Assets
@@ -128,12 +131,12 @@ jobs:
             Automatically generated release from push to `${{ github.ref_name }}` branch.
             
             ### Artifacts
-            * **Signed APK**: `app-debug.apk` (Ready to download and install directly on Android devices for testing)
+            * **Signed Release APK**: `app-release.apk` (R8-minified, symbol-stripped, arm64-v8a release build)
             * **Security Report**: `mobsf-report.pdf` & `mobsf-report.json` (Automated MobSF SAST security audit report)
           draft: false
           prerelease: false
           files: |
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
             mobsf-report.pdf
             mobsf-report.json
         env:

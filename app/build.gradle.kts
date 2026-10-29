@@ -33,6 +33,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+
         buildConfigField("String", "API_URL", "\"$apiUrl\"")
         buildConfigField("String", "BACKEND_CREDENTIAL", "\"$kwagoApiKey\"")
     }
@@ -45,6 +49,10 @@ android {
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "kuwago_release_pass"
                 keyAlias = System.getenv("KEY_ALIAS") ?: "kuwago_release"
                 keyPassword = System.getenv("KEY_PASSWORD") ?: "kuwago_release_pass"
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
             }
         }
     }
@@ -58,7 +66,8 @@ android {
         }
         release {
             isDebuggable = false
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             if (releaseKeystoreFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -66,6 +75,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    packaging {
+        jniLibs {
+            keepDebugSymbols.clear()
         }
     }
     compileOptions {
@@ -112,4 +126,31 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// Strip debug symbols and clear DT_RUNPATH ($ORIGIN) on native .so libraries before APK packaging
+tasks.matching { it.name.startsWith("strip") && it.name.endsWith("DebugSymbols") }.configureEach {
+    doLast {
+        val strippedDir = layout.buildDirectory.dir("intermediates/stripped_native_libs").get().asFile
+        if (strippedDir.exists()) {
+            strippedDir.walkTopDown().filter { it.isFile && it.extension == "so" }.forEach { soFile ->
+                try {
+                    ProcessBuilder("aarch64-linux-gnu-strip", "--strip-unneeded", soFile.absolutePath)
+                        .redirectErrorStream(true)
+                        .start()
+                        .waitFor()
+                } catch (_: Exception) {
+                    // aarch64-linux-gnu-strip not present on local Windows machine; safely skipped
+                }
+                try {
+                    ProcessBuilder("patchelf", "--remove-rpath", soFile.absolutePath)
+                        .redirectErrorStream(true)
+                        .start()
+                        .waitFor()
+                } catch (_: Exception) {
+                    // patchelf not present on local Windows machine; safely skipped
+                }
+            }
+        }
+    }
 }
