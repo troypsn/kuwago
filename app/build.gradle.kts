@@ -16,6 +16,11 @@ val rawApiUrl: String = System.getenv("API_URL")?.ifEmpty { null }
     ?: "https://kwago-backend.vercel.app/"
 val apiUrl: String = if (rawApiUrl.endsWith("/")) rawApiUrl else "$rawApiUrl/"
 
+val rawFallbackApiUrl: String = System.getenv("FALLBACK_API_URL")?.ifEmpty { null }
+    ?: localProperties.getProperty("FALLBACK_API_URL")?.ifEmpty { null }
+    ?: "https://kwagobackend.onrender.com/"
+val fallbackApiUrl: String = if (rawFallbackApiUrl.endsWith("/")) rawFallbackApiUrl else "$rawFallbackApiUrl/"
+
 val kwagoApiKey: String = System.getenv("KWAGO_API_KEY")?.ifEmpty { null }
     ?: localProperties.getProperty("KWAGO_API_KEY")?.ifEmpty { null }
     ?: "773881c32e8fabf37030ae54fce3e60585f3ead8b2d69fd15a1fa749093c3c3d"
@@ -38,6 +43,7 @@ android {
         }
 
         buildConfigField("String", "API_URL", "\"$apiUrl\"")
+        buildConfigField("String", "FALLBACK_API_URL", "\"$fallbackApiUrl\"")
         buildConfigField("String", "BACKEND_CREDENTIAL", "\"$kwagoApiKey\"")
     }
 

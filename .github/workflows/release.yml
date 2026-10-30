@@ -17,6 +17,7 @@ jobs:
 
     env:
       API_URL: "https://kwago-backend.vercel.app/"
+      FALLBACK_API_URL: "https://kwagobackend.onrender.com/"
       KWAGO_API_KEY: ${{ secrets.KWAGO_API_KEY }}
 
     steps:
