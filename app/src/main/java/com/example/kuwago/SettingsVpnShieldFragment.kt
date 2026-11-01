@@ -47,8 +47,8 @@ class SettingsVpnShieldFragment : Fragment() {
     private var isWaitingForPermission = false
 
     private val vpnPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
-        if (key == KuwagoVpnService.KEY_VPN_ACTIVE && isAdded) {
-            val active = prefs.getBoolean(key, false)
+        if ((key == KuwagoVpnService.KEY_VPN_ACTIVE || key == KuwagoVpnService.KEY_VPN_ENABLED) && isAdded) {
+            val active = isVpnCurrentlyActive()
             setSwitchCheckedProgrammatically(active)
             updateStatusText(active)
         }
@@ -59,13 +59,16 @@ class SettingsVpnShieldFragment : Fragment() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         isWaitingForPermission = false
+        val ctx = context ?: return@registerForActivityResult
         if (result.resultCode == Activity.RESULT_OK) {
             Log.i(TAG, "VPN permission granted by user")
+            KuwagoVpnService.setVpnEnabled(ctx, true)
             startVpnService()
             setSwitchCheckedProgrammatically(true)
             updateStatusText(true)
         } else {
             Log.i(TAG, "VPN permission denied by user")
+            KuwagoVpnService.setVpnEnabled(ctx, false)
             setSwitchCheckedProgrammatically(false)
             updateStatusText(false)
         }
@@ -103,6 +106,7 @@ class SettingsVpnShieldFragment : Fragment() {
         switchVpnShield.setOnCheckedChangeListener { _, isChecked ->
             if (isProgrammaticChange) return@setOnCheckedChangeListener
             if (isChecked) {
+                KuwagoVpnService.setVpnEnabled(requireContext(), true)
                 requestVpnPermission()
             } else {
                 CustomDialogHelper.showConfirmDialog(
@@ -116,6 +120,7 @@ class SettingsVpnShieldFragment : Fragment() {
                     cancelText = "Cancel",
                     cancelBg = R.drawable.bg_dark_button,
                     onConfirm = {
+                        KuwagoVpnService.setVpnEnabled(requireContext(), false)
                         stopVpnService()
                         updateStatusText(false)
                     },
@@ -179,11 +184,7 @@ class SettingsVpnShieldFragment : Fragment() {
 
     private fun startVpnService() {
         val ctx = context?.applicationContext ?: return
-        // Set shared pref immediately so onResume or external checks see it active
-        ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, true)
-            .apply()
+        KuwagoVpnService.setVpnEnabled(ctx, true)
 
         val intent = Intent(ctx, KuwagoVpnService::class.java).apply {
             action = KuwagoVpnService.ACTION_START
@@ -217,10 +218,7 @@ class SettingsVpnShieldFragment : Fragment() {
 
     private fun stopVpnService() {
         val ctx = context ?: return
-        ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
-            .apply()
+        KuwagoVpnService.setVpnEnabled(ctx, false)
 
         val intent = Intent(ctx, KuwagoVpnService::class.java).apply {
             action = KuwagoVpnService.ACTION_STOP
@@ -235,8 +233,7 @@ class SettingsVpnShieldFragment : Fragment() {
 
     private fun isVpnCurrentlyActive(): Boolean {
         val ctx = context ?: return false
-        return ctx.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
-            .getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
+        return KuwagoVpnService.isVpnActive(ctx)
     }
 
     private fun updateStatusText(active: Boolean) {

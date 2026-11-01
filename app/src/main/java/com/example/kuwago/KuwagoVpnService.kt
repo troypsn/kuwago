@@ -63,6 +63,27 @@ class KuwagoVpnService : VpnService() {
         /** Shared-prefs key — whether the VPN is currently considered active. */
         const val PREFS_VPN      = "kuwago_vpn_prefs"
         const val KEY_VPN_ACTIVE = "vpn_active"
+        const val KEY_VPN_ENABLED = "vpn_shield_enabled"
+
+        fun isVpnActive(context: Context): Boolean {
+            val vpnPrefs = context.getSharedPreferences(PREFS_VPN, Context.MODE_PRIVATE)
+            val settingsPrefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            return vpnPrefs.getBoolean(KEY_VPN_ACTIVE, false) ||
+                   vpnPrefs.getBoolean(KEY_VPN_ENABLED, false) ||
+                   settingsPrefs.getBoolean(SettingsFragment.KEY_VPN_SHIELD_ENABLED, false)
+        }
+
+        fun setVpnEnabled(context: Context, enabled: Boolean) {
+            context.getSharedPreferences(PREFS_VPN, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_VPN_ENABLED, enabled)
+                .putBoolean(KEY_VPN_ACTIVE, enabled)
+                .apply()
+            context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(SettingsFragment.KEY_VPN_SHIELD_ENABLED, enabled)
+                .apply()
+        }
 
         private const val TAG = "KuwagoVpnService"
 

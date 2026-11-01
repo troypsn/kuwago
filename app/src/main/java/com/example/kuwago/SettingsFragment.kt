@@ -15,6 +15,7 @@ class SettingsFragment : Fragment() {
         const val KEY_SCAN_OTHER_APPS  = "scan_other_messaging_apps"
         const val KEY_ENABLED_APP_PACKAGES = "enabled_scanned_app_packages"
         const val KEY_SCAN_INSTANTLY   = "scan_incoming_instantly"
+        const val KEY_SMS_INTEGRATION_ENABLED = "sms_inbox_integration_enabled"
         const val KEY_VPN_SHIELD_ENABLED = "vpn_shield_enabled"
 
         // Online Scan Consolidated Settings

@@ -6,9 +6,11 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -118,6 +120,19 @@ class MainActivity : AppCompatActivity() {
         }
         checkForPendingWarnings()
         checkNotificationPermission()
+
+        // If URL Shield is enabled, keep service running if permission is present
+        if (KuwagoVpnService.isVpnActive(this) && VpnService.prepare(this) == null) {
+            try {
+                val vpnIntent = Intent(this, KuwagoVpnService::class.java).apply {
+                    action = KuwagoVpnService.ACTION_START
+                }
+                ContextCompat.startForegroundService(this, vpnIntent)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to start VPN service", e)
+            }
+        }
+
         checkVpnShieldSuggestion()
     }
 
@@ -203,12 +218,19 @@ class MainActivity : AppCompatActivity() {
      * only appears once per unique trigger event.
      */
     private fun checkVpnShieldSuggestion() {
+        if (KuwagoVpnService.isVpnActive(this)) {
+            getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("suggest_vpn_shield", false)
+                .apply()
+            return
+        }
+
         val vpnPrefs = getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
         val suggestFlag = vpnPrefs.getBoolean("suggest_vpn_shield", false)
-        val vpnAlreadyActive = vpnPrefs.getBoolean(KuwagoVpnService.KEY_VPN_ACTIVE, false)
         val hasPrompted = vpnPrefs.getBoolean("has_prompted_vpn_shield", false)
 
-        if (vpnAlreadyActive || (hasPrompted && !suggestFlag)) return
+        if (hasPrompted && !suggestFlag) return
 
         CoroutineScope(Dispatchers.IO).launch {
             val db = com.example.kuwago.db.SmsLocalRepository.getDatabase(applicationContext)
@@ -216,6 +238,7 @@ class MainActivity : AppCompatActivity() {
             if (suggestFlag || hasSmishingUrls) {
                 withContext(Dispatchers.Main) {
                     if (isFinishing || isDestroyed) return@withContext
+                    if (KuwagoVpnService.isVpnActive(this@MainActivity)) return@withContext
                     vpnPrefs.edit()
                         .putBoolean("suggest_vpn_shield", false)
                         .putBoolean("has_prompted_vpn_shield", true)
@@ -235,6 +258,7 @@ class MainActivity : AppCompatActivity() {
                         cancelText = "Maybe Later",
                         cancelBg = R.drawable.bg_dark_button,
                         onConfirm = {
+                            KuwagoVpnService.setVpnEnabled(this@MainActivity, true)
                             val vpnFragment = SettingsVpnShieldFragment().apply {
                                 arguments = Bundle().apply { putBoolean("auto_enable", true) }
                             }
