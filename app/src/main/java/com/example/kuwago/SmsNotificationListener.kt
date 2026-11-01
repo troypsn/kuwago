@@ -32,7 +32,7 @@ class SmsNotificationListener : NotificationListenerService() {
     private data class CapturedNotif(
         val title: String,
         val text: String,
-        val originalKey: String,
+        val originalNotifTag: String,
         val packageName: String,
         val contentIntent: PendingIntent?
     )
@@ -188,7 +188,7 @@ class SmsNotificationListener : NotificationListenerService() {
             scanInstantlyFlow(sbn, extractedSender, extractedText)
         } else {
             // FLOW B: Let original through → scan in background → post result notification
-            scanPassthroughFlow(sbn, extractedSender, extractedText)
+            scanStandardFlow(sbn, extractedSender, extractedText)
         }
     }
 
@@ -214,7 +214,7 @@ class SmsNotificationListener : NotificationListenerService() {
         val captured = CapturedNotif(
             title = sender,
             text = messageText,
-            originalKey = sbn.key,
+            originalNotifTag = sbn.key,
             packageName = sbn.packageName,
             contentIntent = contentIntent
         )
@@ -309,12 +309,12 @@ class SmsNotificationListener : NotificationListenerService() {
     //   Original notification passes through untouched.
     //   Kuwago posts an ongoing "Scanning…" notification, then a result notification.
     // -------------------------------------------------------------------------
-    private fun scanPassthroughFlow(
+    private fun scanStandardFlow(
         sbn: StatusBarNotification,
         sender: String,
         messageText: String
     ) {
-        Log.i("SmsNotifListener", "[PASSTHROUGH] Scanning message from: $sender")
+        Log.i("SmsNotifListener", "[STANDARD_FLOW] Scanning message from: $sender")
 
         // Post a "Scanning…" notification
         val scanNotifId = notifIdCounter.getAndIncrement()
@@ -364,7 +364,7 @@ class SmsNotificationListener : NotificationListenerService() {
                     ) {
                         val risk = if (finalResult.classification == Classification.SMISHING) RiskLevel.HIGH else RiskLevel.MEDIUM
                         BlacklistRepository.addOrUpdateEntry(this@SmsNotificationListener, sender, risk, BlacklistMethod.AUTO)
-                        Log.i("SmsNotifListener", "[PASSTHROUGH] Auto-blacklisted sender: $sender (classification=${finalResult.classification})")
+                        Log.i("SmsNotifListener", "[STANDARD_FLOW] Auto-blacklisted sender: $sender (classification=${finalResult.classification})")
                     }
 
                     if (!BlacklistRepository.isBlacklisted(this@SmsNotificationListener, sender) &&
@@ -379,7 +379,7 @@ class SmsNotificationListener : NotificationListenerService() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("SmsNotifListener", "[PASSTHROUGH] Error during scan", e)
+                Log.e("SmsNotifListener", "[STANDARD_FLOW] Error during scan", e)
                 cancelOwnNotification(scanNotifId)
                 DetectionRepository.updateDetection(this@SmsNotificationListener, instantResult)
                 com.example.kuwago.db.SmsLocalRepository.saveAnalysisComplete(this@SmsNotificationListener, instantResult)
@@ -613,11 +613,11 @@ class SmsNotificationListener : NotificationListenerService() {
     // Existing helpers (unchanged)
     // -------------------------------------------------------------------------
 
-    private fun cancelNotificationSafely(key: String) {
+    private fun cancelNotificationSafely(notifTag: String) {
         try {
-            cancelNotification(key)
+            cancelNotification(notifTag)
         } catch (e: Exception) {
-            Log.e("SmsNotifListener", "Failed to cancel notification $key: ${e.message}")
+            Log.e("SmsNotifListener", "Failed to cancel notification $notifTag: ${e.message}")
         }
     }
 
@@ -666,7 +666,7 @@ class SmsNotificationListener : NotificationListenerService() {
 
                 if (shouldKill) {
                     cancelNotificationSafely(notif.key)
-                    Log.i("SmsNotifListener", "Killed: key=${notif.key}, title=$notifTitle, group=$isGroupSummary")
+                    Log.i("SmsNotifListener", "Killed: notifTag=${notif.key}, title=$notifTitle, group=$isGroupSummary")
                 }
             }
         } catch (e: Exception) {

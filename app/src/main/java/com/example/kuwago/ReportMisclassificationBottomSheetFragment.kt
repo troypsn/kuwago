@@ -270,7 +270,7 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         // ML score: rfProb or xgbProb — null if both are zero (never ran or failed)
         val originalMlScore: Float? = when {
             result.rfProb > 0f || result.xgbProb > 0f ->
-                (0.75f * result.rfProb + 0.25f * result.xgbProb)
+                (LocalClassifier.rfWeight * result.rfProb + LocalClassifier.xgbWeight * result.xgbProb)
             result.localVerdict != null -> result.probability
             else -> null
         }
@@ -316,11 +316,36 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
                 if (isAdded) {
                     showSuccessScreen(view, result, request.userComment)
                 }
-            } catch (e: Exception) {
-                Log.e("ReportMisclassification", "Failed to submit report: ${e.message}", e)
+            } catch (e: java.io.IOException) {
+                Log.e("ReportMisclassification", "Network error submitting report: ${e.message}", e)
                 if (isAdded) {
                     showNoInternetDialog(
                         "Unable to submit report because Wi-Fi or cellular data is not available. Please check your internet connection and try again."
+                    )
+                }
+            } catch (e: retrofit2.HttpException) {
+                Log.e("ReportMisclassification", "HTTP error submitting report: ${e.code()} ${e.message()}", e)
+                if (isAdded) {
+                    val errorMsg = when (e.code()) {
+                        401 -> "Authentication failed with the server (401). Please check the app configuration."
+                        422 -> "Validation error (422): The server rejected the report payload."
+                        else -> "Server error (${e.code()}). Please try again later."
+                    }
+                    val currentContext = context ?: return@launch
+                    CustomDialogHelper.showInfoDialog(
+                        context = currentContext,
+                        title = "Submission Error",
+                        message = errorMsg
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ReportMisclassification", "Failed to submit report: ${e.message}", e)
+                if (isAdded) {
+                    val currentContext = context ?: return@launch
+                    CustomDialogHelper.showInfoDialog(
+                        context = currentContext,
+                        title = "Submission Error",
+                        message = e.localizedMessage ?: "An unexpected error occurred while submitting your report."
                     )
                 }
             } finally {

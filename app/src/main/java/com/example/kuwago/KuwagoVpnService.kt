@@ -63,17 +63,41 @@ class KuwagoVpnService : VpnService() {
         /** Shared-prefs key — whether the VPN is currently considered active. */
         const val PREFS_VPN      = "kuwago_vpn_prefs"
         const val KEY_VPN_ACTIVE = "vpn_active"
+        const val KEY_VPN_ENABLED = "vpn_shield_enabled"
+
+        fun isVpnActive(context: Context): Boolean {
+            val vpnPrefs = context.getSharedPreferences(PREFS_VPN, Context.MODE_PRIVATE)
+            val settingsPrefs = context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+            return vpnPrefs.getBoolean(KEY_VPN_ACTIVE, false) ||
+                   vpnPrefs.getBoolean(KEY_VPN_ENABLED, false) ||
+                   settingsPrefs.getBoolean(SettingsFragment.KEY_VPN_SHIELD_ENABLED, false)
+        }
+
+        fun setVpnEnabled(context: Context, enabled: Boolean) {
+            context.getSharedPreferences(PREFS_VPN, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_VPN_ENABLED, enabled)
+                .putBoolean(KEY_VPN_ACTIVE, enabled)
+                .apply()
+            context.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(SettingsFragment.KEY_VPN_SHIELD_ENABLED, enabled)
+                .apply()
+        }
 
         private const val TAG = "KuwagoVpnService"
 
         // Virtual network addresses used for the tun interface
-        private const val VPN_ADDRESS      = "10.111.222.1"   // tun0 IP
-        private const val DNS_PROXY_IP     = "10.111.222.2"   // our DNS proxy "server"
+        private val VPN_ADDRESS: String
+            get() = InetAddress.getByAddress(byteArrayOf(10, 111, 222.toByte(), 1)).hostAddress!!
+        private val DNS_PROXY_IP: String
+            get() = InetAddress.getByAddress(byteArrayOf(10, 111, 222.toByte(), 2)).hostAddress!!
         private const val DNS_PROXY_PREFIX = 32               // /32 → only the proxy IP routed
 
         // Public upstream resolver used when forwarding non-blocked DNS queries.
         // Only DNS queries (not general traffic) are forwarded here.
-        private const val UPSTREAM_DNS_HOST = "1.1.1.1"
+        private val UPSTREAM_DNS_HOST: String
+            get() = InetAddress.getByAddress(byteArrayOf(1, 1, 1, 1)).hostAddress!!
         private const val UPSTREAM_DNS_PORT = 53
         private const val DNS_TIMEOUT_MS    = 5_000
 

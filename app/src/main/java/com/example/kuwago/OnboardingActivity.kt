@@ -68,6 +68,7 @@ class OnboardingActivity : AppCompatActivity(), OnboardingHost {
     }
     private fun startVpnService() {
         try {
+            KuwagoVpnService.setVpnEnabled(this, true)
             NotificationHelper.createAllNotificationChannels(this)
             ContextCompat.startForegroundService(this, Intent(this, KuwagoVpnService::class.java).setAction(KuwagoVpnService.ACTION_START))
         } catch (e: Exception) {

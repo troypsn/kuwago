@@ -108,15 +108,35 @@ class HistoryFragment : Fragment() {
         return view
     }
 
+    private fun isSmsIntegrationEnabled(): Boolean {
+        val ctx = context ?: return false
+        val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(SettingsFragment.KEY_SMS_INTEGRATION_ENABLED, hasSmsPermission())
+    }
+
+    private fun setSmsIntegrationEnabled(enabled: Boolean) {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(SettingsFragment.KEY_SMS_INTEGRATION_ENABLED, enabled).apply()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         context?.let { DetectionRepository.loadIfNeeded(it) }
 
         view.findViewById<View>(R.id.btn_refresh_history)?.setOnClickListener {
-            loadAndClassifySms()
+            if (isSmsIntegrationEnabled() && hasSmsPermission()) {
+                loadAndClassifySms()
+            } else {
+                Toast.makeText(requireContext(), "Enable SMS Inbox Integration to view history", Toast.LENGTH_SHORT).show()
+            }
         }
 
         DetectionRepository.detections.observe(viewLifecycleOwner) { liveList ->
+            if (!isSmsIntegrationEnabled() || !hasSmsPermission()) {
+                clearSmsList()
+                return@observe
+            }
             if (liveList.isEmpty()) return@observe
 
             var hasNewItems = false
@@ -172,14 +192,16 @@ class HistoryFragment : Fragment() {
             if (!isUserAction) return@setOnCheckedChangeListener
 
             if (isChecked) {
-                // Request Permission
+                setSmsIntegrationEnabled(true)
                 if (hasSmsPermission()) {
+                    tvPermissionDesc.text = "SMS Inbox scan active"
                     loadAndClassifySms()
                 } else {
                     requestSmsPermission()
                 }
             } else {
                 // Confirm turning off SMS inbox integration
+                var isConfirmed = false
                 CustomDialogHelper.showConfirmDialog(
                     context = requireContext(),
                     title = "Disable SMS Integration?",
@@ -191,8 +213,13 @@ class HistoryFragment : Fragment() {
                     cancelText = "Cancel",
                     cancelBg = R.drawable.bg_dark_button,
                     onConfirm = {
-                        tvPermissionDesc.text = "Grant permission to analyze device SMS history"
-                        loadAndClassifySms()
+                        isConfirmed = true
+                        setSmsIntegrationEnabled(false)
+                        isUserAction = false
+                        switchSmsPermission.isChecked = false
+                        isUserAction = true
+                        tvPermissionDesc.text = "SMS Inbox scan inactive"
+                        clearSmsList()
                     },
                     onCancel = {
                         isUserAction = false
@@ -200,7 +227,7 @@ class HistoryFragment : Fragment() {
                         isUserAction = true
                     },
                     onDismiss = {
-                        if (hasSmsPermission()) {
+                        if (!isConfirmed) {
                             isUserAction = false
                             switchSmsPermission.isChecked = true
                             isUserAction = true
@@ -232,11 +259,15 @@ class HistoryFragment : Fragment() {
         if (requestCode == REQUEST_CODE_SMS) {
             isUserAction = false
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                setSmsIntegrationEnabled(true)
                 switchSmsPermission.isChecked = true
                 tvPermissionDesc.text = "SMS Inbox scan active"
                 loadAndClassifySms()
             } else {
+                setSmsIntegrationEnabled(false)
                 switchSmsPermission.isChecked = false
+                tvPermissionDesc.text = "Grant permission to analyze device SMS history"
+                clearSmsList()
                 // Check if permanently denied
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS)) {
                     showSettingsGuideDialog()
@@ -271,28 +302,43 @@ class HistoryFragment : Fragment() {
     }
 
     private fun syncPermissionState() {
+        val isIntegrationEnabled = isSmsIntegrationEnabled()
         isUserAction = false
-        if (hasSmsPermission()) {
+        if (isIntegrationEnabled && hasSmsPermission()) {
             switchSmsPermission.isChecked = true
             tvPermissionDesc.text = "SMS Inbox scan active"
+            loadAndClassifySms()
         } else {
             switchSmsPermission.isChecked = false
-            tvPermissionDesc.text = "Grant permission to analyze device SMS history"
+            tvPermissionDesc.text = if (isIntegrationEnabled) {
+                "Grant permission to analyze device SMS history"
+            } else {
+                "SMS Inbox scan inactive"
+            }
+            clearSmsList()
         }
-        loadAndClassifySms()
         isUserAction = true
     }
 
     private fun clearSmsList() {
         allSmsList.clear()
         smsList.clear()
-        smsAdapter.notifyDataSetChanged()
+        if (::smsAdapter.isInitialized) {
+            smsAdapter.notifyDataSetChanged()
+        }
         historyRecyclerView.visibility = View.GONE
         layoutEmptyState.visibility = View.VISIBLE
+        tvEmptyTitle.text = "SMS Integration Disabled"
+        tvEmptyMessage.text = "Turn on SMS Inbox Integration above to view message history."
     }
 
     private fun loadAndClassifySms() {
         val ctx = context ?: return
+        if (!isSmsIntegrationEnabled() || !hasSmsPermission()) {
+            clearSmsList()
+            return
+        }
+
         historyRecyclerView.visibility = View.VISIBLE
         layoutEmptyState.visibility = View.GONE
 
@@ -377,15 +423,29 @@ class HistoryFragment : Fragment() {
                 val combinedRepo = (inMemoryDetections + dbDetections).distinctBy { it.id }
                 list.addAll(combinedRepo)
 
-                // 2. Load SMS inbox entries (only if permission granted)
+                // 2. Load SMS entries from Messages app (inbox and sent)
                 if (hasSmsPermission()) {
-                    val cursor: Cursor? = ctx.contentResolver.query(
-                        Uri.parse("content://sms/inbox"),
-                        arrayOf("_id", "address", "body", "date"),
-                        null,
-                        null,
-                        "date DESC LIMIT 50"
-                    )
+                    val cursor: Cursor? = try {
+                        ctx.contentResolver.query(
+                            Uri.parse("content://sms"),
+                            arrayOf("_id", "address", "body", "date"),
+                            null,
+                            null,
+                            "date DESC LIMIT 100"
+                        )
+                    } catch (_: Exception) {
+                        try {
+                            ctx.contentResolver.query(
+                                Uri.parse("content://sms/inbox"),
+                                arrayOf("_id", "address", "body", "date"),
+                                null,
+                                null,
+                                "date DESC LIMIT 100"
+                            )
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
 
                     cursor?.use { c ->
                         val idCol = c.getColumnIndex("_id")
@@ -400,6 +460,7 @@ class HistoryFragment : Fragment() {
                             val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
                             val date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
 
+                            if (body.isBlank()) continue
                             if (list.any { it.message == body && it.sender == sender }) continue
 
                             val classificationResult = LocalClassifier.classify(ctx, body)
@@ -413,6 +474,11 @@ class HistoryFragment : Fragment() {
                     }
                 }
                 list.sortedByDescending { it.timestamp }
+            }
+
+            if (!isSmsIntegrationEnabled() || !hasSmsPermission()) {
+                clearSmsList()
+                return@launch
             }
 
             allSmsList.clear()

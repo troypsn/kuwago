@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import com.example.kuwago.Classification
 import com.example.kuwago.DetectionResult
+import com.example.kuwago.KuwagoVpnService
 import com.example.kuwago.LocalClassifier
 import com.example.kuwago.UrlNormalizer
 import kotlinx.coroutines.Dispatchers
@@ -165,11 +166,11 @@ object SmsLocalRepository {
         }
 
         // If a SMISHING or SUSPICIOUS result with a URL host was saved, flag the suggestion dialog
-        // so that MainActivity can offer to enable URL Shield on next open.
+        // so that MainActivity can offer to enable URL Shield on next open (only if not already active).
         val hasThreatUrl = (result.classification == Classification.SMISHING || result.classification == Classification.SUSPICIOUS) &&
                 urlEntities.any { it.normalizedHost != null && it.isMalicious == 1 }
-        if (hasThreatUrl) {
-            context.getSharedPreferences("kuwago_vpn_prefs", Context.MODE_PRIVATE)
+        if (hasThreatUrl && !KuwagoVpnService.isVpnActive(context)) {
+            context.getSharedPreferences(KuwagoVpnService.PREFS_VPN, Context.MODE_PRIVATE)
                 .edit()
                 .putBoolean("suggest_vpn_shield", true)
                 .apply()

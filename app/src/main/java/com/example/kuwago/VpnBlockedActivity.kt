@@ -59,6 +59,7 @@ class VpnBlockedActivity : AppCompatActivity() {
         btnDisableVpn.setOnClickListener {
             // Send the stop command to the VPN service; the user can re-enable
             // from Settings → URL Shield at any time.
+            KuwagoVpnService.setVpnEnabled(this, false)
             val stopIntent = Intent(this, KuwagoVpnService::class.java).apply {
                 action = KuwagoVpnService.ACTION_STOP
             }
