@@ -130,7 +130,6 @@
                     android:layout_marginStart="12dp"
                     android:backgroundTint="@color/icon_tint"
                     android:gravity="end"
-                    android:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
                     android:spinnerMode="dropdown" />
             </LinearLayout>
 

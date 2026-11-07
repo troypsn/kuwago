@@ -12,11 +12,7 @@ class KuwagoApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
-        val isLightMode = prefs.getBoolean(SettingsFragment.KEY_LIGHT_MODE, false)
-        AppCompatDelegate.setDefaultNightMode(
-            if (isLightMode) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
-        )
+        SettingsFragment.applySavedTheme(this)
         DetectionRepository.loadIfNeeded(this)
         NotificationHelper.createAllNotificationChannels(this)
 

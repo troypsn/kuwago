@@ -324,8 +324,11 @@
     <string name="settings_developer_mode_title">Advanced Mode</string>
     <string name="settings_developer_mode_desc">Turning this on will show you extra details specifically made for advanced users</string>
 
-    <!-- Appearance / Light Mode -->
+    <!-- Appearance / Theme Mode -->
     <string name="settings_group_appearance">Appearance</string>
-    <string name="settings_light_mode_title">Light Mode</string>
-    <string name="settings_light_mode_desc">Switch between light and dark appearance</string>
+    <string name="settings_light_mode_title">Theme</string>
+    <string name="settings_light_mode_desc">Choose Light Mode, Dark Mode, or Follow System</string>
+    <string name="settings_theme_light">Light Mode</string>
+    <string name="settings_theme_dark">Dark Mode</string>
+    <string name="settings_theme_system">Follow System</string>
 </resources>

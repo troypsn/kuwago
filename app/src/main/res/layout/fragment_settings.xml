@@ -129,11 +129,14 @@
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switch_light_mode"
+                    <Spinner
+                        android:id="@+id/spinner_theme_mode"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp" />
+                        android:layout_marginStart="12dp"
+                        android:backgroundTint="@color/icon_tint"
+                        android:gravity="end"
+                        android:spinnerMode="dropdown" />
                 </LinearLayout>
             </LinearLayout>
 

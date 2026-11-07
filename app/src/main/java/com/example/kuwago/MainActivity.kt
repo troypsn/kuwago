@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val isLightMode = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE).getBoolean(SettingsFragment.KEY_LIGHT_MODE, false)
+        val isLightMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) != android.content.res.Configuration.UI_MODE_NIGHT_YES
         WindowInsetsControllerCompat(window, window.decorView).apply {
             isAppearanceLightStatusBars = isLightMode
             isAppearanceLightNavigationBars = isLightMode
