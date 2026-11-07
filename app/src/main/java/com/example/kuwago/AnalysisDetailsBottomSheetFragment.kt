@@ -1095,6 +1095,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun updateBlacklistButtonState(btn: Button, sender: String) {
         val isBlacklisted = BlacklistRepository.isBlacklisted(requireContext(), sender)
+        btn.backgroundTintList = null
         if (isBlacklisted) {
             btn.text = "Remove from Blacklist"
             btn.setBackgroundResource(R.drawable.bg_dark_button)

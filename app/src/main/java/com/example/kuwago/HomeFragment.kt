@@ -195,7 +195,7 @@ class HomeFragment : Fragment() {
                 statusBadge.text = classificationName
 
                 val (bgColor, textColor) = when (result.classification) {
-                    Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_stroke)
+                    Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_text)
                     Classification.SUSPICIOUS -> Pair(R.color.detection_orange_bg, R.color.percentage_orange)
                     Classification.SMISHING -> Pair(R.color.detection_red_bg, R.color.percentage_red)
                 }

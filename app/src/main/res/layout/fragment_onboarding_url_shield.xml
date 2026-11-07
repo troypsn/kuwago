@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -49,11 +50,12 @@
         android:gravity="bottom|center"
         android:orientation="vertical">
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_enable_shield"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:background="@drawable/bg_onboarding_primary"
+            app:backgroundTint="@null"
             android:fontFamily="@font/sf_pro"
             android:text="@string/onboarding_enable_shield"
             android:textAllCaps="false"
@@ -61,8 +63,9 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_shield_later"
+            app:backgroundTint="@null"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
             android:layout_height="52dp"

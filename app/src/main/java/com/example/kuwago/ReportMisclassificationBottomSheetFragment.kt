@@ -210,7 +210,7 @@ class ReportMisclassificationBottomSheetFragment : BottomSheetDialogFragment() {
         val (bgColor, textColor) = when (result.getEffectiveClassification()) {
             Classification.SMISHING -> Pair(R.color.detection_red_bg, R.color.percentage_red)
             Classification.SUSPICIOUS -> Pair(R.color.detection_orange_bg, R.color.percentage_orange)
-            Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_stroke)
+            Classification.SAFE -> Pair(R.color.detection_green_bg, R.color.detection_green_text)
         }
         tvBadge.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), bgColor))
         tvBadge.setTextColor(ContextCompat.getColor(requireContext(), textColor))

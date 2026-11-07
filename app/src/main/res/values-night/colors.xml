@@ -66,6 +66,7 @@
     <color name="detection_orange_stroke">#FF4A3010</color>
     <color name="detection_green_bg">#FF0D1F12</color>
     <color name="detection_green_stroke">#FF1A4028</color>
+    <color name="detection_green_text">#FF26CE6B</color>
 
     <!-- Badges & Banners -->
     <color name="badge_red_bg">#FF241014</color>

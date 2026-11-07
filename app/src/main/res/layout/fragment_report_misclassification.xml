@@ -341,11 +341,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_submit_report" 
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_scan_button"
+                    app:backgroundTint="@null"
                     android:stateListAnimator="@null"
                     android:text="Submit Report"
                     android:textAllCaps="false"
@@ -652,11 +653,12 @@
             android:paddingTop="12dp"
             android:paddingBottom="24dp">
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_done" 
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="@drawable/bg_scan_button"
+                app:backgroundTint="@null"
                 android:stateListAnimator="@null"
                 android:text="Done"
                 android:textAllCaps="false"

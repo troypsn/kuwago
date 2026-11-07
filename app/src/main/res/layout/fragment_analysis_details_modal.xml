@@ -665,11 +665,12 @@
                             android:lineSpacingMultiplier="1.4"
                             android:layout_marginBottom="14dp" />
 
-                        <Button
+                        <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/btn_run_deep_analysis"
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:background="@drawable/bg_dark_button"
+                            app:backgroundTint="@null"
                             android:text="Run Deep Analysis"
                             android:textAllCaps="false"
                             android:textColor="@color/text_tertiary"
@@ -1001,12 +1002,13 @@
                     android:textStyle="bold" />
 
                 <!-- Blacklist Button -->
-            <android.widget.Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_blacklist_contact"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_red_button"
+                app:backgroundTint="@null"
                 android:drawableStart="@drawable/ic_block"
                 android:drawablePadding="10dp"
                 android:paddingHorizontal="16dp"
@@ -1019,12 +1021,13 @@
                 app:drawableTint="#FFFFFFFF" />
 
             <!-- Report Misclassification Button -->
-            <android.widget.Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_report_misclassification"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_dark_button"
+                app:backgroundTint="@null"
                 android:drawableStart="@drawable/ic_report_file"
                 android:drawablePadding="10dp"
                 android:paddingHorizontal="16dp"

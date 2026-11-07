@@ -290,7 +290,7 @@ class BlacklistAdapter(
         val (badgeText, bgColor) = when (item.riskLevel) {
             RiskLevel.HIGH   -> Pair("High risk",   R.color.color_alert)
             RiskLevel.MEDIUM -> Pair("Medium risk", R.color.color_warning)
-            RiskLevel.LOW    -> Pair("Low risk",    R.color.detection_green_stroke)
+            RiskLevel.LOW    -> Pair("Low risk",    R.color.detection_green_text)
         }
         holder.riskBadge.text = badgeText
         holder.riskBadge.backgroundTintList =

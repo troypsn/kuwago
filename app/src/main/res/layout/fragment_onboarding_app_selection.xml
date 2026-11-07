@@ -82,11 +82,12 @@
 
     </FrameLayout>
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_onboarding_finish"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@drawable/bg_onboarding_primary"
+        app:backgroundTint="@null"
         android:fontFamily="@font/sf_pro"
         android:text="@string/onboarding_finish"
         android:textAllCaps="false"

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minWidth="300dp"
@@ -69,7 +70,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <android.widget.Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_confirm_add"
             android:layout_width="0dp"
             android:layout_height="48dp"
@@ -77,6 +78,7 @@
             android:layout_weight="1"
             android:minWidth="100dp"
             android:background="@drawable/bg_red_button"
+            app:backgroundTint="@null"
             android:stateListAnimator="@null"
             android:text="Yes, add it"
             android:textAllCaps="false"
@@ -84,13 +86,14 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <android.widget.Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_cancel_add"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
             android:minWidth="100dp"
             android:background="@drawable/bg_dark_button"
+            app:backgroundTint="@null"
             android:stateListAnimator="@null"
             android:text="No, exit"
             android:textAllCaps="false"

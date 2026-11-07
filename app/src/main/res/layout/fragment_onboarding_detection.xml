@@ -249,11 +249,12 @@
         </LinearLayout>
 
         <!-- Continue Button -->
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_detection_continue"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:background="@drawable/bg_onboarding_primary"
+            app:backgroundTint="@null"
             android:fontFamily="@font/sf_pro"
             android:text="@string/onboarding_continue"
             android:textAllCaps="false"
