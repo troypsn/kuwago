@@ -69,8 +69,8 @@ class TermsBottomSheetFragment : BottomSheetDialogFragment() {
             btnAgree?.visibility = View.GONE
             btnAgree?.isEnabled = false
             btnAgree?.text = getString(R.string.terms_accept_button)
-            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
-            btnAgree?.setTextColor(Color.BLACK)
+            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.button_primary_bg))
+            btnAgree?.setTextColor(ContextCompat.getColor(requireContext(), R.color.button_primary_text))
 
             cbAgreeTerms?.setOnCheckedChangeListener { _, isChecked ->
                 btnAgree?.visibility = if (isChecked) View.VISIBLE else View.GONE
@@ -92,8 +92,8 @@ class TermsBottomSheetFragment : BottomSheetDialogFragment() {
             btnAgree?.visibility = View.VISIBLE
             btnAgree?.text = getString(R.string.terms_close_button)
             btnAgree?.isEnabled = true
-            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
-            btnAgree?.setTextColor(Color.BLACK)
+            btnAgree?.backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.button_primary_bg))
+            btnAgree?.setTextColor(ContextCompat.getColor(requireContext(), R.color.button_primary_text))
             btnAgree?.setOnClickListener {
                 dismiss()
             }

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.viewpager2.widget.ViewPager2
 
 class OnboardingActivity : AppCompatActivity(), OnboardingHost {
@@ -32,6 +33,11 @@ class OnboardingActivity : AppCompatActivity(), OnboardingHost {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val isLightMode = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE).getBoolean(SettingsFragment.KEY_LIGHT_MODE, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = isLightMode
+            isAppearanceLightNavigationBars = isLightMode
+        }
         setContentView(R.layout.activity_onboarding)
         val root = findViewById<View>(R.id.onboarding_root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->

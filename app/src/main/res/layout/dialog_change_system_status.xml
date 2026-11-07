@@ -19,7 +19,7 @@
             android:layout_toStartOf="@+id/btn_close_dialog"
             android:layout_marginEnd="8dp"
             android:text="Change System Status?"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:fontFamily="@font/sf_pro"
             android:textStyle="bold" />
@@ -34,7 +34,7 @@
             android:clickable="true"
             android:focusable="true"
             android:src="@drawable/ic_close"
-            android:tint="#888888" />
+            android:tint="@color/text_secondary" />
     </RelativeLayout>
 
     <TextView
@@ -43,7 +43,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp"
         android:text="Select the operational mode for Kuwago protection."
-        android:textColor="#888888"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
     <!-- Option: On -->
@@ -75,7 +75,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="On"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold" />
@@ -85,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Run as normal with background protection active"
-                android:textColor="#888888"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
@@ -119,7 +119,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Off"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold" />
@@ -129,7 +129,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Stop background processes and SMS interception"
-                android:textColor="#888888"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
@@ -163,7 +163,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Local Layer"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold" />
@@ -173,7 +173,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Conserve cellular bandwidth using local ML models"
-                android:textColor="#888888"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
@@ -187,7 +187,7 @@
         android:stateListAnimator="@null"
         android:text="Cancel"
         android:textAllCaps="false"
-        android:textColor="#CCCCCC"
+        android:textColor="@color/text_tertiary"
         android:textSize="14sp"
         android:textStyle="bold" />
 

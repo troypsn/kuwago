@@ -13,7 +13,7 @@
         android:fontFamily="@font/sf_pro"
         android:textStyle="bold"
         android:text="@string/configure_title"
-        android:textColor="@color/black"
+        android:textColor="@color/button_primary_text"
         android:textSize="28sp" />
 
     <TextView
@@ -44,7 +44,7 @@
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold"
                 android:text="@string/detection_section"
-                android:textColor="@color/black"
+                android:textColor="@color/button_primary_text"
                 android:textSize="14sp" />
 
             <LinearLayout
@@ -79,7 +79,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/real_time_scanning"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView
@@ -129,7 +129,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/auto_black_listing"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView
@@ -158,7 +158,7 @@
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold"
                 android:text="@string/analysis_section"
-                android:textColor="@color/black"
+                android:textColor="@color/button_primary_text"
                 android:textSize="14sp" />
 
             <LinearLayout
@@ -193,7 +193,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/deep_analysis_scan"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView
@@ -243,7 +243,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/url_scanning"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView
@@ -272,7 +272,7 @@
                 android:fontFamily="@font/sf_pro"
                 android:textStyle="bold"
                 android:text="@string/data_privacy_section"
-                android:textColor="@color/black"
+                android:textColor="@color/button_primary_text"
                 android:textSize="14sp" />
 
             <LinearLayout
@@ -307,7 +307,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/sms_retraining"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView
@@ -357,7 +357,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/sf_pro"
                             android:text="@string/misclassified_sms"
-                            android:textColor="@color/black"
+                            android:textColor="@color/button_primary_text"
                             android:textSize="16sp" />
 
                         <TextView

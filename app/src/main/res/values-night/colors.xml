@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Background palette (deep blacks) -->
+    <color name="background_primary">#FF000000</color>
+    <color name="background_secondary">#FF0D0D0D</color>
+    <color name="background_tertiary">#FF1A1A1A</color>
+    <color name="background_gray">#FF000000</color>
+
+    <!-- Border -->
+    <color name="border_color">#FF2A2A2A</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#FF888888</color>
+    <color name="text_tertiary">#FFCCCCCC</color>
+    <color name="status_active_text">#FFFFFFFF</color>
+    <color name="divider_gray">#FF2A2A2A</color>
+    <color name="icon_tint">#FFFFFFFF</color>
+
+    <!-- Primary Action Button (inverts in light/dark) -->
+    <color name="button_primary_bg">#FFFFFFFF</color>
+    <color name="button_primary_text">#FF000000</color>
+
+    <!-- Card & Dialog surfaces -->
+    <color name="card_bg">#FF1A1A1A</color>
+    <color name="card_stroke">#FF2A2A2A</color>
+    <color name="inner_card_bg">#FF18181C</color>
+    <color name="inner_card_stroke">#FF28282E</color>
+    <color name="layer_card_bg">#FF121214</color>
+    <color name="layer_card_stroke">#FF242428</color>
+    <color name="input_field_bg">#FF141414</color>
+    <color name="dialog_bg">#FF121215</color>
+    <color name="dialog_stroke">#FF282830</color>
+    <color name="dark_button_bg">#FF1A1A1E</color>
+    <color name="dark_button_stroke">#FF2A2A30</color>
+    <color name="chip_selected_bg">#FF2A2A2A</color>
+    <color name="chip_unselected_bg">#FF1A1A1A</color>
+    <color name="country_chip_bg">#FF202020</color>
+    <color name="notif_card_bg">#FF141414</color>
+    <color name="notif_card_stroke">#FF2A2A2A</color>
+    <color name="status_badge_bg">#FF000000</color>
+    <color name="onboarding_disabled_bg">#26FFFFFF</color>
+
+    <!-- Primary (blue) -->
+    <color name="primary">#FF4B5FE4</color>
+    <color name="primary_light">#FFAAB2F0</color>
+    <color name="teal_300">#FF4ECCA3</color>
+    <color name="accent_teal">#FF4ECCA3</color>
+
+    <!-- Alert / red -->
+    <color name="color_alert">#FFD93B55</color>
+
+    <!-- Warning / orange -->
+    <color name="color_warning">#FFF07048</color>
+
+    <!-- Success / yellow-orange -->
+    <color name="color_success">#FFFAAF3B</color>
+
+    <!-- Detection Items (dark-themed) -->
+    <color name="detection_red_bg">#FF1F0D10</color>
+    <color name="detection_red_stroke">#FF4A1520</color>
+    <color name="detection_orange_bg">#FF1F1408</color>
+    <color name="detection_orange_stroke">#FF4A3010</color>
+    <color name="detection_green_bg">#FF0D1F12</color>
+    <color name="detection_green_stroke">#FF1A4028</color>
+
+    <!-- Badges & Banners -->
+    <color name="badge_red_bg">#FF241014</color>
+    <color name="badge_red_stroke">#FF4A1C22</color>
+    <color name="option_selected_bg">#FF0D2B1E</color>
+    <color name="email_banner_bg">#FF1A1813</color>
+    <color name="email_banner_stroke">#FF4D3B1E</color>
+
+    <color name="percentage_red">#FFD93B55</color>
+    <color name="percentage_orange">#FFF07048</color>
+
+    <!-- Bottom Nav -->
+    <color name="nav_bg">#FF0D0D0D</color>
+    <color name="nav_border">#FF2A2A2A</color>
+    <color name="nav_icon_unselected">#FF555555</color>
+    <color name="nav_icon_selected">#FFFFFFFF</color>
+    <color name="home_fab_bg">#FF4B5FE4</color>
+    <color name="scan_bg">#582EFB</color>
+</resources>

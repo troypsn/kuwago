@@ -21,7 +21,7 @@
             android:layout_toStartOf="@+id/btn_close_dialog"
             android:layout_marginEnd="8dp"
             android:text="Notice"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -35,7 +35,7 @@
             android:clickable="true"
             android:focusable="true"
             android:src="@drawable/ic_close"
-            android:tint="#888888" />
+            android:tint="@color/text_secondary" />
     </RelativeLayout>
 
     <!-- Message Content Row -->
@@ -62,7 +62,7 @@
             android:layout_weight="1"
             android:lineSpacingExtra="3dp"
             android:text="Message body goes here."
-            android:textColor="#CCCCCC"
+            android:textColor="@color/text_tertiary"
             android:textSize="14sp" />
     </LinearLayout>
 
@@ -83,7 +83,7 @@
             android:stateListAnimator="@null"
             android:text="OK"
             android:textAllCaps="false"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -98,7 +98,7 @@
             android:stateListAnimator="@null"
             android:text="Cancel"
             android:textAllCaps="false"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
             android:visibility="gone" />

@@ -32,12 +32,12 @@ class OnboardingPermissionsFragment : Fragment() {
         val allGranted = PermissionHelper.isAllRequiredProtectionGranted(c)
         continueButton.isEnabled = allGranted
         continueButton.setBackgroundResource(if (allGranted) R.drawable.bg_onboarding_primary else R.drawable.bg_onboarding_disabled)
-        continueButton.setTextColor(c.getColor(if (allGranted) R.color.black else R.color.text_secondary))
+        continueButton.setTextColor(c.getColor(if (allGranted) R.color.button_primary_text else R.color.text_secondary))
         view?.findViewById<View>(R.id.btn_open_app_settings)?.visibility = if (!smsOk) View.VISIBLE else View.GONE
     }
     private fun updatePermissionButton(button: Button, enabled: Boolean) {
         button.text = getString(if (enabled) R.string.onboarding_enabled else R.string.onboarding_enable)
-        button.setTextColor(requireContext().getColor(if (enabled) R.color.white else R.color.black))
+        button.setTextColor(requireContext().getColor(if (enabled) R.color.text_primary else R.color.button_primary_text))
         button.setBackgroundResource(if (enabled) R.drawable.bg_onboarding_enabled else R.drawable.bg_onboarding_primary)
     }
 }

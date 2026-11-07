@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/background_primary"
     android:orientation="vertical">
 
     <!-- Top Navigation Header -->
@@ -22,7 +22,7 @@
             android:clickable="true"
             android:focusable="true"
             android:src="@drawable/ic_arrow_back"
-            android:tint="#FFFFFFFF" />
+            android:tint="@color/icon_tint" />
 
         <TextView
             android:layout_width="0dp"
@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="Full Analysis"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -42,7 +42,7 @@
             android:clickable="true"
             android:focusable="true"
             android:src="@drawable/ic_dl"
-            android:tint="#FFFFFFFF"
+            android:tint="@color/icon_tint"
             android:visibility="gone" />
 
         <ProgressBar
@@ -115,7 +115,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal"
                         android:text="Reasoning Summary"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -134,7 +134,7 @@
                         android:gravity="center_horizontal"
                         android:lineSpacingExtra="3dp"
                         android:text="No suspicious patterns or malicious links detected."
-                        android:textColor="#CCCCCC"
+                        android:textColor="@color/text_tertiary"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -156,7 +156,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="18dp"
-                    android:background="#242428" />
+                    android:background="@color/divider_gray" />
 
                 <!-- 3 Layer Summary Columns -->
                 <LinearLayout
@@ -180,7 +180,7 @@
                             android:background="@drawable/bg_inner_card"
                             android:padding="6dp"
                             android:src="@drawable/ic_ml"
-                            android:tint="#AAAAAA" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:id="@+id/tv_layer_ml_title"
@@ -188,7 +188,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:text="ML Layer"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_tertiary"
                             android:textSize="12sp" />
 
                         <TextView
@@ -218,7 +218,7 @@
                             android:background="@drawable/bg_inner_card"
                             android:padding="6dp"
                             android:src="@drawable/ic_brain"
-                            android:tint="#AAAAAA" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:id="@+id/tv_layer_dl_title"
@@ -226,7 +226,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:text="DL Layer"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_tertiary"
                             android:textSize="12sp" />
 
                         <TextView
@@ -256,7 +256,7 @@
                             android:background="@drawable/bg_inner_card"
                             android:padding="6dp"
                             android:src="@drawable/ic_link"
-                            android:tint="#AAAAAA" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:id="@+id/tv_layer_url_title"
@@ -264,7 +264,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:text="URL Scan"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_tertiary"
                             android:textSize="12sp" />
 
                         <TextView
@@ -284,7 +284,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="18dp"
-                    android:background="#242428" />
+                    android:background="@color/divider_gray" />
 
                 <!-- Scanned Date -->
                 <TextView
@@ -292,7 +292,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="9:38 AM • May 18, 2026"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -312,7 +312,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Message preview"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -321,7 +321,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:lineSpacingExtra="3dp"
                     android:maxLines="2"
@@ -335,7 +335,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Tap to view full message"
-                    android:textColor="#555555"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
                 <!-- Rule-based Email Notice Banner -->
@@ -382,7 +382,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:text="This message contains an email address and may be an unsolicited message."
-                            android:textColor="#D8D8D8"
+                            android:textColor="@color/text_tertiary"
                             android:textSize="12sp"
                             android:lineSpacingExtra="2dp"
                             android:fontFamily="@font/sf_pro" />
@@ -404,7 +404,7 @@
                     android:layout_marginTop="24dp"
                     android:layout_marginBottom="12dp"
                     android:text="Analysis breakdown"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -438,13 +438,13 @@
                             android:layout_height="22dp"
                             android:layout_marginEnd="12dp"
                             android:src="@drawable/ic_ml"
-                            android:tint="#CCCCCC" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Machine Learning"
-                            android:textColor="#FFFFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -465,7 +465,7 @@
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="4dp"
                             android:text="0.89"
-                            android:textColor="#888888"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:textStyle="bold" />
 
@@ -474,7 +474,7 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/ic_chevron_down"
-                            android:tint="#888888" />
+                            android:tint="@color/text_secondary" />
                     </LinearLayout>
                 </RelativeLayout>
 
@@ -492,7 +492,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginBottom="12dp"
-                        android:background="#242428" />
+                        android:background="@color/divider_gray" />
 
                     <!-- Key Value Table -->
                     <LinearLayout
@@ -518,7 +518,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Confidence score"
-                                android:textColor="#888888"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="13sp" />
 
                             <TextView
@@ -527,7 +527,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentEnd="true"
                                 android:text="0.89"
-                                android:textColor="#FFFFFFFF"
+                                android:textColor="@color/text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
                         </RelativeLayout>
@@ -590,13 +590,13 @@
                             android:layout_height="22dp"
                             android:layout_marginEnd="12dp"
                             android:src="@drawable/ic_brain"
-                            android:tint="#CCCCCC" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Deep Learning"
-                            android:textColor="#FFFFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -617,7 +617,7 @@
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="4dp"
                             android:text="0.93"
-                            android:textColor="#888888"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:textStyle="bold" />
 
@@ -626,7 +626,7 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/ic_chevron_down"
-                            android:tint="#888888" />
+                            android:tint="@color/text_secondary" />
                     </LinearLayout>
                 </RelativeLayout>
 
@@ -644,7 +644,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginBottom="12dp"
-                        android:background="#242428" />
+                        android:background="@color/divider_gray" />
 
                     <!-- Pending state: shown when DL scan hasn't run yet -->
                     <LinearLayout
@@ -660,7 +660,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Deep Analysis uses the CNN-Bi-GRU server model for enhanced scanning. Tap below to run it."
-                            android:textColor="#888888"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:lineSpacingMultiplier="1.4"
                             android:layout_marginBottom="14dp" />
@@ -672,7 +672,7 @@
                             android:background="@drawable/bg_dark_button"
                             android:text="Run Deep Analysis"
                             android:textAllCaps="false"
-                            android:textColor="#CCCCCC"
+                            android:textColor="@color/text_tertiary"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:stateListAnimator="@null" />
@@ -710,7 +710,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Confidence score"
-                                    android:textColor="#888888"
+                                    android:textColor="@color/text_secondary"
                                     android:textSize="13sp" />
 
                                 <TextView
@@ -719,7 +719,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_alignParentEnd="true"
                                     android:text="0.93"
-                                    android:textColor="#FFFFFFFF"
+                                    android:textColor="@color/text_primary"
                                     android:textSize="15sp"
                                     android:textStyle="bold" />
                             </RelativeLayout>
@@ -784,13 +784,13 @@
                             android:layout_height="22dp"
                             android:layout_marginEnd="12dp"
                             android:src="@drawable/ic_link"
-                            android:tint="#CCCCCC" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="URL Scan"
-                            android:textColor="#FFFFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -811,7 +811,7 @@
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="4dp"
                             android:text="0.91"
-                            android:textColor="#888888"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:textStyle="bold" />
 
@@ -820,7 +820,7 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/ic_chevron_down"
-                            android:tint="#888888" />
+                            android:tint="@color/text_secondary" />
                     </LinearLayout>
                 </RelativeLayout>
 
@@ -838,7 +838,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginBottom="12dp"
-                        android:background="#242428" />
+                        android:background="@color/divider_gray" />
 
                     <!-- Key Value Table -->
                     <LinearLayout
@@ -864,7 +864,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Confidence score"
-                                android:textColor="#888888"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="13sp" />
 
                             <TextView
@@ -873,7 +873,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentEnd="true"
                                 android:text="0.91"
-                                android:textColor="#FFFFFFFF"
+                                android:textColor="@color/text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
                         </RelativeLayout>
@@ -934,13 +934,13 @@
                             android:layout_height="22dp"
                             android:layout_marginEnd="8dp"
                             android:src="@drawable/ic_combined_score"
-                            android:tint="#CCCCCC" />
+                            android:tint="@color/text_tertiary" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Combined Score"
-                            android:textColor="#FFFFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -967,7 +967,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Ensemble Score"
-                        android:textColor="#888888"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
 
                     <TextView
@@ -976,7 +976,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:text="0.913"
-                        android:textColor="#FFFFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="24sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -996,7 +996,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
                     android:text="Security Actions"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -1031,10 +1031,10 @@
                 android:stateListAnimator="@null"
                 android:text="Report misclassification"
                 android:textAllCaps="false"
-                android:textColor="#CCCCCC"
+                android:textColor="@color/text_tertiary"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                app:drawableTint="#CCCCCC" />
+                app:drawableTint="@color/text_tertiary" />
 
             </LinearLayout>
 

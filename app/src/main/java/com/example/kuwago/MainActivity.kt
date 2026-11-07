@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val isLightMode = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE).getBoolean(SettingsFragment.KEY_LIGHT_MODE, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = isLightMode
+            isAppearanceLightNavigationBars = isLightMode
+        }
 
         setContentView(R.layout.activity_main)
         val bottomNav = findViewById<LinearLayout>(R.id.bottom_nav)
@@ -93,11 +99,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Set default fragment
+        // Set default fragment or restore active tab on theme recreation
         if (savedInstanceState == null) {
             switchFragment(HomeFragment(), "home")
             updateNavUI("home")
+        } else {
+            val savedTab = savedInstanceState.getString("current_tab", "home") ?: "home"
+            updateNavUI(savedTab)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("current_tab", currentTab)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -394,7 +408,8 @@ class MainActivity : AppCompatActivity() {
         val selected = ContextCompat.getColor(this, R.color.nav_icon_selected)
 
         // Reset other tabs to unselected (gray), keep scan icon white
-        scanIcon.setColorFilter(selected)
+        val white = ContextCompat.getColor(this, R.color.white)
+        scanIcon.setColorFilter(white)
         listOf(homeIcon, historyIcon, blacklistIcon, settingsIcon)
             .forEach { it.setColorFilter(unselected) }
         listOf(homeText, historyText, blacklistText, settingsText)
@@ -411,7 +426,7 @@ class MainActivity : AppCompatActivity() {
                 historyText.setTextColor(selected)
             }
             "scan" -> {
-                scanIcon.setColorFilter(selected)
+                scanIcon.setColorFilter(white)
             }
             "blacklist" -> {
                 blacklistIcon.setColorFilter(selected)

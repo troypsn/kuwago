@@ -37,7 +37,7 @@
                 android:layout_height="16dp"
                 android:src="@drawable/ic_settings"
                 android:alpha="0.5"
-                android:tint="@color/white"
+                android:tint="@color/icon_tint"
                 android:contentDescription="settings icon" />
 
             <TextView
@@ -64,6 +64,78 @@
             android:orientation="vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
+
+            <!-- ========== GROUP 0: Appearance ========== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="4dp"
+                android:text="@string/settings_group_appearance"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="@font/sf_pro" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_action_card"
+                android:orientation="vertical">
+
+                <!-- Light Mode -->
+                <LinearLayout
+                    android:id="@+id/settings_row_light_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_light_mode"
+                        android:padding="6dp"
+                        android:tint="@color/icon_tint"
+                        android:background="@drawable/bg_action_card"
+                        android:contentDescription="light mode" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_light_mode_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:fontFamily="@font/sf_pro" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_light_mode_desc"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switch_light_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" />
+                </LinearLayout>
+            </LinearLayout>
 
             <!-- ========== GROUP 1: Detection ========== -->
             <TextView
@@ -100,6 +172,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:src="@drawable/prohibit_icon"
+                        android:tint="@color/icon_tint"
                         android:padding="4dp"
                         android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
@@ -134,7 +207,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -160,6 +233,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:src="@drawable/scan_icon"
+                        android:tint="@color/icon_tint"
                         android:padding="4dp"
                         android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
@@ -194,7 +268,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -236,6 +310,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:src="@drawable/prohibit_icon"
+                        android:tint="@color/icon_tint"
                         android:padding="4dp"
                         android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
@@ -270,7 +345,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -297,7 +372,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_shield"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="url shield" />
 
@@ -330,7 +405,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -358,7 +433,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_scan"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="ntc report" />
 
@@ -391,7 +466,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -432,7 +507,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_dl"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="online scan" />
 
@@ -465,7 +540,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -505,6 +580,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:src="@drawable/paper_plane_icon"
+                        android:tint="@color/icon_tint"
                         android:padding="4dp"
                         android:scaleType="centerInside"
                         android:background="@drawable/bg_action_card"
@@ -539,7 +615,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -580,7 +656,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_scan"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="help train ai" />
 
@@ -613,7 +689,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>
@@ -654,7 +730,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_settings"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="app version" />
 
@@ -687,7 +763,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
 
@@ -714,7 +790,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_report_file"
                         android:padding="6dp"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:background="@drawable/bg_action_card"
                         android:contentDescription="terms and conditions" />
 
@@ -747,7 +823,7 @@
                         android:layout_height="18dp"
                         android:src="@drawable/ic_chevron_right"
                         android:alpha="0.5"
-                        android:tint="@color/white"
+                        android:tint="@color/icon_tint"
                         android:contentDescription="open" />
                 </LinearLayout>
             </LinearLayout>

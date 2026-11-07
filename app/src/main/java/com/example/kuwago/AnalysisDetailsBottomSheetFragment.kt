@@ -17,6 +17,7 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.ImageViewCompat
+import androidx.core.content.ContextCompat
 import androidx.core.widget.TextViewCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -296,20 +297,20 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             ivReasoningIcon?.setColorFilter(Color.parseColor("#FFF07048"))
             if (isDevMode) {
                 tvMlSummaryVerdict.text = "Scanning…"
-                tvMlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                tvMlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                 tvDlSummaryVerdict.text = "Scanning…"
-                tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                tvDlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                 tvUrlSummaryVerdict.text = "Scanning…"
-                tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
-                ivLayerMlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
-                ivLayerDlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
+                tvUrlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+                ivLayerMlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
+                ivLayerDlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
             } else {
                 tvMlSummaryVerdict.text = "Pending"
-                tvMlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
+                tvMlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
                 tvDlSummaryVerdict.text = "Pending"
-                tvDlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
-                ivLayerMlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
-                ivLayerDlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
+                tvDlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                ivLayerMlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                ivLayerDlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_primary))
             }
         } else {
             val isSenderBlacklisted = context?.let { BlacklistRepository.isBlacklisted(it, result.sender) } ?: false
@@ -379,7 +380,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                 }
                 tvMlSummaryVerdict.text = getVerdictText(mlProb, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold)
                 tvMlSummaryVerdict.setTextColor(getVerdictColor(mlProb, LocalClassifier.mlSuspiciousThreshold, LocalClassifier.mlSmishingThreshold))
-                ivLayerMlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
+                ivLayerMlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
 
                 val dlProb = result.cnnScore ?: result.cnnProb ?: 0f
                 if (result.cnnScore != null || result.cnnProb != null) {
@@ -388,9 +389,9 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     tvDlSummaryVerdict.setTextColor(getVerdictColor(dlProb, dlSusp, dlSmish))
                 } else {
                     tvDlSummaryVerdict.text = "Pending"
-                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                    tvDlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                 }
-                ivLayerDlIcon?.setColorFilter(Color.parseColor("#AAAAAA"))
+                ivLayerDlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
 
                 if (result.urlFound) {
                     if (result.urlScore != null) {
@@ -407,11 +408,11 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                         tvUrlSummaryVerdict.setTextColor(getVerdictColor(urlProb, LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold))
                     } else {
                         tvUrlSummaryVerdict.text = "Pending"
-                        tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                        tvUrlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                     }
                 } else {
                     tvUrlSummaryVerdict.text = "No Link"
-                    tvUrlSummaryVerdict.setTextColor(Color.parseColor("#888888"))
+                    tvUrlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                 }
             } else {
                 // Regular User Interface (Non-developer):
@@ -436,8 +437,8 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
                     ivLayerDlIcon?.setColorFilter(Color.parseColor("#777777"))
                 } else {
                     tvDlSummaryVerdict.text = "Pending"
-                    tvDlSummaryVerdict.setTextColor(Color.parseColor("#E0E0E0"))
-                    ivLayerDlIcon?.setColorFilter(Color.parseColor("#E0E0E0"))
+                    tvDlSummaryVerdict.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                    ivLayerDlIcon?.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_primary))
                 }
             }
         }
@@ -537,7 +538,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             populateDlMetrics(llDlMetricsContainer, result, dlScore)
         } else {
             tvDlScoreBadge.text = "–"
-            tvDlScoreBadge.setTextColor(Color.parseColor("#888888"))
+            tvDlScoreBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             llDlPendingState?.visibility = View.VISIBLE
             llDlResultState?.visibility = View.GONE
             val isDeepScanning = result.isScanning || DeepScanManager.isScanning(result)
@@ -577,23 +578,23 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         if (!result.urlFound) {
             // No URL in message
             tvUrlScoreBadge.text = "–"
-            tvUrlScoreBadge.setTextColor(Color.parseColor("#888888"))
+            tvUrlScoreBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             tvUrlConfidenceVal.text = "N/A"
-            tvUrlConfidenceVal.setTextColor(Color.parseColor("#888888"))
+            tvUrlConfidenceVal.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "No URLs found in this message"
-            tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
-            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(Color.parseColor("#888888")))
+            tvUrlClassifiedBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.text_secondary)))
         } else if (result.urlScore == null) {
             // URL found but not yet scanned
             tvUrlScoreBadge.text = "–"
-            tvUrlScoreBadge.setTextColor(Color.parseColor("#888888"))
+            tvUrlScoreBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             tvUrlConfidenceVal.text = "Pending"
-            tvUrlConfidenceVal.setTextColor(Color.parseColor("#888888"))
+            tvUrlConfidenceVal.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             pbUrlConfidence.progress = 0
             tvUrlClassifiedBadge.text = "URL scan pending"
-            tvUrlClassifiedBadge.setTextColor(Color.parseColor("#888888"))
-            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(Color.parseColor("#888888")))
+            tvUrlClassifiedBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            TextViewCompat.setCompoundDrawableTintList(tvUrlClassifiedBadge, ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.text_secondary)))
         } else {
             val urlScore = result.urlScore
             val urlColor = getVerdictColor(urlScore, LocalClassifier.withUrlSuspiciousThreshold, LocalClassifier.withUrlSmishingThreshold)
@@ -748,7 +749,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         if (!hasCnnRun) {
             val tvNotScanned = TextView(requireContext()).apply {
                 text = "Not scanned yet"
-                setTextColor(Color.parseColor("#888888"))
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
                 textSize = 13f
                 setPadding(0, 10, 0, 10)
             }
@@ -803,7 +804,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
             if (!result.explanation.isNullOrEmpty()) {
                 val tvExplain = TextView(requireContext()).apply {
                     text = result.explanation
-                    setTextColor(Color.parseColor("#AAAAAA"))
+                    setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
                     textSize = 12f
                     setPadding(0, 12, 0, 4)
                     setLineSpacing(4f, 1f)
@@ -839,7 +840,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvKey = TextView(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             text = key
-            setTextColor(Color.parseColor("#888888"))
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             textSize = 13f
         }
 
@@ -922,7 +923,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvLabel = TextView(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(100, ViewGroup.LayoutParams.WRAP_CONTENT)
             text = label
-            setTextColor(Color.parseColor("#AAAAAA"))
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary))
             textSize = 12f
         }
 
@@ -930,7 +931,7 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         val tvVal = TextView(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             text = textVal
-            setTextColor(if (isPending) Color.parseColor("#666666") else Color.parseColor("#DDDDDD"))
+            setTextColor(if (isPending) ContextCompat.getColor(requireContext(), R.color.text_secondary) else ContextCompat.getColor(requireContext(), R.color.text_primary))
             textSize = 12f
         }
 
@@ -1097,9 +1098,14 @@ class AnalysisDetailsBottomSheetFragment : BottomSheetDialogFragment() {
         if (isBlacklisted) {
             btn.text = "Remove from Blacklist"
             btn.setBackgroundResource(R.drawable.bg_dark_button)
+            val textColor = ContextCompat.getColor(requireContext(), R.color.text_primary)
+            btn.setTextColor(textColor)
+            TextViewCompat.setCompoundDrawableTintList(btn, ColorStateList.valueOf(textColor))
         } else {
             btn.text = "Blacklist this contact"
             btn.setBackgroundResource(R.drawable.bg_red_button)
+            btn.setTextColor(Color.WHITE)
+            TextViewCompat.setCompoundDrawableTintList(btn, ColorStateList.valueOf(Color.WHITE))
         }
     }
 

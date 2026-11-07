@@ -31,11 +31,11 @@ class OnboardingGetStartedFragment : Fragment() {
             isTermsAccepted = accepted
             cbAgree?.isChecked = accepted
             if (accepted) {
-                btnGetStarted?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
-                btnGetStarted?.setTextColor(Color.BLACK)
+                btnGetStarted?.backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.button_primary_bg))
+                btnGetStarted?.setTextColor(ContextCompat.getColor(requireContext(), R.color.button_primary_text))
             } else {
-                btnGetStarted?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#26FFFFFF"))
-                btnGetStarted?.setTextColor(Color.parseColor("#66FFFFFF"))
+                btnGetStarted?.backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.onboarding_disabled_bg))
+                btnGetStarted?.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             }
         }
 

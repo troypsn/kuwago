@@ -323,4 +323,9 @@
     <!-- Advanced Mode -->
     <string name="settings_developer_mode_title">Advanced Mode</string>
     <string name="settings_developer_mode_desc">Turning this on will show you extra details specifically made for advanced users</string>
+
+    <!-- Appearance / Light Mode -->
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_light_mode_title">Light Mode</string>
+    <string name="settings_light_mode_desc">Switch between light and dark appearance</string>
 </resources>

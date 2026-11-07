@@ -694,7 +694,7 @@ class SmsHistoryAdapter(
         val alpha = if (scanned) 1.0f else 0.35f
         chip.alpha = alpha
         chip.setBackgroundResource(R.drawable.bg_chip_unselected)
-        val tintColor = if (scanned) Color.WHITE else Color.parseColor("#888888")
+        val tintColor = ContextCompat.getColor(chip.context, if (scanned) R.color.text_primary else R.color.text_secondary)
         for (i in 0 until chip.childCount) {
             val child = chip.getChildAt(i)
             if (child is ImageView) {

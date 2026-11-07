@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D1117"
+    android:background="@color/background_primary"
     android:orientation="vertical"
     android:padding="24dp"
     android:gravity="center">
@@ -35,7 +35,7 @@
         android:layout_marginTop="8dp"
         android:gravity="center"
         android:text="Kuwago URL Shield prevented access to a known phishing site."
-        android:textColor="#B0B0B0"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
     <!-- Blocked site card -->
@@ -72,7 +72,7 @@
             android:layout_height="1dp"
             android:layout_marginTop="14dp"
             android:layout_marginBottom="14dp"
-            android:background="#2A2A2A" />
+            android:background="@color/divider_gray" />
 
         <TextView
             android:id="@+id/vpn_blocked_detail"
@@ -107,7 +107,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:text="Your device is protected. No data was sent to this site."
-            android:textColor="#80E0A0"
+            android:textColor="@color/detection_green_stroke"
             android:textSize="13sp"
             android:fontFamily="@font/sf_pro" />
 
@@ -157,7 +157,7 @@
             android:layout_marginTop="8dp"
             android:padding="8dp"
             android:text="Disable URL Shield (not recommended)"
-            android:textColor="#585858"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/sf_pro"
             android:clickable="true"

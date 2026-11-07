@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 
@@ -12,6 +13,7 @@ class SettingsFragment : Fragment() {
 
     companion object {
         const val PREFS_NAME = "kuwago_settings"
+        const val KEY_LIGHT_MODE = "light_mode"
         const val KEY_SCAN_OTHER_APPS  = "scan_other_messaging_apps"
         const val KEY_ENABLED_APP_PACKAGES = "enabled_scanned_app_packages"
         const val KEY_SCAN_INSTANTLY   = "scan_incoming_instantly"
@@ -65,6 +67,26 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val switchLightMode = view.findViewById<SwitchCompat>(R.id.switch_light_mode)
+        val rowLightMode = view.findViewById<View>(R.id.settings_row_light_mode)
+
+        val isLightMode = prefs.getBoolean(KEY_LIGHT_MODE, false)
+        switchLightMode?.isChecked = isLightMode
+
+        switchLightMode?.setOnCheckedChangeListener { _, isChecked ->
+            if (prefs.getBoolean(KEY_LIGHT_MODE, false) != isChecked) {
+                prefs.edit().putBoolean(KEY_LIGHT_MODE, isChecked).apply()
+                AppCompatDelegate.setDefaultNightMode(
+                    if (isChecked) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
+                )
+            }
+        }
+
+        rowLightMode?.setOnClickListener {
+            switchLightMode?.isChecked = !(switchLightMode?.isChecked ?: false)
+        }
 
         view.findViewById<View>(R.id.settings_row_realtime_scan).setOnClickListener {
             openSubPage(SettingsRealtimeScanFragment())

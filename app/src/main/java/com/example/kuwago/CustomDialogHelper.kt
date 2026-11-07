@@ -167,7 +167,10 @@ object CustomDialogHelper {
             btnPrimary.visibility = View.VISIBLE
             btnPrimary.text = primaryButtonText
             btnPrimary.setBackgroundResource(primaryButtonBg)
-            btnPrimary.setTextColor(primaryButtonTextColor)
+            val resolvedPrimaryTextColor = if (primaryButtonBg == R.drawable.bg_dark_button && primaryButtonTextColor == Color.WHITE) {
+                ContextCompat.getColor(context, R.color.text_primary)
+            } else primaryButtonTextColor
+            btnPrimary.setTextColor(resolvedPrimaryTextColor)
             btnPrimary.setOnClickListener {
                 onPrimaryClick?.invoke()
                 dialog.dismiss()
@@ -180,7 +183,10 @@ object CustomDialogHelper {
             btnSecondary.visibility = View.VISIBLE
             btnSecondary.text = secondaryButtonText
             btnSecondary.setBackgroundResource(secondaryButtonBg)
-            btnSecondary.setTextColor(secondaryButtonTextColor)
+            val resolvedSecondaryTextColor = if (secondaryButtonBg == R.drawable.bg_dark_button && secondaryButtonTextColor == Color.WHITE) {
+                ContextCompat.getColor(context, R.color.text_primary)
+            } else secondaryButtonTextColor
+            btnSecondary.setTextColor(resolvedSecondaryTextColor)
             btnSecondary.setOnClickListener {
                 onSecondaryClick?.invoke()
                 dialog.dismiss()

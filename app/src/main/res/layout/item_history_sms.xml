@@ -92,14 +92,14 @@
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_ml"
                     android:contentDescription="Local"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tv_chip_local"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Local"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:fontFamily="@font/sf_pro" />
             </LinearLayout>
@@ -121,14 +121,14 @@
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_brain"
                     android:contentDescription="Online"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tv_chip_online"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Online"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:fontFamily="@font/sf_pro" />
             </LinearLayout>
@@ -161,14 +161,14 @@
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_ml"
                     android:contentDescription="ML"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tv_chip_ml"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="ML"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:fontFamily="@font/sf_pro" />
             </LinearLayout>
@@ -191,14 +191,14 @@
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_brain"
                     android:contentDescription="DL"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tv_chip_dl"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="DL"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:fontFamily="@font/sf_pro" />
             </LinearLayout>
@@ -220,14 +220,14 @@
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_link"
                     android:contentDescription="URL"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tv_chip_url"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="URL"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     android:fontFamily="@font/sf_pro" />
             </LinearLayout>

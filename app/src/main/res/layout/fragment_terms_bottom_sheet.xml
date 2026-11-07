@@ -26,7 +26,7 @@
             android:focusable="true"
             android:padding="8dp"
             android:src="@drawable/ic_close"
-            app:tint="@color/white" />
+            app:tint="@color/icon_tint" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -247,11 +247,11 @@
             android:layout_width="match_parent"
             android:layout_height="52dp"
             app:cornerRadius="24dp"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/button_primary_bg"
             android:fontFamily="@font/sf_pro"
             android:text="@string/terms_accept_button"
             android:textAllCaps="false"
-            android:textColor="@color/black"
+            android:textColor="@color/button_primary_text"
             android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>

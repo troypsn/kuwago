@@ -2,7 +2,9 @@ package com.example.kuwago
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatDelegate
 
 class KuwagoApp : Application() {
 
@@ -10,6 +12,11 @@ class KuwagoApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        val prefs = getSharedPreferences(SettingsFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        val isLightMode = prefs.getBoolean(SettingsFragment.KEY_LIGHT_MODE, false)
+        AppCompatDelegate.setDefaultNightMode(
+            if (isLightMode) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
+        )
         DetectionRepository.loadIfNeeded(this)
         NotificationHelper.createAllNotificationChannels(this)
 
