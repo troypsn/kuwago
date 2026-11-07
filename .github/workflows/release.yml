@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - test_mobsf
+      - ui/light_mode
   workflow_dispatch:
 
 permissions:
@@ -123,7 +124,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release and Upload Assets
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test_mobsf'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test_mobsf' || github.ref == 'refs/heads/ui/light_mode'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
